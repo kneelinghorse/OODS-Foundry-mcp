@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/repl.patch.json",
+  "title": "Agentic REPL Patch",
+  "oneOf": [
+    { "$ref": "#/$defs/jsonPatchArray" },
+    { "$ref": "#/$defs/nodePatch" },
+    {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nodePatch" },
+      "minItems": 1
+    }
+  ],
+  "$defs": {
+    "jsonPatchOp": {
+      "type": "object",
+      "required": ["op", "path"],
+      "properties": {
+        "op": { "type": "string", "enum": ["add", "remove", "replace"] },
+        "path": { "type": "string", "minLength": 1 },
+        "value": {}
+      },
+      "additionalProperties": false
+    },
+    "jsonPatchArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/jsonPatchOp" },
+      "minItems": 1
+    },
+    "nodePatch": {
+      "type": "object",
+      "required": ["nodeId", "path"],
+      "properties": {
+        "nodeId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "value": {},
+        "op": { "type": "string", "enum": ["add", "remove", "replace"], "default": "replace" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

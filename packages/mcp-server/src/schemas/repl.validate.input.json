@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/repl.validate.input.json",
+  "title": "Agentic REPL validate input",
+  "type": "object",
+  "properties": {
+    "mode": { "type": "string", "enum": ["full", "patch"], "default": "full" },
+    "schema": { "$ref": "./repl.ui.schema.json" },
+    "patch": { "$ref": "./repl.patch.json" },
+    "baseTree": { "$ref": "./repl.ui.schema.json" },
+    "options": {
+      "type": "object",
+      "properties": {
+        "includeNormalized": { "type": "boolean", "default": true },
+        "checkComponents": { "type": "boolean", "default": true }
+      },
+      "additionalProperties": false,
+      "default": {}
+    }
+  },
+  "required": ["mode"],
+  "allOf": [
+    { "if": { "properties": { "mode": { "const": "full" } } }, "then": { "required": ["schema"] } },
+    { "if": { "properties": { "mode": { "const": "patch" } } }, "then": { "required": ["patch"] } }
+  ],
+  "additionalProperties": false
+}

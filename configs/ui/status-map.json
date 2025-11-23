@@ -1,0 +1,38 @@
+{
+  "$schema": "../../schemas/ui/status-map.schema.json",
+  "version": "1.1.0",
+  "generated_at": "2025-10-27T00:00:00Z",
+  "notes": "Billing contexts render subscription and invoice statuses through the canonical token manifest.",
+  "domains": {
+    "subscription": {
+      "source": "tokens/maps/saas-billing.status-map.json",
+      "path": "#/domains/subscription",
+      "statuses": [
+        "future",
+        "trialing",
+        "active",
+        "delinquent",
+        "paused",
+        "pending_cancellation",
+        "terminated"
+      ]
+    },
+    "invoice": {
+      "source": "tokens/maps/saas-billing.status-map.json",
+      "path": "#/domains/invoice",
+      "statuses": [
+        "draft",
+        "posted",
+        "past_due",
+        "paid",
+        "void"
+      ]
+    }
+  },
+  "contexts": {
+    "list": ["subscription", "invoice"],
+    "detail": ["subscription", "invoice"],
+    "form": ["subscription", "invoice"],
+    "timeline": ["subscription", "invoice"]
+  }
+}

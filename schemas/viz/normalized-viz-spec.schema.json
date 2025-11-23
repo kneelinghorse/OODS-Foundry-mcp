@@ -1,0 +1,725 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Normalized Viz Spec v0.1",
+  "type": "object",
+  "description": "Declarative visualization specification generated from trait composition.",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://oods.dev/viz-spec/v1"
+    },
+    "id": {
+      "type": "string",
+      "description": "Stable identifier for the spec instance."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human friendly label surfaced in UI + narration."
+    },
+    "data": {
+      "$ref": "#/definitions/DataSource"
+    },
+    "transforms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Transform"
+      },
+      "description": "Declarative data transforms applied prior to rendering."
+    },
+    "marks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/Mark"
+      },
+      "description": "List of mark definitions (layers)."
+    },
+    "encoding": {
+      "$ref": "#/definitions/EncodingMap"
+    },
+    "layout": {
+      "$ref": "#/definitions/LayoutDefinition"
+    },
+    "interactions": {
+      "type": "array",
+      "description": "Declarative interaction traits applied to the visualization (e.g., highlight, tooltip).",
+      "items": {
+        "$ref": "#/definitions/InteractionTrait"
+      }
+    },
+    "config": {
+      "$ref": "#/definitions/VizConfig"
+    },
+    "a11y": {
+      "$ref": "#/definitions/AccessibilitySpec"
+    },
+    "portability": {
+      "$ref": "#/definitions/PortabilitySpec"
+    }
+  },
+  "required": ["data", "marks", "encoding", "a11y"],
+  "additionalProperties": false,
+  "definitions": {
+    "DataSource": {
+      "type": "object",
+      "description": "Inline values or reference to an external dataset.",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["json", "csv", "tsv", "topojson", "auto"]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Transform": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "aggregate",
+            "calculate",
+            "filter",
+            "sort",
+            "window",
+            "stack",
+            "bin"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "Mark": {
+      "type": "object",
+      "properties": {
+        "trait": {
+          "type": "string",
+          "description": "ID of Mark trait (e.g., MarkBar)."
+        },
+        "from": {
+          "type": "string",
+          "description": "Optional dataset reference for layered specs."
+        },
+        "encodings": {
+          "$ref": "#/definitions/EncodingMap"
+        },
+        "options": {
+          "type": "object",
+          "description": "Trait-specific configuration applied post-normalization.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["trait"],
+      "additionalProperties": false
+    },
+    "EncodingMap": {
+      "type": "object",
+      "description": "Mapping of encoding channels to trait bindings.",
+      "properties": {
+        "x": { "$ref": "#/definitions/TraitBinding" },
+        "y": { "$ref": "#/definitions/TraitBinding" },
+        "color": { "$ref": "#/definitions/TraitBinding" },
+        "size": { "$ref": "#/definitions/TraitBinding" },
+        "shape": { "$ref": "#/definitions/TraitBinding" },
+        "detail": { "$ref": "#/definitions/TraitBinding" }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "TraitBinding": {
+      "type": "object",
+      "description": "Links a data field to a trait-backed encoding channel.",
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field name in the data source."
+        },
+        "trait": {
+          "type": "string",
+          "description": "Trait ID (e.g., EncodingColor)."
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["x", "y", "color", "size", "shape", "detail"]
+        },
+        "aggregate": {
+          "type": "string",
+          "enum": [
+            "sum",
+            "count",
+            "average",
+            "median",
+            "min",
+            "max",
+            "distinct"
+          ]
+        },
+        "bin": {
+          "type": "boolean"
+        },
+        "timeUnit": {
+          "type": "string",
+          "enum": [
+            "year",
+            "quarter",
+            "month",
+            "week",
+            "day",
+            "hour",
+            "minute",
+            "second"
+          ]
+        },
+        "scale": {
+          "type": "string",
+          "enum": ["linear", "temporal", "log", "sqrt", "band", "point"]
+        },
+        "sort": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["none", "ascending", "descending"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "field": { "type": "string" },
+                "order": {
+                  "type": "string",
+                  "enum": ["ascending", "descending"]
+                }
+              },
+              "required": ["field", "order"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "legend": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["field", "trait"],
+      "additionalProperties": false
+    },
+    "InteractionTrait": {
+      "type": "object",
+      "description": "Declarative interaction trait composed of a selection primitive and production rule.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for referencing this interaction predicate."
+        },
+        "select": {
+          "$ref": "#/definitions/InteractionSelection"
+        },
+        "rule": {
+          "$ref": "#/definitions/InteractionRule"
+        }
+      },
+      "required": ["id", "select", "rule"],
+      "additionalProperties": false
+    },
+    "InteractionSelection": {
+      "description": "Selection primitive that produces a predicate for downstream rules.",
+      "oneOf": [
+        { "$ref": "#/definitions/PointSelection" },
+        { "$ref": "#/definitions/IntervalSelection" }
+      ]
+    },
+    "PointSelection": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["point"]
+        },
+        "on": {
+          "type": "string",
+          "description": "Event stream that triggers the selection (e.g., hover, click)."
+        },
+        "fields": {
+          "type": "array",
+          "description": "Data fields that participate in the predicate.",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      },
+      "required": ["type", "on", "fields"],
+      "additionalProperties": false
+    },
+    "IntervalSelection": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["interval"]
+        },
+        "on": {
+          "type": "string",
+          "description": "Event stream that triggers the interval (e.g., drag)."
+        },
+        "encodings": {
+          "type": "array",
+          "description": "Encoding channels that define the brush interval.",
+          "items": {
+            "type": "string",
+            "enum": ["x", "y"]
+          },
+          "minItems": 1
+        },
+        "bind": {
+          "description": "Binding target for the selection (e.g., 'scales' for zoom).",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["scales"]
+            },
+            {
+              "type": "object",
+              "additionalProperties": true
+            }
+          ]
+        }
+      },
+      "required": ["type", "on", "encodings"],
+      "additionalProperties": false
+    },
+    "InteractionRule": {
+      "description": "Production rule describing how the predicate manipulates the visualization.",
+      "oneOf": [
+        { "$ref": "#/definitions/InteractionFilterRule" },
+        { "$ref": "#/definitions/InteractionVisualRule" },
+        { "$ref": "#/definitions/InteractionTooltipRule" },
+        { "$ref": "#/definitions/InteractionZoomRule" }
+      ]
+    },
+    "InteractionFilterRule": {
+      "type": "object",
+      "properties": {
+        "bindTo": {
+          "type": "string",
+          "enum": ["filter"]
+        }
+      },
+      "required": ["bindTo"],
+      "additionalProperties": false
+    },
+    "InteractionZoomRule": {
+      "type": "object",
+      "properties": {
+        "bindTo": {
+          "type": "string",
+          "enum": ["zoom"]
+        }
+      },
+      "required": ["bindTo"],
+      "additionalProperties": false
+    },
+    "InteractionVisualRule": {
+      "type": "object",
+      "properties": {
+        "bindTo": {
+          "type": "string",
+          "enum": ["visual"]
+        },
+        "property": {
+          "type": "string",
+          "description": "Visual property to conditionally modify (e.g., fillOpacity)."
+        },
+        "condition": {
+          "$ref": "#/definitions/InteractionValueConfig"
+        },
+        "else": {
+          "$ref": "#/definitions/InteractionValueConfig"
+        }
+      },
+      "required": ["bindTo", "property", "condition", "else"],
+      "additionalProperties": false
+    },
+    "InteractionTooltipRule": {
+      "type": "object",
+      "properties": {
+        "bindTo": {
+          "type": "string",
+          "enum": ["tooltip"]
+        },
+        "fields": {
+          "type": "array",
+          "description": "Ordered list of fields rendered inside the tooltip.",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      },
+      "required": ["bindTo", "fields"],
+      "additionalProperties": false
+    },
+    "InteractionValueConfig": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "description": "Value applied when the predicate condition is met or not met.",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" }
+          ]
+        }
+      },
+      "required": ["value"],
+      "additionalProperties": false
+    },
+    "VizConfig": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "description": "Theme identifier."
+        },
+        "tokens": {
+          "type": "object",
+          "description": "Token overrides scoped to this spec.",
+          "additionalProperties": {
+            "type": ["string", "number"]
+          }
+        },
+        "layout": {
+          "type": "object",
+          "properties": {
+            "width": { "type": "number", "minimum": 0 },
+            "height": { "type": "number", "minimum": 0 },
+            "padding": { "type": "number", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "mark": {
+          "type": "object",
+          "description": "Mark-level defaults applied before traits."
+        }
+      },
+      "additionalProperties": false
+    },
+    "AccessibilitySpec": {
+      "type": "object",
+      "description": "Accessibility contract mandated by RDV.4.",
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Long-form description surfaced via screen readers."
+        },
+        "ariaLabel": {
+          "type": "string",
+          "description": "Short ARIA label applied to chart container."
+        },
+        "narrative": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" },
+            "keyFindings": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "tableFallback": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "caption": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["description"],
+      "additionalProperties": false
+    },
+    "PortabilitySpec": {
+      "type": "object",
+      "description": "Portability hints for low-fi translations (dv-5).",
+      "properties": {
+        "fallbackType": {
+          "type": "string",
+          "enum": ["table", "text"]
+        },
+        "tableColumnOrder": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "preferredRenderer": {
+          "type": "string",
+          "enum": ["vega-lite", "echarts", "native"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LayoutDefinition": {
+      "description": "Layout trait that augments the normalized spec with facet/layer/concat metadata.",
+      "oneOf": [
+        { "$ref": "#/definitions/LayoutFacet" },
+        { "$ref": "#/definitions/LayoutLayer" },
+        { "$ref": "#/definitions/LayoutConcat" }
+      ]
+    },
+    "SharedScaleConfig": {
+      "type": "object",
+      "description": "Controls whether encoding channels remain synchronized across layout children.",
+      "properties": {
+        "x": { "$ref": "#/definitions/ScaleBindingMode" },
+        "y": { "$ref": "#/definitions/ScaleBindingMode" },
+        "color": { "$ref": "#/definitions/ScaleBindingMode" },
+        "size": { "$ref": "#/definitions/ScaleBindingMode" },
+        "shape": { "$ref": "#/definitions/ScaleBindingMode" },
+        "detail": { "$ref": "#/definitions/ScaleBindingMode" }
+      },
+      "additionalProperties": false
+    },
+    "ScaleBindingMode": {
+      "type": "string",
+      "enum": ["shared", "independent"]
+    },
+    "LayoutProjection": {
+      "type": "object",
+      "description": "Projection hints forwarded to adapters.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["cartesian", "polar", "radial"]
+        },
+        "preserveAspectRatio": {
+          "type": "boolean"
+        },
+        "rotate": {
+          "type": "number",
+          "description": "Rotation (degrees) applied to the projection center."
+        }
+      },
+      "additionalProperties": false
+    },
+    "FacetField": {
+      "type": "object",
+      "description": "Declares how a facet dimension is derived.",
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Data field used for the facet dimension."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum facet count for this dimension."
+        },
+        "sort": {
+          "$ref": "#/definitions/LayoutSort"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["field"],
+      "additionalProperties": false
+    },
+    "LayoutSort": {
+      "description": "Sorting definition for layout fields.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["none", "ascending", "descending"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field": { "type": "string" },
+            "order": { "type": "string", "enum": ["ascending", "descending"] }
+          },
+          "required": ["field", "order"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "LayoutFacet": {
+      "type": "object",
+      "properties": {
+        "trait": {
+          "type": "string",
+          "const": "LayoutFacet"
+        },
+        "rows": {
+          "$ref": "#/definitions/FacetField"
+        },
+        "columns": {
+          "$ref": "#/definitions/FacetField"
+        },
+        "wrap": {
+          "type": "string",
+          "enum": ["row", "column", "auto"],
+          "default": "row"
+        },
+        "maxPanels": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 48
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0,
+          "default": 16
+        },
+        "sharedScales": {
+          "$ref": "#/definitions/SharedScaleConfig"
+        },
+        "projection": {
+          "$ref": "#/definitions/LayoutProjection"
+        }
+      },
+      "required": ["trait"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "anyOf": [
+            { "required": ["rows"] },
+            { "required": ["columns"] }
+          ]
+        }
+      ]
+    },
+    "LayoutLayer": {
+      "type": "object",
+      "properties": {
+        "trait": {
+          "type": "string",
+          "const": "LayoutLayer"
+        },
+        "blendMode": {
+          "type": "string",
+          "enum": ["normal", "multiply", "screen", "overlay"]
+        },
+        "syncInteractions": {
+          "type": "boolean",
+          "default": true
+        },
+        "sharedScales": {
+          "$ref": "#/definitions/SharedScaleConfig"
+        },
+        "order": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "projection": {
+          "$ref": "#/definitions/LayoutProjection"
+        }
+      },
+      "required": ["trait"],
+      "additionalProperties": false
+    },
+    "LayoutConcat": {
+      "type": "object",
+      "properties": {
+        "trait": {
+          "type": "string",
+          "const": "LayoutConcat"
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["horizontal", "vertical", "grid"],
+          "default": "horizontal"
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0,
+          "default": 24
+        },
+        "sections": {
+          "type": "array",
+          "description": "Dashboard sections that reference filtered variants of the normalized spec.",
+          "items": { "$ref": "#/definitions/ConcatSection" },
+          "minItems": 2
+        },
+        "sharedScales": {
+          "$ref": "#/definitions/SharedScaleConfig"
+        },
+        "projection": {
+          "$ref": "#/definitions/LayoutProjection"
+        }
+      },
+      "required": ["trait", "sections"],
+      "additionalProperties": false
+    },
+    "ConcatSection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable identifier for the section."
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "filters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SectionFilter" }
+        },
+        "sharedScales": {
+          "$ref": "#/definitions/SharedScaleConfig"
+        },
+        "projection": {
+          "$ref": "#/definitions/LayoutProjection"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    },
+    "SectionFilter": {
+      "type": "object",
+      "properties": {
+        "field": { "type": "string" },
+        "operator": {
+          "type": "string",
+          "enum": ["==", "!=", "in", "not_in", ">", ">=", "<", "<="]
+        },
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            {
+              "type": "array",
+              "items": { "type": ["string", "number", "boolean"] },
+              "minItems": 1
+            }
+          ]
+        }
+      },
+      "required": ["field", "operator", "value"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/repl.ui.schema.json",
+  "title": "Agentic REPL UI Schema",
+  "type": "object",
+  "required": ["version", "screens"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string", "minLength": 1 },
+    "dsVersion": { "type": "string" },
+    "theme": { "type": "string" },
+    "screens": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/uiElement" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "layout": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["stack", "grid", "inline", "section", "sidebar"] },
+        "align": { "type": "string", "enum": ["start", "center", "end", "space-between"] },
+        "gapToken": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "style": {
+      "type": "object",
+      "properties": {
+        "spacingToken": { "type": "string" },
+        "radiusToken": { "type": "string" },
+        "shadowToken": { "type": "string" },
+        "colorToken": { "type": "string" },
+        "typographyToken": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "intent": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "props": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "uiElement": {
+      "type": "object",
+      "required": ["id", "component"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "component": { "type": "string", "minLength": 1 },
+        "route": { "type": "string" },
+        "layout": { "$ref": "#/$defs/layout" },
+        "style": { "$ref": "#/$defs/style" },
+        "props": { "$ref": "#/$defs/props" },
+        "bindings": { "$ref": "#/$defs/bindings" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/uiElement" }
+        },
+        "meta": { "$ref": "#/$defs/meta" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

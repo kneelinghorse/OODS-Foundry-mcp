@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "structuredData.fetch.input.json",
+  "title": "structuredData.fetch input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "dataset": {
+      "type": "string",
+      "enum": ["components", "tokens", "manifest"],
+      "description": "Structured dataset to return."
+    },
+    "ifNoneMatch": {
+      "type": "string",
+      "minLength": 8,
+      "description": "Return matched=true without payload when the ETag matches."
+    },
+    "includePayload": {
+      "type": "boolean",
+      "default": true,
+      "description": "When false, omit payload even if no ETag match occurs."
+    }
+  },
+  "required": ["dataset"]
+}

@@ -1,0 +1,10 @@
+{
+  "theme": {
+    "shadow": {
+      "elevation": {
+        "card": { "$type": "shadow", "$value": "{shadow.elevation.card}" },
+        "overlay": { "$type": "shadow", "$value": "{shadow.elevation.overlay}" }
+      }
+    }
+  }
+}

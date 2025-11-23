@@ -1,0 +1,24 @@
+{
+  "name": "@oods/design-lab-shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Three-pane Agentic Design Lab shell wired to the MCP renderer.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "react": "workspace:*",
+    "react-dom": "workspace:*"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "workspace:*",
+    "@testing-library/react": "workspace:*",
+    "@types/react": "workspace:*",
+    "@types/react-dom": "workspace:*",
+    "jsdom": "workspace:*",
+    "typescript": "workspace:*",
+    "vitest": "workspace:*"
+  }
+}

@@ -1,0 +1,25 @@
+# Node / JS / build
+node_modules/
+pnpm-lock.yaml
+.pnpm-store/
+dist/
+coverage/
+storybook-static/
+
+# Python / tooling
+.pytest_cache/
+.benchmarks/
+__pycache__/
+
+# OS / IDE
+.DS_Store
+.vscode/
+
+# Generated data / SQLite state
+cmos/db/cmos.sqlite
+cmos/db/*.log
+*.sqlite
+
+# Misc
+*.log
+tmp/

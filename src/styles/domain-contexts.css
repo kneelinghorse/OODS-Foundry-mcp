@@ -1,0 +1,382 @@
+/**
+ * Domain Context Layouts
+ * Mission BI-20251020-1610d
+ *
+ * Context-aware grid scaffolds powered exclusively by semantic tokens.
+ * No literal spacing/colour values; all sizing comes from view/system tokens.
+ */
+
+@layer components {
+  /* Base container — tokens: --cmp-surface-canvas, --cmp-text-body, --view-shell-padding-inline, --view-shell-padding-block, --view-shell-max-width */
+  [data-view] {
+    background: var(--cmp-surface-canvas);
+    color: var(--cmp-text-body);
+    padding-inline: var(--view-shell-padding-inline);
+    padding-block: var(--view-shell-padding-block);
+    display: grid;
+    justify-items: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Shell constraint — tokens: --view-shell-max-width */
+  [data-view] > * {
+    width: var(--view-shell-max-width);
+    box-sizing: border-box;
+  }
+
+  /* Page header — tokens: --view-pageHeader-gap, --cmp-surface-panel, --view-card-radius, --view-card-padding, --cmp-shadow-panel, --view-border-thin, --cmp-border-default, --view-pageHeader-card-gap */
+  [data-view] header[data-region='pageHeader'] {
+    display: grid;
+    gap: var(--view-pageHeader-gap);
+  }
+
+  [data-view] header[data-region='pageHeader'] header {
+    background: var(--cmp-surface-panel);
+    border-radius: var(--view-card-radius);
+    padding: var(--view-card-padding);
+    box-shadow: var(--cmp-shadow-panel);
+    border: var(--view-border-thin) solid var(--cmp-border-default);
+    display: grid;
+    gap: var(--view-pageHeader-card-gap);
+  }
+
+  /* Toolbar cluster — tokens: --view-toolbar-gap, --view-toolbar-item-gap */
+  [data-view] [data-region='viewToolbar'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--view-toolbar-gap);
+  }
+
+  [data-view] [data-region='viewToolbar'] > * {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--view-toolbar-item-gap);
+  }
+
+  /* Main region — tokens: --view-main-gap-default */
+  [data-view] main[data-region='main'] {
+    display: grid;
+    gap: var(--view-main-gap-default);
+    align-content: start;
+  }
+
+  [data-view] [data-chart-grid] {
+    display: grid;
+    gap: var(--view-main-gap-default);
+    align-content: start;
+  }
+
+  [data-view] [data-chart-grid='chart'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-view] [data-chart-grid='dashboard'] {
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  }
+
+  /* List main rhythm — tokens: --view-main-gap-list */
+  [data-view-context='list'] main[data-region='main'] {
+    gap: var(--view-main-gap-list);
+  }
+
+  /* Inline main rhythm — tokens: --view-main-gap-inline */
+  [data-view-context='inline'] main[data-region='main'] {
+    gap: var(--view-main-gap-inline);
+  }
+
+  /* Primary panels — tokens: --cmp-surface-panel, --view-card-radius, --view-card-padding, --cmp-shadow-panel, --view-border-thin, --cmp-border-default */
+  :is(
+      [data-view-context='detail'],
+      [data-view-context='list'],
+      [data-view-context='form'],
+      [data-view-context='timeline']
+    ) main[data-region='main'] > *,
+  :is(
+      [data-view-context='detail'],
+      [data-view-context='list'],
+      [data-view-context='form'],
+      [data-view-context='timeline']
+    ) main[data-region='main'] > * > * {
+    background: var(--cmp-surface-panel);
+    border-radius: var(--view-card-radius);
+    padding: var(--view-card-padding);
+    box-shadow: var(--cmp-shadow-panel);
+    border: var(--view-border-thin) solid var(--cmp-border-default);
+  }
+
+  /* Inline surfaces — tokens: --view-gap-inline */
+  [data-view-context='inline'] main[data-region='main'] > *,
+  [data-view-context='inline'] main[data-region='main'] > * > * {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  /* Context rail — tokens: --cmp-surface-panel, --view-card-radius, --view-contextPanel-padding, --cmp-shadow-panel, --view-border-thin, --cmp-border-default, --view-contextPanel-gap */
+  [data-view] aside[data-region='contextPanel'] {
+    background: var(--cmp-surface-panel);
+    border-radius: var(--view-card-radius);
+    padding: var(--view-contextPanel-padding);
+    box-shadow: var(--cmp-shadow-panel);
+    border: var(--view-border-thin) solid var(--cmp-border-default);
+    display: grid;
+    gap: var(--view-contextPanel-gap);
+    align-content: start;
+  }
+
+  /* Standard rail sizing — tokens: --view-rail-width-standard, --view-rail-width-min-standard */
+  :is([data-view-context='detail'], [data-view-context='timeline'])
+    aside[data-region='contextPanel'] {
+    inline-size: var(--view-rail-width-standard);
+    min-inline-size: var(--view-rail-width-min-standard);
+  }
+
+  /* Narrow rail sizing — tokens: --view-rail-width-narrow, --view-rail-width-min-narrow */
+  :is([data-view-context='list'], [data-view-context='form'])
+    aside[data-region='contextPanel'] {
+    inline-size: var(--view-rail-width-narrow);
+    min-inline-size: var(--view-rail-width-min-narrow);
+  }
+
+  /* Detail view layout — tokens: --view-section-gap-detail, --view-main-gap-default, --view-columns-default, --view-columns-two-column-standard */
+  [data-view-context='detail'] [data-region-group='detail-body'] {
+    display: grid;
+    gap: var(--view-section-gap-detail);
+    align-content: start;
+  }
+
+  [data-view-context='detail'] [data-region-group='detail-content'] {
+    display: grid;
+    gap: var(--view-main-gap-default);
+    align-items: start;
+    align-content: start;
+    grid-template-columns: var(--view-columns-default);
+  }
+
+  [data-view-context='detail'][data-view-has-contextpanel='true']
+    [data-region-group='detail-content'] {
+    grid-template-columns: var(--view-columns-two-column-standard);
+  }
+
+  /* List view layout — tokens: --view-section-gap-list, --view-main-gap-list, --view-columns-default, --view-columns-two-column-narrow */
+  [data-view-context='list'] [data-region-group='list-body'] {
+    display: grid;
+    gap: var(--view-section-gap-list);
+    align-content: start;
+  }
+
+  [data-view-context='list'] [data-region-group='list-chrome'] {
+    display: grid;
+    gap: var(--view-section-gap-list);
+    align-content: start;
+  }
+
+  [data-view-context='list'] [data-region-group='list-content'] {
+    display: grid;
+    gap: var(--view-main-gap-list);
+    align-items: start;
+    align-content: start;
+    grid-template-columns: var(--view-columns-default);
+  }
+
+  [data-view-context='list'][data-view-has-contextpanel='true']
+    [data-region-group='list-content'] {
+    grid-template-columns: var(--view-columns-two-column-narrow);
+  }
+
+  /* Form view layout — tokens: --view-section-gap-form, --view-main-gap-default, --view-columns-default, --view-columns-two-column-guidance */
+  [data-view-context='form'] [data-region-group='form-body'] {
+    display: grid;
+    gap: var(--view-section-gap-form);
+    align-content: start;
+  }
+
+  [data-view-context='form'] [data-region-group='form-content'] {
+    display: grid;
+    gap: var(--view-main-gap-default);
+    align-items: start;
+    align-content: start;
+    grid-template-columns: var(--view-columns-default);
+  }
+
+  [data-view-context='form'][data-view-has-contextpanel='true']
+    [data-region-group='form-content'] {
+    grid-template-columns: var(--view-columns-two-column-guidance);
+  }
+
+  /* Timeline view layout — tokens: --view-timeline-layer, --view-section-gap-timeline, --view-timeline-gap, --view-timeline-stream-gap */
+  [data-view-context='timeline'] {
+    background: var(--view-timeline-layer);
+  }
+
+  [data-view-context='timeline'] [data-region-group='timeline-body'] {
+    display: grid;
+    gap: var(--view-section-gap-timeline);
+    align-content: start;
+  }
+
+  [data-view-context='timeline'] [data-region-group='timeline-meta'] {
+    display: grid;
+    gap: var(--view-timeline-gap);
+    align-content: start;
+  }
+
+  [data-view-context='timeline'] [data-region-group='timeline-stream'] {
+    display: grid;
+    gap: var(--view-timeline-stream-gap);
+    align-content: start;
+  }
+
+  /* Inline view layout — tokens: --view-gap-inline, --view-main-gap-inline */
+  [data-view-context='inline'] {
+    display: grid;
+    gap: var(--view-gap-inline);
+    justify-items: stretch;
+  }
+
+  [data-view-context='inline'] [data-region-group='inline-header-row'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--view-gap-inline);
+  }
+
+  /* Chart view layout — tokens: --view-section-gap-detail, --view-main-gap-default, --view-columns-default, --view-columns-two-column-narrow */
+  [data-view-context='chart'] [data-region-group='chart-body'] {
+    display: grid;
+    gap: var(--view-section-gap-detail);
+    align-content: start;
+  }
+
+  [data-view-context='chart'] [data-region-group='chart-content'] {
+    display: grid;
+    gap: var(--view-main-gap-default);
+    align-items: start;
+    align-content: start;
+    grid-template-columns: var(--view-columns-default);
+  }
+
+  [data-view-context='chart'][data-view-has-contextpanel='true']
+    [data-region-group='chart-content'] {
+    grid-template-columns: var(--view-columns-two-column-narrow);
+  }
+
+  /* Dashboard view layout — tokens: --view-section-gap-detail, --view-main-gap-default, --view-columns-default, --view-columns-two-column-standard */
+  [data-view-context='dashboard'] [data-region-group='dashboard-body'] {
+    display: grid;
+    gap: var(--view-section-gap-detail);
+    align-content: start;
+  }
+
+  [data-view-context='dashboard'] [data-region-group='dashboard-chrome'] {
+    display: grid;
+    gap: var(--view-section-gap-detail);
+    align-content: start;
+  }
+
+  [data-view-context='dashboard'] [data-region-group='dashboard-content'] {
+    display: grid;
+    gap: var(--view-main-gap-default);
+    align-items: start;
+    align-content: start;
+    grid-template-columns: var(--view-columns-default);
+  }
+
+  [data-view-context='dashboard'][data-view-has-contextpanel='true']
+    [data-region-group='dashboard-content'] {
+    grid-template-columns: var(--view-columns-two-column-standard);
+  }
+
+  /* Card view layout — tokens: --cmp-surface-panel, --view-card-radius, --view-card-padding, --cmp-shadow-panel, --view-border-thin, --cmp-border-default, --view-card-gap, --view-card-max-width */
+  [data-view-context='card'] {
+    background: var(--cmp-surface-panel);
+    border-radius: var(--view-card-radius);
+    padding: var(--view-card-padding);
+    box-shadow: var(--cmp-shadow-panel);
+    border: var(--view-border-thin) solid var(--cmp-border-default);
+    display: grid;
+    gap: var(--view-card-gap);
+    max-width: var(--view-card-max-width);
+    margin-inline: auto;
+    justify-items: stretch;
+  }
+
+  [data-view-context='card'] aside[data-region='contextPanel'] {
+    inline-size: auto;
+    min-inline-size: 0;
+  }
+
+  [data-view-context='card'] main[data-region='main'] > *,
+  [data-view-context='card'] aside[data-region='contextPanel'] {
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  /* Forced colours — tokens: --view-border-thin, --view-border-medium, --view-border-strong, --cmp-spacing-inset-compact, --cmp-focus-width, --view-accessibility-outline-offset */
+  @media (forced-colors: active) {
+    [data-view] {
+      border: var(--view-border-thin) solid CanvasText;
+      forced-color-adjust: none;
+    }
+
+    [data-view] [data-region='viewToolbar'] {
+      border: var(--view-border-thin) solid ButtonBorder;
+      padding: var(--cmp-spacing-inset-compact);
+    }
+
+    :is(
+        [data-view-context='detail'],
+        [data-view-context='list'],
+        [data-view-context='form'],
+        [data-view-context='timeline']
+      ) main[data-region='main'] > *,
+    :is(
+        [data-view-context='detail'],
+        [data-view-context='list'],
+        [data-view-context='form'],
+        [data-view-context='timeline']
+      ) main[data-region='main'] > * > * {
+      border: var(--view-border-medium) solid CanvasText;
+      box-shadow: none;
+      background: Canvas;
+      forced-color-adjust: none;
+    }
+
+    :is(
+        [data-view-context='detail'],
+        [data-view-context='list'],
+        [data-view-context='form'],
+        [data-view-context='timeline']
+      ) aside[data-region='contextPanel'],
+    [data-view] header[data-region='pageHeader'] header {
+      border: var(--view-border-medium) solid CanvasText;
+      box-shadow: none;
+      background: Canvas;
+      forced-color-adjust: none;
+    }
+
+    [data-view-context='card'] {
+      border: var(--view-border-strong) solid CanvasText;
+      box-shadow: none;
+      background: Canvas;
+    }
+
+    [data-view] *:focus {
+      outline: var(--cmp-focus-width) solid Highlight;
+      outline-offset: var(--view-accessibility-outline-offset);
+      forced-color-adjust: none;
+    }
+
+    [data-view] [data-region-group] {
+      border: var(--view-border-thin) solid ButtonBorder;
+      padding: var(--cmp-spacing-inset-compact);
+    }
+  }
+}

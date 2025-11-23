@@ -1,0 +1,34 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "emitDeclarationOnly": false,
+    "declarationMap": false,
+    "rootDir": ".",
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": [
+    "stories/**/*.ts",
+    "stories/**/*.tsx",
+    "stories/**/*.stories.ts",
+    "stories/**/*.stories.tsx",
+    "stories/**/*.stories.mdx",
+    "stories/**/*.mdx",
+    "src/stories/**/*.ts",
+    "src/stories/**/*.tsx",
+    "src/**/*.stories.ts",
+    "src/**/*.stories.tsx",
+    "src/**/*.stories.mdx",
+    "src/**/*.mdx",
+    "apps/explorer/src/stories/**/*.stories.tsx",
+    "apps/explorer/src/stories/**/*.stories.mdx",
+    "apps/explorer/src/stories/**/*.tsx",
+    "apps/explorer/src/stories/**/*.mdx",
+    "apps/explorer/src/**/*.ts",
+    "apps/explorer/src/**/*.tsx",
+    "apps/explorer/addons/storybook-addon-agent/**/*.ts",
+    "apps/explorer/addons/storybook-addon-agent/**/*.tsx",
+    "apps/explorer/src/types/**/*.d.ts"
+  ]
+}

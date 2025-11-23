@@ -1,0 +1,37 @@
+@import '../../apps/explorer/src/styles/tokens.css';
+@import '../../apps/explorer/src/styles/brand.css';
+@import '../../apps/explorer/src/styles/layers.css';
+@import '../../apps/explorer/src/styles/overlays.css';
+@import '../../apps/explorer/src/styles/hc.css';
+@import '../../apps/explorer/src/styles/index.css';
+@import './statusables.css';
+@import './forms.css';
+@import './table.css';
+@import './domain-contexts.css';
+@import './empty-state.css';
+@import './toast-portal.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: var(--cmp-surface-canvas, Canvas);
+  color: var(--cmp-text-body, CanvasText);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}

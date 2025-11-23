@@ -1,0 +1,37 @@
+{
+  "theme": {
+    "motion": {
+      "duration": {
+        "fast": { "$type": "duration", "$value": "{motion.duration.fast}" },
+        "base": { "$type": "duration", "$value": "{motion.duration.base}" },
+        "slow": { "$type": "duration", "$value": "{motion.duration.slow}" }
+      },
+      "easing": {
+        "standard": { "$type": "cubicBezier", "$value": "{motion.easing.standard}" },
+        "emphasized": { "$type": "cubicBezier", "$value": "{motion.easing.emphasized}" },
+        "linear": { "$type": "cubicBezier", "$value": "{motion.easing.linear}" }
+      },
+      "transition": {
+        "hover": { "$type": "transition", "$value": "{motion.transition.hover}", "$extensions": { "properties": ["background-color", "border-color", "box-shadow", "color"] } },
+        "focus": { "$type": "transition", "$value": "{motion.transition.focus}", "$extensions": { "properties": ["box-shadow", "outline-color", "outline-offset"] } },
+        "chip-in": { "$type": "transition", "$value": "{motion.transition.chip-in}", "$extensions": { "properties": ["transform", "opacity", "background-color"] } },
+        "chip-out": { "$type": "transition", "$value": "{motion.transition.chip-out}", "$extensions": { "properties": ["transform", "opacity", "background-color"] } },
+        "banner-reveal": { "$type": "transition", "$value": "{motion.transition.banner-reveal}", "$extensions": { "properties": ["transform", "opacity"] } }
+      },
+      "reduced": {
+        "duration": {
+          "fast": { "$type": "duration", "$value": "{motion.reduced.duration.fast}" },
+          "base": { "$type": "duration", "$value": "{motion.reduced.duration.base}" },
+          "slow": { "$type": "duration", "$value": "{motion.reduced.duration.slow}" }
+        },
+        "transition": {
+          "hover": { "$type": "transition", "$value": "{motion.reduced.transition.hover}" },
+          "focus": { "$type": "transition", "$value": "{motion.reduced.transition.focus}" },
+          "chip-in": { "$type": "transition", "$value": "{motion.reduced.transition.chip-in}" },
+          "chip-out": { "$type": "transition", "$value": "{motion.reduced.transition.chip-out}" },
+          "banner-reveal": { "$type": "transition", "$value": "{motion.reduced.transition.banner-reveal}" }
+        }
+      }
+    }
+  }
+}
