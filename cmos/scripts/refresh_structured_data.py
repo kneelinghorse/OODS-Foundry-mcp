@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Refresh OODS structured data exports (components, traits, objects, tokens).
 
-Outputs:
-- OODS-Foundry-mcp/cmos/planning/oods-components.json
-- OODS-Foundry-mcp/cmos/planning/oods-tokens.json
-- OODS-Foundry-mcp/cmos/planning/structured-data-delta-YYYY-MM-DD.md
+Outputs (defaults):
+- cmos/planning/oods-components.json
+- cmos/planning/oods-tokens.json
+- cmos/planning/structured-data-delta-YYYY-MM-DD.md
+- artifacts/structured-data/manifest.json (when --artifact-dir is provided)
 """
 
 from __future__ import annotations
@@ -23,13 +24,16 @@ import yaml
 from jsonschema import validate
 
 
-ROOT = Path(__file__).resolve().parents[1]
-OODS_ROOT = ROOT / "OODS-Foundry-mcp"
-OUTPUT_DIR = OODS_ROOT / "cmos" / "planning"
+# Resolve paths relative to repo root (cmos/scripts/* → repo root at parents[2])
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CMOS_ROOT = REPO_ROOT / "cmos"
+OUTPUT_DIR = CMOS_ROOT / "planning"
 COMPONENT_SCHEMA_PATH = OUTPUT_DIR / "component-schema.json"
-BASELINE_COMPONENTS_PATH = ROOT / "cmos" / "research" / "oods-components.json"
-BASELINE_TOKENS_PATH = ROOT / "cmos" / "research" / "oods-tokens.json"
-ARTIFACT_DIR = OODS_ROOT / "artifacts" / "structured-data"
+DEFAULT_BASELINE_COMPONENTS_PATH = OUTPUT_DIR / "oods-components.json"
+DEFAULT_BASELINE_TOKENS_PATH = OUTPUT_DIR / "oods-tokens.json"
+LEGACY_BASELINE_COMPONENTS_PATH = CMOS_ROOT / "research" / "oods-components.json"
+LEGACY_BASELINE_TOKENS_PATH = CMOS_ROOT / "research" / "oods-tokens.json"
+ARTIFACT_DIR = REPO_ROOT / "artifacts" / "structured-data"
 
 
 @dataclass
@@ -91,8 +95,8 @@ def collect_traits() -> tuple[
     List[Dict[str, Any]],
 ]:
     trait_paths: List[Path] = []
-    trait_paths.extend((OODS_ROOT / "traits").glob("**/*.trait.yaml"))
-    trait_paths.extend((OODS_ROOT / "domains").glob("*/traits/*.trait.yaml"))
+    trait_paths.extend((REPO_ROOT / "traits").glob("**/*.trait.yaml"))
+    trait_paths.extend((REPO_ROOT / "domains").glob("*/traits/*.trait.yaml"))
     traits: List[Dict[str, Any]] = []
     components_index: Dict[str, Dict[str, Any]] = {}
     domain_traits: Dict[str, Set[str]] = defaultdict(set)
@@ -108,7 +112,7 @@ def collect_traits() -> tuple[
         tags = trait_meta.get("tags") or []
         metadata = raw.get("metadata") or {}
         view_exts = raw.get("view_extensions") or {}
-        rel_path = str(path.relative_to(OODS_ROOT))
+        rel_path = str(path.relative_to(REPO_ROOT))
 
         view_extensions: List[Dict[str, Any]] = []
         contexts: Set[str] = set()
@@ -196,8 +200,8 @@ def collect_traits() -> tuple[
 
 def collect_objects() -> tuple[List[Dict[str, Any]], Dict[str, Set[str]], Dict[str, Set[str]]]:
     object_paths: List[Path] = []
-    object_paths.extend((OODS_ROOT / "objects").glob("**/*.object.yaml"))
-    object_paths.extend((OODS_ROOT / "domains").glob("*/objects/*.object.yaml"))
+    object_paths.extend((REPO_ROOT / "objects").glob("**/*.object.yaml"))
+    object_paths.extend((REPO_ROOT / "domains").glob("*/objects/*.object.yaml"))
 
     objects: List[Dict[str, Any]] = []
     trait_object_map: Dict[str, Set[str]] = defaultdict(set)
@@ -227,7 +231,7 @@ def collect_objects() -> tuple[List[Dict[str, Any]], Dict[str, Set[str]], Dict[s
                 }
             )
 
-        rel_path = str(path.relative_to(OODS_ROOT))
+        rel_path = str(path.relative_to(REPO_ROOT))
         schema = raw.get("schema") or {}
 
         objects.append(
@@ -287,7 +291,7 @@ def summarize_domains(domain_traits: Dict[str, Set[str]], domain_objects: Dict[s
 
 
 def extract_patterns() -> List[Dict[str, Any]]:
-    patterns_dir = OODS_ROOT / "docs" / "patterns"
+    patterns_dir = REPO_ROOT / "docs" / "patterns"
     patterns: List[Dict[str, Any]] = []
     if not patterns_dir.exists():
         return patterns
@@ -306,7 +310,7 @@ def extract_patterns() -> List[Dict[str, Any]]:
                 "id": slug,
                 "title": title,
                 "summary": summary,
-                "source": str(path.relative_to(OODS_ROOT)),
+                "source": str(path.relative_to(REPO_ROOT)),
             }
         )
     return patterns
@@ -357,15 +361,15 @@ def build_sample_queries(
 def build_tokens_payload(trait_overlays: List[Dict[str, Any]], *, generated_at: Optional[str] = None) -> Dict[str, Any]:
     timestamp = generated_at or iso_now()
     layers = {
-        "reference": load_json(OODS_ROOT / "tokens" / "base.json"),
-        "theme": load_json(OODS_ROOT / "tokens" / "theme.json"),
-        "system": load_json(OODS_ROOT / "tokens" / "semantic" / "system.json"),
-        "component": load_json(OODS_ROOT / "tokens" / "semantic" / "components.json"),
-        "view": load_json(OODS_ROOT / "tokens" / "view.json"),
+        "reference": load_json(REPO_ROOT / "tokens" / "base.json"),
+        "theme": load_json(REPO_ROOT / "tokens" / "theme.json"),
+        "system": load_json(REPO_ROOT / "tokens" / "semantic" / "system.json"),
+        "component": load_json(REPO_ROOT / "tokens" / "semantic" / "components.json"),
+        "view": load_json(REPO_ROOT / "tokens" / "view.json"),
     }
 
     maps: Dict[str, Any] = {}
-    maps_dir = OODS_ROOT / "tokens" / "maps"
+    maps_dir = REPO_ROOT / "tokens" / "maps"
     for path in sorted(maps_dir.glob("*.json")):
         maps[path.stem] = load_json(path)
 
@@ -565,9 +569,26 @@ def compute_etag(payload: Dict[str, Any], *, drop_keys: Tuple[str, ...] = ("gene
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _relative_to_root(path: Path) -> str:
+def resolve_baseline_path(
+    explicit: Optional[Path],
+    *,
+    default: Path,
+    legacy: Path,
+    fallback: Path,
+) -> Path:
+    """Pick a baseline path preferring explicit, then current planning output, then legacy research, else fallback."""
+    if explicit:
+        return Path(explicit)
+    if default.exists():
+        return default
+    if legacy.exists():
+        return legacy
+    return fallback
+
+
+def _relative_to_repo(path: Path) -> str:
     try:
-        return str(path.resolve().relative_to(ROOT))
+        return str(path.resolve().relative_to(REPO_ROOT))
     except ValueError:
         return str(path)
 
@@ -594,28 +615,28 @@ def write_versioned_artifacts(
         "generatedAt": components_payload.get("generatedAt"),
         "version": version,
         "source": {
-            "components": _relative_to_root(components_path),
-            "tokens": _relative_to_root(tokens_path),
+            "components": _relative_to_repo(components_path),
+            "tokens": _relative_to_repo(tokens_path),
         },
         "artifacts": [
             {
                 "name": "components",
                 "file": components_artifact.name,
-                "path": _relative_to_root(components_artifact),
+                "path": _relative_to_repo(components_artifact),
                 "etag": compute_etag(components_payload),
                 "sizeBytes": components_artifact.stat().st_size,
             },
             {
                 "name": "tokens",
                 "file": tokens_artifact.name,
-                "path": _relative_to_root(tokens_artifact),
+                "path": _relative_to_repo(tokens_artifact),
                 "etag": compute_etag(tokens_payload),
                 "sizeBytes": tokens_artifact.stat().st_size,
             },
         ],
     }
     if delta_path:
-        manifest["delta"] = {"file": delta_path.name, "path": _relative_to_root(delta_path)}
+        manifest["delta"] = {"file": delta_path.name, "path": _relative_to_repo(delta_path)}
 
     manifest_path = artifact_dir / "manifest.json"
     write_json(manifest_path, manifest)
@@ -639,22 +660,24 @@ def refresh_structured_data(
 
     components_path = output_dir / "oods-components.json"
     tokens_path = output_dir / "oods-tokens.json"
+    resolved_baseline_components = resolve_baseline_path(
+        baseline_components_path,
+        default=DEFAULT_BASELINE_COMPONENTS_PATH,
+        legacy=LEGACY_BASELINE_COMPONENTS_PATH,
+        fallback=components_path,
+    )
+    resolved_baseline_tokens = resolve_baseline_path(
+        baseline_tokens_path,
+        default=DEFAULT_BASELINE_TOKENS_PATH,
+        legacy=LEGACY_BASELINE_TOKENS_PATH,
+        fallback=tokens_path,
+    )
+
+    old_components = load_json(resolved_baseline_components) if resolved_baseline_components.exists() else components_payload
+    old_tokens = load_json(resolved_baseline_tokens) if resolved_baseline_tokens.exists() else tokens_payload
+
     write_json(components_path, components_payload)
     write_json(tokens_path, tokens_payload)
-
-    baseline_components = (
-        Path(baseline_components_path)
-        if baseline_components_path
-        else (BASELINE_COMPONENTS_PATH if BASELINE_COMPONENTS_PATH.exists() else components_path)
-    )
-    baseline_tokens = (
-        Path(baseline_tokens_path)
-        if baseline_tokens_path
-        else (BASELINE_TOKENS_PATH if BASELINE_TOKENS_PATH.exists() else tokens_path)
-    )
-
-    old_components = load_json(baseline_components)
-    old_tokens = load_json(baseline_tokens)
 
     delta_path = None
     if include_delta:
@@ -701,17 +724,17 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=OUTPUT_DIR,
-        help="Directory for canonical outputs (defaults to OODS planning directory).",
+        help="Directory for canonical outputs (defaults to cmos/planning).",
     )
     parser.add_argument(
         "--baseline-components",
         type=Path,
-        help="Optional baseline components JSON for delta generation (defaults to cmos/research or existing output).",
+        help="Baseline components JSON for delta generation (defaults to planning output, then cmos/research if present).",
     )
     parser.add_argument(
         "--baseline-tokens",
         type=Path,
-        help="Optional baseline tokens JSON for delta generation (defaults to cmos/research or existing output).",
+        help="Baseline tokens JSON for delta generation (defaults to planning output, then cmos/research if present).",
     )
     parser.add_argument(
         "--generated-at",

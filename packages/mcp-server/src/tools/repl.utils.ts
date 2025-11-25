@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAjv } from '../lib/ajv.js';
-import uiSchemaJson from '../schemas/repl.ui.schema.json' assert { type: 'json' };
 import type {
   ReplIssue,
   ReplJsonPatchOperation,
@@ -17,13 +16,18 @@ import type {
 type NodeRef = { node: UiElement; pointer: string };
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const UI_SCHEMA_PATH = path.join(__dirname, '../schemas/repl.ui.schema.json');
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const STRUCTURED_DATA_DIR = path.join(REPO_ROOT, 'artifacts', 'structured-data');
 const COMPONENT_MANIFEST = path.join(STRUCTURED_DATA_DIR, 'manifest.json');
 const FALLBACK_COMPONENTS = path.join(REPO_ROOT, 'cmos', 'planning', 'oods-components.json');
 
 const ajv = getAjv();
-const validateUiSchema = ajv.compile<UiSchema>(uiSchemaJson);
+const uiSchemaJson = JSON.parse(fs.readFileSync(UI_SCHEMA_PATH, 'utf8'));
+type ValidateFn = ((schema: UiSchema) => boolean) & {
+  errors?: Array<{ message?: string; instancePath?: string; schemaPath?: string }>;
+};
+const validateUiSchema = ajv.compile(uiSchemaJson) as ValidateFn;
 
 type RegistryInfo = {
   names: Set<string>;
@@ -232,7 +236,7 @@ export function applyPatch(baseTree: UiSchema, patch: ReplPatch): { tree: UiSche
 export function validateSchema(tree: UiSchema): ReplIssue[] {
   const ok = validateUiSchema(tree);
   if (ok) return [];
-  return (validateUiSchema.errors || []).map((err) => {
+  return (validateUiSchema.errors || []).map((err: { message?: string; instancePath?: string; schemaPath?: string }) => {
     const message = err.message || 'Schema validation failed';
     const pathValue = normalizePointer(err.instancePath || err.schemaPath || '/');
     return issue('DSL_SCHEMA', message, pathValue);

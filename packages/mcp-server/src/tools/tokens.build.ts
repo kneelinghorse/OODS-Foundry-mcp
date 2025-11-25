@@ -11,6 +11,8 @@ export async function handle(input: TokensBuildInput = {}): Promise<GenericOutpu
   const startedAt = new Date();
   const artifacts: string[] = [];
 
+  fs.mkdirSync(outDir, { recursive: true });
+
   if (input.apply) {
     const file = path.join(outDir, `tokens.${input.theme ?? 'dark'}.json`);
     if (!withinAllowed(policy.artifactsBase, file)) {

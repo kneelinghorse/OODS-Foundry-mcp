@@ -143,6 +143,13 @@ CMOS keeps the backlog, sessions, and telemetry in SQLite. Pair this README with
 
 The CLI writes directly to `cmos/db/cmos.sqlite` and re-exports backlog/context files to keep the docs in sync.
 
+Docs for the MCP/agent toolchain:
+- `docs/mcp/Design-Lab-Shell.md` — Design Lab shell usage
+- `docs/mcp/CLI-UX.md` — Agent CLI commands, outputs, and error taxonomy
+- `docs/mcp/Structured-Data-Refresh.md` — structured data exports and delta reports
+- `docs/mcp/Semantic-Protocol-v3.2.0.md` — semantic protocol engine overview
+- `docs/mcp/Integration-Guides.md` — end-to-end loop (refresh → build → run → replay)
+
 ---
 
 ## Using the system
