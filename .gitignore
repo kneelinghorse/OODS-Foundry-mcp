@@ -13,6 +13,7 @@ coverage/
 storybook-static/
 **/storybook-static/
 artifacts/
+!packages/artifacts/
 
 # Temp and logs
 tmp/
