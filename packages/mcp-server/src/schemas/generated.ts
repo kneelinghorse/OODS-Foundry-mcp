@@ -94,11 +94,20 @@ export type JsonValue =
       [k: string]: JsonValue;
     };
 
+export type GenericArtifactRef = string | GenericArtifact;
+export interface GenericArtifact {
+  path: string;
+  name?: string;
+  purpose?: string;
+  sha256?: string;
+  sizeBytes?: number;
+}
+
 export interface GenericOutput {
-  /**
-   * Absolute paths of artifacts produced by the tool.
-   */
-  artifacts: string[];
+  status?: 'ok' | 'error' | 'invalid';
+  notes?: string;
+  logs?: string[];
+  artifacts: GenericArtifactRef[];
   /**
    * Path to diagnostics JSON output when produced.
    */
@@ -111,11 +120,14 @@ export interface GenericOutput {
    * Path to bundle index describing transcript and artifacts.
    */
   bundleIndexPath: string;
+  structuredData?: {
+    [k: string]: JsonValue;
+  };
   preview?: ToolPreview;
   /**
    * Optional descriptive metadata for artifacts.
    */
-  artifactsDetail?: ArtifactDetail[];
+  artifactsDetail?: GenericArtifact[];
 }
 export interface ToolPreview {
   summary?: string | null;

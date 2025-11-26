@@ -27,7 +27,9 @@ const uiSchemaJson = JSON.parse(fs.readFileSync(UI_SCHEMA_PATH, 'utf8'));
 type ValidateFn = ((schema: UiSchema) => boolean) & {
   errors?: Array<{ message?: string; instancePath?: string; schemaPath?: string }>;
 };
-const validateUiSchema = ajv.compile(uiSchemaJson) as ValidateFn;
+const validateUiSchema = (
+  (typeof uiSchemaJson.$id === 'string' && ajv.getSchema(uiSchemaJson.$id)) || ajv.compile(uiSchemaJson)
+) as ValidateFn;
 
 type RegistryInfo = {
   names: Set<string>;

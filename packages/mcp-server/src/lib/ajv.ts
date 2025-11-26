@@ -16,7 +16,6 @@ export function getAjv(): any {
       allErrors: true,
       allowUnionTypes: true,
       strict: false,
-      removeAdditional: 'failing',
       useDefaults: true
     });
     const addFormats: any = (addFormatsImport as any).default ?? addFormatsImport;
@@ -27,6 +26,20 @@ export function getAjv(): any {
       ajvInstance.addMetaSchema(draft7);
     } catch {
       // ignore missing meta schema; validation will be less strict without it
+    }
+
+    // Preload shared schemas so relative $ref links (e.g. ./repl.patch.json)
+    // resolve without external fetches. Only load the shared dependencies to
+    // avoid duplicate registrations for top-level schemas compiled elsewhere.
+    const schemasDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../schemas');
+    for (const file of ['repl.patch.json', 'repl.ui.schema.json']) {
+      const schemaPath = path.join(schemasDir, file);
+      if (!fs.existsSync(schemaPath)) continue;
+      const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+      const schemaId = typeof schema.$id === 'string' && schema.$id.trim().length > 0 ? schema.$id : `urn:local-schema:${file}`;
+      if (!ajvInstance.getSchema(schemaId)) {
+        ajvInstance.addSchema(schema, schemaId);
+      }
     }
   }
   return ajvInstance;

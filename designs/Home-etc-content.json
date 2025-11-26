@@ -1,0 +1,270 @@
+{
+  "home": {
+    "hero": {
+      "title": "Design systems & UX leader for complex, AI-era products.",
+      "subtitle": "I help B2B teams turn messy platforms into runnable systems—clear objects, governed patterns, and design systems that ship faster and drift less.",
+      "primaryCtaLabel": "View work",
+      "primaryCtaHref": "/case-studies",
+      "secondaryCtaLabel": "About me",
+      "secondaryCtaHref": "/about",
+      "meta": [
+        "20+ years in UX",
+        "Org-level design system leadership (Paylocity, Uptake)",
+        "Frameworks: OODS Foundry, Mission Protocol, OSSP-AGI"
+      ]
+    },
+    "whatIDo": {
+      "heading": "What I do",
+      "items": [
+        {
+          "title": "Enterprise design systems & platforms",
+          "body": "Lead UI modernization and system governance for multi-product SaaS—tokens → components → patterns → adoption."
+        },
+        {
+          "title": "Object-oriented UX & data models",
+          "body": "Shape canonical objects, traits, and permissions so products, analytics, and AI agents all speak the same language."
+        },
+        {
+          "title": "AI-native UX",
+          "body": "Design systems that humans and agents can both operate—explainable scoring, semantic manifests, and guardrails instead of black boxes."
+        },
+        {
+          "title": "Org-level leadership",
+          "body": "Build and mentor UX teams, partner with Product/Eng/Data Science, and align systems work with real business constraints."
+        }
+      ]
+    },
+    "featuredWork": {
+      "heading": "Featured work",
+      "items": [
+        {
+          "slug": "paylocity-citrus",
+          "title": "Paylocity UX/UI Modernization — Citrus Design System",
+          "role": "Senior UX Manager",
+          "summary": "Led a full-platform refresh from a fragmented, “C+” UI to a modern, brand-aligned experience. Created the Citrus design system, defined a five-dimension brand-to-UX framework, and established governance so teams could ship consistently across web and mobile.",
+          "href": "/projects/project-pcty-uiux.html",
+          "tags": ["Design systems", "Enterprise SaaS", "Modernization"]
+        },
+        {
+          "slug": "paylocity-mwi",
+          "title": "Modern Workforce Index — Paylocity",
+          "role": "Senior UX Manager, Product Design",
+          "summary": "Co-led UX and product design for an organizational-health dashboard that blends utilization, employee voice, and structural signals into an explainable score with recommended actions. Focused on explainability, decision design, and adoption.",
+          "href": "/projects/project-mwi.html",
+          "tags": ["Data products", "Decision design", "Explainability"]
+        },
+        {
+          "slug": "uptake-design-system",
+          "title": "Industrial IoT Design System — Uptake",
+          "role": "UX Lead",
+          "summary": "Designed and scaled patterns for real-time industrial dashboards and alarm workflows—bringing consistency to time-series visualization, alert semantics, and safety-critical UX across sectors.",
+          "href": "/projects/project-uptake.html",
+          "tags": ["Design systems", "Data viz", "Industrial IoT"]
+        },
+        {
+          "slug": "oods-foundry",
+          "title": "OODS Foundry — Trait-Based Design System",
+          "role": "Creator",
+          "summary": "An object-oriented, agent-native design system where traits compose UI across list, detail, form, and timeline contexts. Backed by automated tests and accessibility checks, OODS is built to be audited as much as admired.",
+          "href": "/systems/oods-foundry",
+          "tags": ["OODS", "Open source", "Agent-native"]
+        }
+      ]
+    },
+    "systemsTeaser": {
+      "heading": "Systems & frameworks",
+      "body": "I work at the layer between data models, design systems, and AI tooling.",
+      "items": [
+        {
+          "title": "OODS Foundry",
+          "body": "Trait-based design system for object- and agent-native UI.",
+          "href": "/systems/oods-foundry"
+        },
+        {
+          "title": "Mission Protocol + CMOS",
+          "body": "A mission-and-memory model for coordinating human and agent work.",
+          "href": "/systems/mission-protocol"
+        },
+        {
+          "title": "OSSP-AGI experiments",
+          "body": "Protocol-driven manifests that help agents understand and navigate product environments.",
+          "href": "/systems/ossp-agi"
+        }
+      ],
+      "ctaLabel": "View systems & frameworks",
+      "ctaHref": "/systems"
+    },
+    "writingTeaser": {
+      "heading": "Writing & research",
+      "intro": "I write about design systems, object literacy, and how AI is changing work.",
+      "items": [
+        {
+          "title": "OODS Foundry: An Object-Oriented, Agent-Native Design System",
+          "summary": "On building trait-based systems that agents can navigate and maintain.",
+          "href": "https://medium.com/design-systems-collective/oods-foundry-an-object-oriented-agent-native-design-system-ecee271d0b07",
+          "source": "Medium",
+          "tags": ["OODS", "Design systems", "Agents"]
+        },
+        {
+          "title": "The “AI Builder” Myth: Austerity Disguised as Innovation",
+          "summary": "Why “everyone’s a builder” is financial triage dressed up as empowerment.",
+          "href": "https://medium.com/@kneelinghorse/the-ai-builder-myth-austerity-disguised-as-innovation-XXXXXXXXXXXX",
+          "source": "Medium",
+          "tags": ["AI & work", "Org design"]
+        }
+      ],
+      "ctaLabel": "See all writing",
+      "ctaHref": "/writing"
+    },
+    "currentWork": {
+      "heading": "How I work now",
+      "body": "These days I split my time between leading and advising design-system and UX platform teams—especially for data-heavy or multi-product SaaS—and running System.Systems, an enterprise UX & design systems consultancy focused on audit-ready systems, objects, and measurement.",
+      "links": [
+        {
+          "label": "System.Systems",
+          "href": "https://system.systems/"
+        }
+      ]
+    },
+    "contact": {
+      "heading": "Contact",
+      "body": "I’m exploring Director / Head of Design Systems and UX Platform roles, and I take on a small number of advisory and systems engagements through System.Systems.",
+      "email": "mailto:derek@deniedart.com",
+      "linkedin": "https://www.linkedin.com/in/derekniedringhaus/",
+      "resume": "/assets/derek-niedringhaus-resume.pdf",
+      "primaryCtaLabel": "Email me",
+      "secondaryCtaLabel": "Connect on LinkedIn"
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "About Derek",
+      "subtitle": "Design systems and UX leader focused on complex, data-heavy products."
+    },
+    "intro": {
+      "body": "Over the last two decades I’ve led enterprise UI modernization, built design systems like Paylocity’s Citrus, and shipped products like Modern Workforce Index that turn noisy signals into explainable decisions. Today, most of my systems work shows up in OODS Foundry and in client programs through System.Systems."
+    },
+    "whatIDo": {
+      "heading": "What I do",
+      "items": [
+        {
+          "title": "Enterprise UX & design systems",
+          "body": "Align multi-product platforms around tokens, components, and patterns governed by clear contracts—not just Figma libraries."
+        },
+        {
+          "title": "Object-oriented UX & canonical models",
+          "body": "Define user, organization, product, and subscription objects (and the traits that shape them) so product teams, analytics, and agents can all rely on the same source of truth."
+        },
+        {
+          "title": "AI-era workflows",
+          "body": "Treat AI as a co-creator and maintainer, not a replacement—linting traits, checking token coverage and accessibility, and keeping systems in sync while humans provide taste and judgment."
+        },
+        {
+          "title": "Leadership & enablement",
+          "body": "Grow teams, set ladders and contribution models, and connect design-system work to outcomes that matter to executives: delivery velocity, quality, and trust."
+        }
+      ]
+    },
+    "howIWork": {
+      "heading": "How I work",
+      "items": [
+        {
+          "title": "Systems first",
+          "body": "Start from objects, relationships, and constraints; let components and screens fall out of that structure."
+        },
+        {
+          "title": "Evidence over aesthetics alone",
+          "body": "Research, metrics, and operational realities shape the system as much as brand."
+        },
+        {
+          "title": "Explainability as a requirement",
+          "body": "From organizational scores to permissions models, people should understand why something changed—not just that it did."
+        },
+        {
+          "title": "Humans in the loop",
+          "body": "Use agents to maintain and audit systems; keep humans responsible for taste, judgment, and trade-offs."
+        },
+        {
+          "title": "Production-minded",
+          "body": "Prefer working proofs over slideware; prototypes use real data, real flows, and are designed to be hardened, not thrown away."
+        }
+      ]
+    },
+    "recentFocus": {
+      "heading": "Recent focus",
+      "items": [
+        {
+          "title": "OODS Foundry",
+          "body": "An object-oriented, trait-based design system that composes UI from canonical objects across list, detail, form, and timeline contexts. Traits bring their own views, tokens, and accessibility rules; agents help lint, test, and synchronize everything.",
+          "href": "/systems/oods-foundry"
+        },
+        {
+          "title": "System.Systems",
+          "body": "An enterprise UX & design systems consultancy where I help teams plan, build, and govern systems, product objects, and measurement so they can show audit-ready results each quarter.",
+          "href": "https://system.systems/"
+        }
+      ],
+      "ndaNote": "Client work there is often NDA-limited, so this site focuses on public work, open frameworks, and writing."
+    },
+    "selectedOutcomes": {
+      "heading": "Selected outcomes",
+      "items": [
+        {
+          "title": "Modern Workforce Index (Paylocity)",
+          "body": "Co-led UX for an organizational-health product that blends utilization, sentiment, and structure into an explainable score, adopted as a credibility pillar within the platform.",
+          "href": "/projects/project-mwi.html"
+        },
+        {
+          "title": "Citrus Design System (Paylocity)",
+          "body": "Led the design-system transformation from a fragmented, “C+” UI to a modern, brand-aligned interface with systematic tokens, components, and governance.",
+          "href": "/projects/project-pcty-uiux.html"
+        },
+        {
+          "title": "Industrial IoT Design System (Uptake)",
+          "body": "Unified patterns for time-series data, alerts, and dashboards across safety-critical industrial applications.",
+          "href": "/projects/project-uptake.html"
+        },
+        {
+          "title": "OODS Foundry",
+          "body": "Shipped an open, trait-based design system with extensive automated testing and accessibility checks, built as a substrate for both teams and agents.",
+          "href": "/systems/oods-foundry"
+        },
+        {
+          "title": "Writing & thought leadership",
+          "body": "Recent pieces include “OODS Foundry: An Object-Oriented, Agent-Native Design System” and “The ‘AI Builder’ Myth: Austerity Disguised as Innovation.”",
+          "href": "/writing"
+        }
+      ]
+    },
+    "tooling": {
+      "heading": "Tooling",
+      "items": [
+        {
+          "title": "Design",
+          "body": "Figma, design tokens, accessibility baselines, and occasional visual regression testing."
+        },
+        {
+          "title": "Frontend",
+          "body": "Semantic HTML/CSS, TypeScript/React, static or lightweight deployments for fast proofs."
+        },
+        {
+          "title": "Systems & data",
+          "body": "JSON/OpenAPI, schema-first thinking, and dashboards wired to real signals, not just mock data."
+        },
+        {
+          "title": "AI workflow",
+          "body": "Use models to accelerate exploration and maintenance—codegen, linting, documentation—while keeping human review and narrative in the loop."
+        }
+      ]
+    },
+    "contact": {
+      "heading": "Contact",
+      "body": "I’m open to Director / Head of Design Systems, UX Platform, or Enterprise UX roles, and to select systems engagements through System.Systems.",
+      "email": "mailto:derek@deniedart.com",
+      "linkedin": "https://www.linkedin.com/in/derekniedringhaus/",
+      "resume": "/assets/derek-niedringhaus-resume.pdf",
+      "primaryCtaLabel": "Email me",
+      "secondaryCtaLabel": "Connect on LinkedIn"
+    }
+  }
+}

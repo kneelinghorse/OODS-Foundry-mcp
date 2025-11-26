@@ -1,0 +1,384 @@
+apiVersion: research-output.v1
+kind: DesignResearchSynthesis
+
+metadata:
+  mission_id: "M.0.0.12"
+  project: "derekn.com-portfolio-refresh"
+  synthesized: "2025-11-25"
+  sources:
+    - "M.0.0.2_site-analysis-rauno-freiberg.md"
+    - "M.0.0.3_Visual Extraction- Emil Kowalski (emilkowal.ski).md"
+    - "M.0.0.4_Visual Extraction- Paco Coursey (paco.me).md"
+    - "M.0.0.5_Visual Extraction & Strategic Analysis- The Design Systems Leader Portfolio (Reference- Dan Mall).md"
+    - "M.0.0.6_Visual Extraction- Harry Atkins (harryjatkins.com).md"
+    - "M.0.0.7_Visual Extraction- Jen Carrington (jencarrington.com).md"
+    - "M.0.0.8_Visual Extraction- Michal Eisikowitz (michaleisik.com).md"
+    - "M.0.0.9_Visual Extraction- Nicholas Gurney.md"
+    - "M.0.0.10_Visual Extraction & Systems Analysis- The Incidental Architecture Framework.md"
+    - "M.0.0.11_Visual Extraction- Jeremy Snell (jeremysnell.com).md"
+
+output:
+
+  personas:
+    - name: "Hiring Panel Lead"
+      role: "Director / VP of Design or Product (Design Systems / Platform focus)"
+      goals:
+        - "Decide in under 5–10 minutes whether Derek is a strong candidate for a senior systems role"
+        - "See evidence of large-scale systems impact, not just UI polish"
+        - "Understand how Derek thinks, leads, and collaborates across design, product, and engineering"
+      pain_points:
+        - "Most portfolios bury impact and make it hard to separate story from reality"
+        - "Too much ornamental UI, not enough systems detail or organizational change"
+        - "Case studies that over-index on pixels and under-index on constraints and trade-offs"
+      context: >
+        Arrives from a job application or referral, often between back-to-back meetings.
+        Skims on laptop first, then may forward to peers or open again on a large monitor
+        for deeper review.
+      visual_preferences:
+        layout_style: "ordered, tool-like, low-noise"
+        information_density: "medium-high (as long as hierarchy is clear)"
+        navigation_preference: "direct entry points into 2–3 flagship systems projects"
+        trust_signals:
+          - "Concise, well-structured case studies with clear roles and outcomes"
+          - "Architecture diagrams, naming systems, before/after states"
+          - "Proof of influence: ladders, playbooks, courses, or guides used by teams"
+      ui_implications:
+        - "Homepage must surface 2–3 ‘Select Systems’ projects above the fold with role + outcomes"
+        - "Dedicated ‘Systems Work’ or ‘Design Systems’ path with diagrams, schemas, and code-adjacent artifacts"
+        - "Quick scan routes: one-click to CV / PDF, one-click to flagship case study, one-click to writing library"
+
+    - name: "Design Engineer / Systems Peer"
+      role: "Staff+ Design Engineer, Principal IC, or Systems-minded Designer"
+      goals:
+        - "Understand Derek’s object-oriented and design-engineering thinking"
+        - "Borrow patterns: schema, tokens, interaction patterns, pipeline setups"
+        - "Gauge whether Derek’s approach aligns with their own practice"
+      pain_points:
+        - "Marketing-heavy sites with little technical specificity"
+        - "Case studies that hide implementation details behind generic language"
+        - "No clear links to repos, Storybook, or real code artifacts"
+      context: >
+        Often arrives via an article, a GitHub repo, or a talk mention. Comfortable with
+        dense, technical content and prefers fast, keyboard-centric navigation.
+      visual_preferences:
+        layout_style: "IDE/OS-inspired, keyboard-friendly"
+        information_density: "high (as long as content is structured like good docs)"
+        navigation_preference: "command menu, /now page, clearly segmented ‘Work’, ‘Writing’, ‘Tools’"
+        trust_signals:
+          - "Command palette, dark mode, good typography and motion hygiene"
+          - "Object models, token schemas, and pipeline diagrams"
+          - "Open-source or pseudo-open artifacts (YAML, JSON, Storybook links)"
+      ui_implications:
+        - "Global cmd/ctrl-K command menu with fuzzy search over pages, objects, and articles"
+        - "‘Library’ section treating key pieces as docs, not just blog posts"
+        - "Clear ‘Systems’ and ‘Tools’ subsections for OODS, metrics, MCP/MAS work, etc."
+
+    - name: "Systems Client Sponsor"
+      role: "VP Product / Head of Design / Head of Platform at B2B SaaS or Data/AI company"
+      goals:
+        - "Decide if Derek/System Systems can help modernize or build their design/system stack"
+        - "See proof that Derek has shipped systems in messy, real-world constraints"
+        - "Understand his engagement model: strategy, architecture, enablement, and guardrails"
+      pain_points:
+        - "Case-study-lite consultant sites full of generic promises"
+        - "No clear throughline from diagnosis → architecture → execution → outcomes"
+        - "Hard to tell if the person can navigate politics and constraints, not just design tokens"
+      context: >
+        Often arrives via referral, LinkedIn, or an article. Will skim on mobile first,
+        then revisit on desktop with a colleague when shortlisting partners.
+      visual_preferences:
+        layout_style: "calm, credible, editorial"
+        information_density: "medium (with option to go deep)"
+        navigation_preference: "clear split between ‘How I work’, ‘Proof’, and ‘Thinking’"
+        trust_signals:
+          - "Outcome metrics, stakeholder quotes, and before/after stories"
+          - "Evidence of teaching and enablement (playbooks, frameworks, talks)"
+          - "A simple way to understand engagement options, not a hard sell"
+      ui_implications:
+        - "Homepage should explain positioning in 1–2 scrolls, with subtle but clear invitation to ‘Work together’"
+        - "Narrative case studies with structured outcomes, stakeholders, and system changes"
+        - "‘How I work’ section aligned to missions / OODS / CMOS, framed for exec audiences"
+
+  visual_references:
+    - name: "Composite Portfolio Style — Technical Library × Immersive Gallery"
+      source: >
+        Synthesis of 10 reference portfolios (Rauno, Emil, Paco, Dan, Harry, Jen,
+        Michal, Nicholas Gurney, Incidental Architecture, Jeremy Snell).
+      image_path: ""
+      analysis_method: "manual"
+      extracted_tokens:
+        colors:
+          # Dual-theme palette: warm, paper-like light mode + precise dark mode
+          light_background: "#FDFBF7"      # warm ‘paper’ for long reading
+          light_surface: "#FCFBF9"         # cards/sections
+          light_surface_muted: "#F3F2F1"
+          dark_background: "#101010"       # Vesper/Linear-style charcoal
+          dark_surface: "#181818"
+          dark_surface_muted: "#111111"
+          text_primary_light: "#111111"
+          text_secondary_light: "#4A4F55"
+          text_primary_dark: "#F5F5F5"
+          text_secondary_dark: "#A1A1A1"
+          accent_primary: "#F5D90A"        # ‘butter’ yellow for primary CTAs
+          accent_secondary: "#B7410E"      # Corten / systems-alert amber
+          accent_tertiary: "#99FFE4"       # mint highlight for technical UI / links
+          accent_neutral: "#8B9591"        # structural grey (borders, diagrams)
+        typography:
+          heading_font: "Neutral neo-grotesque (Geist/Inter class)"
+          body_font: "Readable serif (Caslon/Garamond class) for essays"
+          code_font: "Monospaced (Commit Mono / Geist Mono class)"
+          heading_sizes:
+            - "32px"
+            - "24px"
+            - "20px"
+          body_size: "16px"
+          line_heights:
+            - "1.4"   # headings / tight UI
+            - "1.6"   # body content
+          weights:
+            - 400
+            - 500
+            - 600
+            - 700
+        spacing:
+          grid_system: "8pt base with 4pt sub-steps"
+          section_spacing: "96–128px on desktop, 64px on tablet, 48px on mobile"
+          element_spacing: "16–24px between related blocks"
+          micro_spacing: "4–8px between labels, meta, chips"
+        borders:
+          radius:
+            - "6px"
+            - "12px"
+          widths:
+            - "1px"
+          style: "hairline, low-contrast; heavier only for focus / selection"
+        shadows:
+          elevations:
+            - name: "sm"
+              value: "0 4px 12px rgba(0,0,0,0.10)"
+            - name: "md"
+              value: "0 12px 32px rgba(0,0,0,0.22)"
+      layout_patterns:
+        - "Hero as router: one line positioning + 2–3 segmented CTAs (e.g., For hiring teams / For product leaders / For peers)"
+        - "‘Select Systems’ vertical list (Snell-style curated navigation) for 3–5 flagship case studies"
+        - "Technical library / docs layout for OODS, metrics, and protocols (Emil/Rauno/Paco style)"
+        - "Database-of-work archive view for full portfolio (Harry-Atkins style index) with filters"
+        - "Spacious editorial pages for essays and insight pieces (Jen-style library)"
+        - "Long, scrollable case-study narratives with inline diagrams and minimal chrome (Jeremy, Dan)"
+        - "Command menu (cmd/ctrl-K) that can jump to objects, projects, essays, and tools"
+      aesthetic_tags:
+        - "design-engineer"
+        - "systems-forward"
+        - "warm-technical"
+        - "minimal-but-human"
+        - "immersive-selection"
+        - "constraint-as-style"
+      component_suggestions:
+        - "PortfolioHeroRouter"
+        - "SelectSystemsList"
+        - "CommandMenu"
+        - "CaseStudyNarrative"
+        - "LibraryIndex"
+        - "DatabaseOfWorkArchive"
+        - "NowPage"
+        - "BlueprintDiagram"
+        - "AccessibilityStrip (tokens, contrast, motion prefs)"
+      oods_mapping:
+        hero: "HeroSection (traits: Presentable, Routable, Segmentable)"
+        select_list: "ObjectCollection<CaseStudy> rendered as SelectProjectsList"
+        archive: "ObjectCollection<Artifact> rendered via DatabaseOfWorkIndex"
+        library: "ObjectCollection<Essay|Spec> with DocLayout traits"
+      wcag_validation:
+        passed: false
+        contrast_ratios: {}
+        issues:
+          - "Requires explicit contrast checks for yellow and mint accents on both light and dark surfaces"
+          - "Motion-intensive interactions (dock/command palette/hover previews) must respect prefers-reduced-motion"
+          - "Need to validate focus-visible styles for command menu, filters, and gallery controls in both themes"
+
+  brand_guidelines:
+    colors:
+      primary_light: "#FDFBF7"
+      primary_dark: "#101010"
+      surface_light: "#FCFBF9"
+      surface_dark: "#181818"
+      text_primary_light: "#111111"
+      text_primary_dark: "#F5F5F5"
+      accent_primary: "#F5D90A"
+      accent_secondary: "#B7410E"
+      accent_technical: "#99FFE4"
+      neutral_palette:
+        - "#020617"
+        - "#101010"
+        - "#333333"
+        - "#8B9591"
+        - "#E3E0DD"
+        - "#F3F2F1"
+        - "#FDFBF7"
+    typography:
+      headings: "Geist/Inter-class neo-grotesque"
+      body: "Caslon/Garamond-class book serif for essays and narrative"
+      mono: "Commit Mono / Geist Mono-class for code, schema, and numeric meta"
+      weights:
+        - 400
+        - 500
+        - 600
+        - 700
+      scale: "Major third or perfect fourth, tuned for 16px base"
+    voice_tone:
+      - "direct"
+      - "systems-literate"
+      - "calm"
+      - "skeptical-of-hype"
+      - "teaching-forward rather than selling-forward"
+    imagery_style:
+      photography: >
+        Minimal, atmospheric shots of work surfaces, diagrams, and live systems in use;
+        occasional portrait but de-emphasized. When used, full-bleed ‘vertical river’
+        story strips for key projects rather than grids.
+      illustrations: >
+        Diagrammatic, structural, often monochrome with a single accent color; flows,
+        schemas, blueprints rather than mascots.
+      icons: "Simple, outlined, systems-oriented; avoid cute metaphor icons."
+    animation_principles:
+      duration: "Fast by default (150–220ms UI transitions; 300–450ms larger modals/overlays)"
+      easing: "Spring physics for major interactions (drawers, command menu, dock-like lists); ease-out for simple fades"
+      purpose: >
+        Motion exists to express system behavior (state change, hierarchy, spatial
+        relationship), never as decoration. All motion must degrade gracefully and be
+        soft-disabled when prefers-reduced-motion is set.
+
+  jobs_to_be_done:
+    - job_statement: "Decide whether to interview Derek for a senior design-systems leadership role"
+      context: "Hiring loop; portfolio review alongside CV and referrals"
+      desired_outcome: "Make a confident yes/no decision in 5–10 minutes"
+      success_criteria:
+        - "Can identify 2–3 flagship systems projects and Derek’s role in each in under 90 seconds"
+        - "Can see evidence of org-level change: governance, pipelines, adoption, not just UI kits"
+        - "Finds at least one longer-form narrative that maps to their own challenges"
+      ui_implication: >
+        Homepage must prioritize a short position statement, segmented CTAs, and
+        a clearly labeled ‘Select Systems’ list, with each entry showing role, scope,
+        and outcomes at a glance.
+      priority: "high"
+
+    - job_statement: "Evaluate Derek/System Systems as a potential partner to modernize a design system or platform"
+      context: "VP Product / Head of Design surveying 3–5 potential external partners"
+      desired_outcome: "Shortlist Derek as a serious option and understand engagement shape"
+      success_criteria:
+        - "Understands Derek’s approach in 2–3 screens: diagnosis → architecture → enablement"
+        - "Sees 2+ relevant case studies with quantified or directional outcomes"
+        - "Finds a clear, low-friction next step: email, intro call, or ‘shareable’ overview"
+      ui_implication: >
+        Provide a ‘For product & design leaders’ route from hero that lands on a concise
+        overview page: positioning, how engagements work, 2–3 relevant stories, and
+        a clear CTA—without needing to read the whole library.
+      priority: "high"
+
+    - job_statement: "Borrow patterns, metrics, and schemas from Derek’s work to inform my own systems practice"
+      context: "Peer design engineer / systems designer reading on evenings or weekends"
+      desired_outcome: "Leave with 1–3 concrete patterns, frameworks, or metrics to try"
+      success_criteria:
+        - "Can easily find OODS/CMOS/metrics docs and project blueprints"
+        - "Pages read like high-quality docs: scannable headings, code/diagram blocks, and ‘how it was used’ notes"
+        - "Can deep-link specific sections to teammates"
+      ui_implication: >
+        Treat core framework content as documentation: table-of-contents navigation,
+        persistent anchors, code/diagram-friendly layouts, and command-menu search
+        over headings and objects.
+      priority: "high"
+
+    - job_statement: "Get a fast, honest sense of Derek’s current focus and availability"
+      context: "Recruiter, collaborator, or peer checking in quickly"
+      desired_outcome: "Know what he’s doing now and whether outreach makes sense"
+      success_criteria:
+        - "Finds a /now page or ‘Current focus’ strip within one click"
+        - "Sees high-level availability and current missions"
+      ui_implication: >
+        Include a lean /now page and/or ‘Now’ section on the homepage, and ensure it’s
+        linked from the hero and footer.
+      priority: "medium"
+
+  constraints:
+    technical:
+      - constraint: "Site must feel like a tool, not a brochure"
+        rationale: >
+          Aligns with design-engineer and systems-leader audiences who expect command
+          menus, dark mode, and fast interaction, not just marketing pages.
+      - constraint: "Static or hybrid-rendered architecture with minimal client JS outside interactions"
+        rationale: "Keeps performance, resilience, and carbon footprint in check while allowing rich micro-interactions."
+      - constraint: "Design tokens and theming must align with OODS / existing token pipelines"
+        rationale: "Portfolio should double as a live demonstration of Derek’s systems practice."
+      - constraint: "Dual theme (light/dark) with synchronized token sets"
+        rationale: "Audience expects dark mode; research references skew heavily to dark UI."
+    accessibility:
+      - standard: "WCAG 2.2 AA"
+        requirements:
+          - "Minimum 4.5:1 contrast for body text and key UI in both themes"
+          - "Full keyboard operability, including command menu and any galleries or carousels"
+          - "Visible, consistent focus states not solely indicated by color"
+          - "Motion-reduced mode for all complex transitions and looping animations"
+    performance:
+      - metric: "LCP"
+        target: "< 2.5s on median broadband for key pages (home, flagship case study, library entry)"
+      - metric: "CLS"
+        target: "< 0.1"
+      - metric: "Page weight"
+        target: "< 180–250 KB HTML+CSS+JS for core pages excluding images"
+    responsive:
+      - breakpoints:
+          - "320px"
+          - "768px"
+          - "1024px"
+          - "1440px"
+        approach: >
+          Mobile-first with layouts that preserve the tooling feel (command menu,
+          archive list, select projects) even on small screens; avoid layout modes
+          that only work well on 1440px+.
+
+  accessibility_requirements:
+    - id: "a11y-01-command-menu"
+      summary: "Command menu and global navigation must be fully operable with keyboard and screen readers."
+      rationale: >
+        Command palettes and keyboard shortcuts are a core affordance for peers and
+        design engineers; they must also work for users who rely on assistive tech.
+      related_constraints:
+        - "WCAG 2.2.1 Keyboard"
+        - "WCAG 2.4.7 Focus Visible"
+
+    - id: "a11y-02-motion-preferences"
+      summary: "Respect prefers-reduced-motion for all non-essential animation."
+      rationale: >
+        Dock-like magnification, springy drawers, hover previews, and scroll-linked
+        animations are useful but non-essential; users who opt out should see a
+        stable, minimal-motion experience.
+      related_constraints:
+        - "WCAG 2.3.3 Animation from Interactions"
+        - "Platform-level prefers-reduced-motion setting"
+
+    - id: "a11y-03-contrast-and-tokens"
+      summary: "All brand and interaction tokens must be validated for contrast in both light and dark themes."
+      rationale: >
+        Yellow, amber, and mint accents are easy to misuse on light and dark backgrounds;
+        explicit contrast checks are required for buttons, links, tags, and focus states.
+      related_constraints:
+        - "WCAG 1.4.3 Contrast (Minimum)"
+        - "WCAG 1.4.11 Non-text Contrast"
+
+    - id: "a11y-04-structure-and-landmarks"
+      summary: "Use semantic landmarks and headings for all major sections, including ‘Select Systems’, library, and archive views."
+      rationale: >
+        High-density, tool-like layouts can become opaque if semantic structure is missing;
+        screen-reader users should be able to jump between sections, lists, and filters.
+      related_constraints:
+        - "WCAG 1.3.1 Info and Relationships"
+        - "WCAG 2.4.1 Bypass Blocks"
+
+    - id: "a11y-05-media-and-gallery-content"
+      summary: "Images, diagrams, and any immersive galleries must expose alt text or structured descriptions."
+      rationale: >
+        Immersive selection patterns and blueprint-style diagrams are core to storytelling;
+        non-visual users need equivalent descriptions, especially in flagship case studies.
+      related_constraints:
+        - "WCAG 1.1.1 Non-text Content"
+        - "WCAG 1.2.x where video or motion is involved"
