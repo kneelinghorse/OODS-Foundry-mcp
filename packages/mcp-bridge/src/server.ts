@@ -18,7 +18,26 @@ import {
 import { registerArtifactEndpoints } from './endpoints/artifacts.js';
 import { buildErrorPayload, normalizeRunErrorCode, sendError, statusForCode } from './middleware/errors.js';
 
-const ALLOWED_TOOLS = new Set(bridgeConfig.tools.allowed);
+// MCP tool name translation: dots → underscores for Claude Desktop compatibility
+// Pattern: ^[a-zA-Z0-9_-]{1,64}$ (no dots allowed)
+function toExternalName(internal: string): string {
+  return internal.replace(/\./g, '_');
+}
+function toInternalName(external: string): string {
+  return external.replace(/_/g, '.');
+}
+
+// Build lookup maps for both directions
+const INTERNAL_TOOLS = new Set(bridgeConfig.tools.allowed);
+const EXTERNAL_TO_INTERNAL = new Map<string, string>();
+const INTERNAL_TO_EXTERNAL = new Map<string, string>();
+for (const internal of INTERNAL_TOOLS) {
+  const external = toExternalName(internal);
+  EXTERNAL_TO_INTERNAL.set(external, internal);
+  INTERNAL_TO_EXTERNAL.set(internal, external);
+}
+const ALLOWED_EXTERNAL_TOOLS = new Set(EXTERNAL_TO_INTERNAL.keys());
+
 const APPROVAL_REQUIRED_TOOLS = approvalRequiredTools;
 const APPLY_CAPABLE_TOOLS = applyCapableTools;
 const POLICY_UX_DOC = policyDocs.ux;
@@ -224,7 +243,7 @@ async function main() {
   fastify.get('/health', async () => ({ status: 'ok', bridge: 'ready' }));
 
   fastify.get('/tools', { config: { rateLimit: bridgeConfig.rateLimit.tools } }, async () => ({
-    tools: Array.from(ALLOWED_TOOLS),
+    tools: Array.from(ALLOWED_EXTERNAL_TOOLS),
   }));
 
   fastify.post<{ Body: RunRequestBody }>('/run', { config: { rateLimit: bridgeConfig.rateLimit.run } }, async (request, reply) => {
@@ -232,19 +251,22 @@ async function main() {
     if (!ensureAuthToken(request, reply)) return;
 
     const body = request.body ?? {};
-    const tool = body.tool;
-    if (!tool || typeof tool !== 'string') {
+    const externalTool = body.tool;
+    if (!externalTool || typeof externalTool !== 'string') {
       sendError(reply, 400, 'VALIDATION_ERROR', 'Tool name is required.', {
         details: { reason: 'MISSING_TOOL' },
       });
       return;
     }
-    if (!ALLOWED_TOOLS.has(tool)) {
-      sendError(reply, 403, 'POLICY_DENIED', `Tool not allowed: ${tool}`, {
-        details: { reason: 'FORBIDDEN_TOOL', tool, docs: POLICY_RULES_DOC },
+    // Accept both external (underscore) and internal (dot) names for backward compatibility
+    const internalTool = EXTERNAL_TO_INTERNAL.get(externalTool) ?? EXTERNAL_TO_INTERNAL.get(toExternalName(externalTool));
+    if (!internalTool) {
+      sendError(reply, 403, 'POLICY_DENIED', `Tool not allowed: ${externalTool}`, {
+        details: { reason: 'FORBIDDEN_TOOL', tool: externalTool, docs: POLICY_RULES_DOC },
       });
       return;
     }
+    const tool = internalTool; // Use internal name for all downstream operations
 
     const input = { ...(body.input ?? {}) };
     const role = typeof body.role === 'string' && body.role.trim().length ? body.role.trim() : undefined;
@@ -280,7 +302,10 @@ async function main() {
     }
 
     const applyMode = applyRequested && (!APPROVAL_REQUIRED_TOOLS.has(tool) || approvalState === 'granted');
-    input.apply = applyMode;
+    // Only add apply flag to tools that support it (prevents schema validation errors)
+    if (APPLY_CAPABLE_TOOLS.has(tool)) {
+      input.apply = applyMode;
+    }
 
     try {
       const result = await client.run(tool, input, role);
@@ -288,7 +313,7 @@ async function main() {
         typeof result?.incidentId === 'string' && result.incidentId.length > 0 ? result.incidentId : randomUUID();
       const normalized = {
         ok: true as const,
-        tool,
+        tool: INTERNAL_TO_EXTERNAL.get(tool) ?? tool, // Return external name in response
         role: role ?? null,
         mode: applyMode ? 'apply' : 'dry-run',
         incidentId,

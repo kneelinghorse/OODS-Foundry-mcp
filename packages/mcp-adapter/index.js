@@ -14,21 +14,23 @@ const SCHEMAS_DIR = path.join(NATIVE_DIST, 'schemas');
 
 const DEFAULT_ROLE = process.env.MCP_ROLE || 'designer';
 
+// MCP tool names use underscores (Claude Desktop requires ^[a-zA-Z0-9_-]{1,64}$)
+// internalName uses dots for native server communication
 const TOOL_SPECS = [
-  { name: 'tokens.build', input: 'tokens.build.input.json', output: 'generic.output.json' },
-  { name: 'structuredData.fetch', input: 'structuredData.fetch.input.json', output: 'structuredData.fetch.output.json' },
-  { name: 'repl.validate', input: 'repl.validate.input.json', output: 'repl.validate.output.json' },
-  { name: 'repl.render', input: 'repl.render.input.json', output: 'repl.render.output.json' },
-  { name: 'brand.apply', input: 'brand.apply.input.json', output: 'brand.apply.output.json' },
-  { name: 'a11y.scan', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'purity.audit', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'vrt.run', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'diag.snapshot', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'reviewKit.create', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'billing.reviewKit', input: 'billing.reviewKit.input.json', output: 'generic.output.json' },
-  { name: 'billing.switchFixtures', input: 'billing.switchFixtures.input.json', output: 'generic.output.json' },
-  { name: 'release.verify', input: 'release.verify.input.json', output: 'release.verify.output.json' },
-  { name: 'release.tag', input: 'release.tag.input.json', output: 'release.tag.output.json' },
+  { name: 'tokens_build', internalName: 'tokens.build', input: 'tokens.build.input.json', output: 'generic.output.json' },
+  { name: 'structuredData_fetch', internalName: 'structuredData.fetch', input: 'structuredData.fetch.input.json', output: 'structuredData.fetch.output.json' },
+  { name: 'repl_validate', internalName: 'repl.validate', input: 'repl.validate.input.json', output: 'repl.validate.output.json' },
+  { name: 'repl_render', internalName: 'repl.render', input: 'repl.render.input.json', output: 'repl.render.output.json' },
+  { name: 'brand_apply', internalName: 'brand.apply', input: 'brand.apply.input.json', output: 'brand.apply.output.json' },
+  { name: 'a11y_scan', internalName: 'a11y.scan', input: 'generic.input.json', output: 'generic.output.json' },
+  { name: 'purity_audit', internalName: 'purity.audit', input: 'generic.input.json', output: 'generic.output.json' },
+  { name: 'vrt_run', internalName: 'vrt.run', input: 'generic.input.json', output: 'generic.output.json' },
+  { name: 'diag_snapshot', internalName: 'diag.snapshot', input: 'generic.input.json', output: 'generic.output.json' },
+  { name: 'reviewKit_create', internalName: 'reviewKit.create', input: 'generic.input.json', output: 'generic.output.json' },
+  { name: 'billing_reviewKit', internalName: 'billing.reviewKit', input: 'billing.reviewKit.input.json', output: 'generic.output.json' },
+  { name: 'billing_switchFixtures', internalName: 'billing.switchFixtures', input: 'billing.switchFixtures.input.json', output: 'generic.output.json' },
+  { name: 'release_verify', internalName: 'release.verify', input: 'release.verify.input.json', output: 'release.verify.output.json' },
+  { name: 'release_tag', internalName: 'release.tag', input: 'release.tag.input.json', output: 'release.tag.output.json' },
 ];
 
 function loadSchema(filename) {
@@ -126,13 +128,14 @@ async function main() {
   const inputSchema = z.object({}).catchall(z.any()).default({});
 
   for (const spec of TOOL_SPECS) {
+    const internalName = spec.internalName || spec.name;
     server.tool(
       spec.name,
-      `Proxy to OODS native tool "${spec.name}"`,
+      `Proxy to OODS native tool "${internalName}"`,
       inputSchema,
       async (args) => {
         try {
-          const result = await client.run(spec.name, args ?? {});
+          const result = await client.run(internalName, args ?? {});
           return {
             content: [
               {
