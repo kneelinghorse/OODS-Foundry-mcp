@@ -1,0 +1,168 @@
+{
+  "viz": {
+    "map": {
+      "basemap": {
+        "fill": {
+          "$type": "color",
+          "$value": "{ref.color.neutral.100}",
+          "$description": "Base map fill color for land/water boundaries."
+        },
+        "stroke": {
+          "$type": "color",
+          "$value": "{ref.color.neutral.300}",
+          "$description": "Base map stroke color for coastlines and borders."
+        },
+        "stroke-width": {
+          "$type": "dimension",
+          "$value": "0.5px",
+          "$description": "Base map stroke width for subtle boundary lines."
+        }
+      },
+      "region": {
+        "stroke": {
+          "$type": "color",
+          "$value": "{ref.color.neutral.400}",
+          "$description": "Region boundary stroke color for choropleth regions."
+        },
+        "stroke-width": {
+          "$type": "dimension",
+          "$value": "1px",
+          "$description": "Region boundary stroke width."
+        },
+        "hover-stroke": {
+          "$type": "color",
+          "$value": "{ref.color.primary.500}",
+          "$description": "Region stroke color on hover state."
+        },
+        "hover-stroke-width": {
+          "$type": "dimension",
+          "$value": "2px",
+          "$description": "Region stroke width on hover state."
+        }
+      },
+      "symbol": {
+        "stroke": {
+          "$type": "color",
+          "$value": "{ref.color.neutral.0}",
+          "$description": "Symbol outline stroke for contrast on filled shapes."
+        },
+        "stroke-width": {
+          "$type": "dimension",
+          "$value": "1px",
+          "$description": "Symbol outline stroke width."
+        },
+        "min-radius": {
+          "$type": "dimension",
+          "$value": "4px",
+          "$description": "Minimum symbol radius for bubble maps."
+        },
+        "max-radius": {
+          "$type": "dimension",
+          "$value": "40px",
+          "$description": "Maximum symbol radius for bubble maps."
+        }
+      },
+      "route": {
+        "stroke-opacity": {
+          "$type": "number",
+          "$value": 0.6,
+          "$description": "Default opacity for route/flow lines."
+        },
+        "min-width": {
+          "$type": "dimension",
+          "$value": "1px",
+          "$description": "Minimum route line width."
+        },
+        "max-width": {
+          "$type": "dimension",
+          "$value": "10px",
+          "$description": "Maximum route line width for high-volume flows."
+        }
+      }
+    },
+    "scale": {
+      "sequential": {
+        "blue": {
+          "1": {
+            "$type": "color",
+            "$value": "{viz.scale.sequential.01}",
+            "$description": "Sequential blue step 1 - lightest for low values."
+          },
+          "2": {
+            "$type": "color",
+            "$value": "{viz.scale.sequential.02}",
+            "$description": "Sequential blue step 2."
+          },
+          "3": {
+            "$type": "color",
+            "$value": "{viz.scale.sequential.03}",
+            "$description": "Sequential blue step 3."
+          },
+          "4": {
+            "$type": "color",
+            "$value": "{viz.scale.sequential.04}",
+            "$description": "Sequential blue step 4 - midpoint."
+          },
+          "5": {
+            "$type": "color",
+            "$value": "{viz.scale.sequential.05}",
+            "$description": "Sequential blue step 5."
+          },
+          "6": {
+            "$type": "color",
+            "$value": "{viz.scale.sequential.06}",
+            "$description": "Sequential blue step 6."
+          },
+          "7": {
+            "$type": "color",
+            "$value": "{viz.scale.sequential.07}",
+            "$description": "Sequential blue step 7 - darkest for high values."
+          }
+        }
+      },
+      "diverging": {
+        "negative": {
+          "3": {
+            "$type": "color",
+            "$value": "{viz.scale.diverging.neg-05}",
+            "$description": "Diverging far negative anchor."
+          },
+          "2": {
+            "$type": "color",
+            "$value": "{viz.scale.diverging.neg-03}",
+            "$description": "Diverging negative level 2."
+          },
+          "1": {
+            "$type": "color",
+            "$value": "{viz.scale.diverging.neg-01}",
+            "$description": "Diverging near-neutral negative."
+          }
+        },
+        "neutral": {
+          "0": {
+            "$type": "color",
+            "$value": "{viz.scale.diverging.neutral}",
+            "$description": "Diverging midpoint neutral."
+          }
+        },
+        "positive": {
+          "1": {
+            "$type": "color",
+            "$value": "{viz.scale.diverging.pos-01}",
+            "$description": "Diverging near-neutral positive."
+          },
+          "2": {
+            "$type": "color",
+            "$value": "{viz.scale.diverging.pos-03}",
+            "$description": "Diverging positive level 2."
+          },
+          "3": {
+            "$type": "color",
+            "$value": "{viz.scale.diverging.pos-05}",
+            "$description": "Diverging far positive anchor."
+          }
+        }
+      }
+    }
+  }
+}
