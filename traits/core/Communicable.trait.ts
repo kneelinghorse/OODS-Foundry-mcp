@@ -163,7 +163,13 @@ const CommunicableTrait = {
   dependencies: [
     { trait: 'Preferenceable', version: '>=1.0.0' },
     { trait: 'Authable', version: '>=1.0.0' },
-    { trait: 'Classifiable', version: '>=1.0.0', optional: true },
+  ] as const,
+
+  helpers: [
+    { signature: 'sendMessage?(recipientIds: string[], template: any, variables?: any): any' },
+    { signature: 'markAllAsRead?(): void' },
+    { signature: 'broadcastMessage?(template: any, variables?: any): any' },
+    { signature: 'getDeliveryPolicies?(): any[]' },
   ] as const,
 
   metadata: {

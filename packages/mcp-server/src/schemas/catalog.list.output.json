@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["components", "totalCount", "generatedAt", "stats"],
+  "properties": {
+    "components": {
+      "type": "array",
+      "description": "Array of component catalog entries",
+      "items": {
+        "type": "object",
+        "required": ["name", "displayName", "categories", "tags", "contexts", "regions", "traits", "propSchema", "slots"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Component name (e.g., 'Button', 'Card')"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Human-readable display name"
+          },
+          "categories": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Component categories (e.g., ['core'], ['data'])"
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Component tags for search and discovery"
+          },
+          "contexts": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Rendering contexts where component can be used"
+          },
+          "regions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "UI regions where component can appear"
+          },
+          "traits": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of trait capabilities (e.g., ['Editable', 'Searchable'])"
+          },
+          "propSchema": {
+            "type": "object",
+            "description": "Component prop schema with types and defaults",
+            "additionalProperties": true
+          },
+          "slots": {
+            "type": "object",
+            "description": "Slot definitions with accepted types and roles",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "accept": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "role": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "totalCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of components returned (after filtering)"
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "ISO timestamp when catalog was generated"
+    },
+    "stats": {
+      "type": "object",
+      "required": ["componentCount", "traitCount"],
+      "properties": {
+        "componentCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total components in catalog"
+        },
+        "traitCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total traits available"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

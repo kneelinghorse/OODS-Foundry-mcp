@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import Fastify from 'fastify';
-import {getAjv} from './lib/ajv.js';
+import { getAjv } from './lib/ajv.js';
 import { ERROR_CODES, err, type TypedError } from './security/errors.js';
 import { isAllowed, tryAcquireSlot, releaseSlot, tryConsumeToken, timeoutMsFor } from './security/policy.js';
+import { resolveToolRegistry } from './tools/registry.js';
 
 // Tool registry
 const tools: Record<string, { handle: (input: any) => Promise<any>; inputSchema: object; outputSchema: object }> = {};
@@ -16,79 +17,115 @@ function register(
   tools[name] = { handle: mod.handle, inputSchema, outputSchema };
 }
 
-// Register tools
-register(
-  'tokens.build',
-  await import('./tools/tokens.build.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/tokens.build.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/generic.output.json', import.meta.url), 'utf8')) as object
-);
+type ToolSpec = { modulePath: string; inputSchema: string; outputSchema: string };
 
-register(
-  'structuredData.fetch',
-  await import('./tools/structuredData.fetch.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/structuredData.fetch.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/structuredData.fetch.output.json', import.meta.url), 'utf8')) as object
-);
+const toolSpecs: Record<string, ToolSpec> = {
+  'tokens.build': {
+    modulePath: './tools/tokens.build.js',
+    inputSchema: './schemas/tokens.build.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'structuredData.fetch': {
+    modulePath: './tools/structuredData.fetch.js',
+    inputSchema: './schemas/structuredData.fetch.input.json',
+    outputSchema: './schemas/structuredData.fetch.output.json',
+  },
+  'repl.validate': {
+    modulePath: './tools/repl.validate.js',
+    inputSchema: './schemas/repl.validate.input.json',
+    outputSchema: './schemas/repl.validate.output.json',
+  },
+  'repl.render': {
+    modulePath: './tools/repl.render.js',
+    inputSchema: './schemas/repl.render.input.json',
+    outputSchema: './schemas/repl.render.output.json',
+  },
+  'brand.apply': {
+    modulePath: './tools/brand.apply.js',
+    inputSchema: './schemas/brand.apply.input.json',
+    outputSchema: './schemas/brand.apply.output.json',
+  },
+  'a11y.scan': {
+    modulePath: './tools/a11y.scan.js',
+    inputSchema: './schemas/generic.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'purity.audit': {
+    modulePath: './tools/purity.audit.js',
+    inputSchema: './schemas/generic.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'vrt.run': {
+    modulePath: './tools/vrt.run.js',
+    inputSchema: './schemas/generic.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'reviewKit.create': {
+    modulePath: './tools/reviewKit.create.js',
+    inputSchema: './schemas/generic.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'diag.snapshot': {
+    modulePath: './tools/diag.snapshot.js',
+    inputSchema: './schemas/generic.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'release.verify': {
+    modulePath: './tools/release.verify.js',
+    inputSchema: './schemas/release.verify.input.json',
+    outputSchema: './schemas/release.verify.output.json',
+  },
+  'release.tag': {
+    modulePath: './tools/release.tag.js',
+    inputSchema: './schemas/release.tag.input.json',
+    outputSchema: './schemas/release.tag.output.json',
+  },
+  'billing.reviewKit': {
+    modulePath: './tools/billing.reviewKit.js',
+    inputSchema: './schemas/billing.reviewKit.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'billing.switchFixtures': {
+    modulePath: './tools/billing.switchFixtures.js',
+    inputSchema: './schemas/billing.switchFixtures.input.json',
+    outputSchema: './schemas/generic.output.json',
+  },
+  'catalog.list': {
+    modulePath: './tools/catalog.list.js',
+    inputSchema: './schemas/catalog.list.input.json',
+    outputSchema: './schemas/catalog.list.output.json',
+  },
+  'design.generate': {
+    modulePath: './tools/design.generate.js',
+    inputSchema: './schemas/design.generate.input.json',
+    outputSchema: './schemas/design.generate.output.json',
+  },
+};
 
-register(
-  'repl.validate',
-  await import('./tools/repl.validate.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/repl.validate.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/repl.validate.output.json', import.meta.url), 'utf8')) as object
-);
-
-register(
-  'repl.render',
-  await import('./tools/repl.render.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/repl.render.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/repl.render.output.json', import.meta.url), 'utf8')) as object
-);
-
-register(
-  'brand.apply',
-  await import('./tools/brand.apply.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/brand.apply.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/brand.apply.output.json', import.meta.url), 'utf8')) as object
-);
-
-for (const name of ['a11y.scan', 'purity.audit', 'vrt.run', 'reviewKit.create', 'diag.snapshot']) {
-  const file = `${name}.js`;
-  register(
-    name,
-    await import(`./tools/${file}`),
-    JSON.parse(fs.readFileSync(new URL('./schemas/generic.input.json', import.meta.url), 'utf8')) as object,
-    JSON.parse(fs.readFileSync(new URL('./schemas/generic.output.json', import.meta.url), 'utf8')) as object
-  );
+const schemaCache = new Map<string, object>();
+function readSchema(relativePath: string): object {
+  const cached = schemaCache.get(relativePath);
+  if (cached) return cached;
+  const schema = JSON.parse(fs.readFileSync(new URL(relativePath, import.meta.url), 'utf8')) as object;
+  schemaCache.set(relativePath, schema);
+  return schema;
 }
 
-register(
-  'release.verify',
-  await import('./tools/release.verify.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/release.verify.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/release.verify.output.json', import.meta.url), 'utf8')) as object
-);
+const registry = resolveToolRegistry();
+if (registry.unknownExtras.length > 0) {
+  // eslint-disable-next-line no-console
+  console.warn(`[mcp] unknown MCP_EXTRA_TOOLS entries ignored: ${registry.unknownExtras.join(', ')}`);
+}
 
-register(
-  'release.tag',
-  await import('./tools/release.tag.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/release.tag.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/release.tag.output.json', import.meta.url), 'utf8')) as object
-);
-
-register(
-  'billing.reviewKit',
-  await import('./tools/billing.reviewKit.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/billing.reviewKit.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/generic.output.json', import.meta.url), 'utf8')) as object
-);
-
-register(
-  'billing.switchFixtures',
-  await import('./tools/billing.switchFixtures.js'),
-  JSON.parse(fs.readFileSync(new URL('./schemas/billing.switchFixtures.input.json', import.meta.url), 'utf8')) as object,
-  JSON.parse(fs.readFileSync(new URL('./schemas/generic.output.json', import.meta.url), 'utf8')) as object
-);
+for (const name of registry.enabled) {
+  const spec = toolSpecs[name];
+  if (!spec) {
+    // eslint-disable-next-line no-console
+    console.warn(`[mcp] tool '${name}' missing from toolSpecs registry`);
+    continue;
+  }
+  register(name, await import(spec.modulePath), readSchema(spec.inputSchema), readSchema(spec.outputSchema));
+}
 
 // Validator
 const ajv = getAjv();

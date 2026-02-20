@@ -1,0 +1,22 @@
+{
+  "auto": [
+    "tokens.build",
+    "structuredData.fetch",
+    "repl.validate",
+    "repl.render",
+    "brand.apply",
+    "catalog.list",
+    "design.generate"
+  ],
+  "onDemand": [
+    "diag.snapshot",
+    "reviewKit.create",
+    "billing.reviewKit",
+    "billing.switchFixtures",
+    "a11y.scan",
+    "purity.audit",
+    "vrt.run",
+    "release.verify",
+    "release.tag"
+  ]
+}

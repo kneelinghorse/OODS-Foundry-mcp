@@ -1,3 +1,5 @@
+/* @vitest-environment jsdom */
+
 /**
  * Renderer-specific tests for BubbleMap (vega-lite & echarts branches).
  */

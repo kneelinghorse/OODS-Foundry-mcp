@@ -33,6 +33,15 @@ export function selectVizRenderer(
     throw new RendererSelectionError('No renderer targets provided.');
   }
 
+  // Handle Network Flow Checking strictly requiring ECharts above any specs
+  const isNetworkFlow = spec.marks && spec.marks.length > 0 && ['sankey', 'force_graph', 'treemap', 'sunburst'].includes(spec.marks[0].type || '');
+  const isMarkNetworkFlow = (spec as any).mark && ['sankey', 'force_graph', 'treemap', 'sunburst'].includes((spec as any).mark.type || '');
+  if (isNetworkFlow || isMarkNetworkFlow) {
+    if (pool.includes('echarts')) {
+      return { renderer: 'echarts', reason: 'network-flow' };
+    }
+  }
+
   if (options.preferred && pool.includes(options.preferred)) {
     return { renderer: options.preferred, reason: 'user-preference' };
   }
@@ -48,6 +57,34 @@ export function selectVizRenderer(
   }
 
   const valuesCount = Array.isArray(spec.data.values) ? spec.data.values.length : 0;
+  const isStreaming = (spec as any).streaming?.enabled;
+
+  // Handle spatial checking
+  const isSpatial = spec.type === 'spatial' || (spec.marks && spec.marks.some(m => m.type && m.type.includes('geoshape')));
+  const portablePriority = (spec as any).portability?.priority;
+  if (isSpatial) {
+    if (specPreferred && pool.includes(specPreferred as VizRendererId)) {
+      return { renderer: specPreferred as VizRendererId, reason: 'spatial' };
+    }
+    if (portablePriority === 'high' && pool.includes('vega-lite')) {
+      return { renderer: 'vega-lite', reason: 'spatial' };
+    }
+    if (isStreaming && pool.includes('echarts')) {
+      return { renderer: 'echarts', reason: 'spatial' };
+    }
+    // ECharts handles very dense spatial better
+    if (valuesCount >= 10000 && pool.includes('echarts')) {
+      return { renderer: 'echarts', reason: 'spatial' };
+    }
+
+    if (pool.includes('vega-lite')) {
+      return { renderer: 'vega-lite', reason: 'spatial' };
+    }
+    if (pool.includes('echarts')) {
+      return { renderer: 'echarts', reason: 'spatial' };
+    }
+  }
+
   const minEChartsRows = options.minRowsForECharts ?? DEFAULT_ECHARTS_THRESHOLD;
   if (valuesCount >= minEChartsRows && pool.includes('echarts')) {
     return { renderer: 'echarts', reason: 'data-volume' };
@@ -100,7 +137,7 @@ function selectLayoutRenderer(spec: NormalizedVizSpec, pool: VizRendererId[]): V
 function hasTemporalEncodings(spec: NormalizedVizSpec): boolean {
   const channelMaps = [
     spec.encoding,
-    ...spec.marks.map((mark) => mark.encodings),
+    ...(spec.marks || []).map((mark) => mark.encodings),
   ].filter((map): map is NormalizedVizSpec['encoding'] => Boolean(map));
 
   for (const map of channelMaps) {

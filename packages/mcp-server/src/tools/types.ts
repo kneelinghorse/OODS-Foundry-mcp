@@ -132,3 +132,31 @@ export type StructuredDataFetchOutput = {
   meta?: Record<string, unknown>;
   payload?: Record<string, unknown>;
 };
+
+export type CatalogListInput = {
+  category?: string;
+  trait?: string;
+  context?: string;
+};
+
+export type ComponentCatalogEntry = {
+  name: string;
+  displayName: string;
+  categories: string[];
+  tags: string[];
+  contexts: string[];
+  regions: string[];
+  traits: string[];
+  propSchema: Record<string, unknown>;
+  slots: Record<string, { accept?: string[]; role?: string }>;
+};
+
+export type CatalogListOutput = {
+  components: ComponentCatalogEntry[];
+  totalCount: number;
+  generatedAt: string;
+  stats: {
+    componentCount: number;
+    traitCount: number;
+  };
+};

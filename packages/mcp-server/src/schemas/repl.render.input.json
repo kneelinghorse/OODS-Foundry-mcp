@@ -4,24 +4,79 @@
   "title": "Agentic REPL render input",
   "type": "object",
   "properties": {
-    "mode": { "type": "string", "enum": ["full", "patch"], "default": "full" },
-    "schema": { "$ref": "./repl.ui.schema.json" },
-    "patch": { "$ref": "./repl.patch.json" },
-    "baseTree": { "$ref": "./repl.ui.schema.json" },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "full",
+        "patch"
+      ],
+      "default": "full"
+    },
+    "schema": {
+      "$ref": "./repl.ui.schema.json"
+    },
+    "patch": {
+      "$ref": "./repl.patch.json"
+    },
+    "baseTree": {
+      "$ref": "./repl.ui.schema.json"
+    },
+    "researchContext": {
+      "type": "object",
+      "description": "Optional research bundle from Stage1 discovery to influence rendering.",
+      "additionalProperties": true
+    },
     "options": {
       "type": "object",
       "properties": {
-        "includeTree": { "type": "boolean", "default": true },
-        "previewOnly": { "type": "boolean", "default": false }
+        "includeTree": {
+          "type": "boolean",
+          "default": true
+        },
+        "previewOnly": {
+          "type": "boolean",
+          "default": false
+        }
       },
       "additionalProperties": false,
       "default": {}
+    },
+    "apply": {
+      "type": "boolean"
     }
   },
-  "required": ["mode"],
+  "required": [
+    "mode"
+  ],
   "allOf": [
-    { "if": { "properties": { "mode": { "const": "full" } } }, "then": { "required": ["schema"] } },
-    { "if": { "properties": { "mode": { "const": "patch" } } }, "then": { "required": ["patch"] } }
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "full"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "schema"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "patch"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "patch"
+        ]
+      }
+    }
   ],
   "additionalProperties": false
 }

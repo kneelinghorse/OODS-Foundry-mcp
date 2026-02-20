@@ -279,18 +279,19 @@ export function summarizeMeta(tree: UiSchema, registry: RegistryInfo): ReplValid
   };
 }
 
-export function buildPreview(tree: UiSchema): ReplRenderPreview {
+export function buildPreview(tree: UiSchema, researchContext?: Record<string, any>): ReplRenderPreview {
   const screens = Array.isArray(tree.screens) ? tree.screens.map((screen) => screen.id) : [];
   const routes = Array.isArray(tree.screens)
     ? tree.screens
-        .map((screen) => screen.route)
-        .filter((route): route is string => typeof route === 'string' && route.length > 0)
+      .map((screen) => screen.route)
+      .filter((route): route is string => typeof route === 'string' && route.length > 0)
     : [];
   return {
     screens,
     routes,
     activeScreen: screens.length ? screens[0] : null,
     summary: `Render ready for ${screens.length} screen${screens.length === 1 ? '' : 's'}`,
+    researchContext,
   };
 }
 

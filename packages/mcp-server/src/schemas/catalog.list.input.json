@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "description": "Filter components by category (e.g., 'core', 'data')"
+    },
+    "trait": {
+      "type": "string",
+      "description": "Filter components by trait (e.g., 'Editable', 'Searchable')"
+    },
+    "context": {
+      "type": "string",
+      "description": "Filter components by context (e.g., 'detail', 'list')"
+    }
+  },
+  "additionalProperties": false
+}

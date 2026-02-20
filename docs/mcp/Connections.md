@@ -39,7 +39,7 @@ The bridge listens on `http://127.0.0.1:${MCP_BRIDGE_PORT:-4466}` and exposes `G
 
 Key points:
 
-- The bridge serves read-only tools (`a11y.scan`, `purity.audit`, `vrt.run`, `diag.snapshot`), plus write-gated tools that remain locked until an approval header is supplied.
+- The bridge serves read-only tools (including `structuredData.fetch`, `tokens.build`, `repl.validate`, `repl.render`, `a11y.scan`, `purity.audit`, `vrt.run`, `diag.snapshot`), plus write-gated tools that remain locked until an approval header is supplied.
 - Because Claude Desktop omits custom headers for remote servers, keep token enforcement disabled when using this profile.
 - If the default port is busy, start the bridge with `MCP_BRIDGE_PORT=<port>` and update the `url` accordingly.
 

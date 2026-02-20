@@ -61,6 +61,8 @@ traits:
     alias: UserAuthz
     parameters:
       hierarchyDepthLimit: 5
+  - name: core/Communicable
+    alias: UserCommunications
 
 schema:
   user_id:

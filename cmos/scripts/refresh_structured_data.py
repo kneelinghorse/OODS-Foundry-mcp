@@ -52,6 +52,16 @@ class RefreshResult:
     manifest_path: Optional[Path] = None
 
 
+VIZ_COMPLEXITY_WEIGHTS: Dict[str, int] = {
+    "viz.scale": 1,
+    "viz.encoding": 2,
+    "viz.mark": 2,
+    "viz.spatial": 3,
+    "viz.layout": 3,
+    "viz.interaction": 3,
+}
+
+
 def iso_now() -> str:
     return datetime.now(tz=timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -86,6 +96,25 @@ def count_tokens(node: Any) -> int:
     if isinstance(node, list):
         return sum(count_tokens(value) for value in node)
     return 0
+
+
+def compute_render_complexity(categories: Set[str]) -> Optional[Dict[str, Any]]:
+    viz_categories = sorted({category for category in categories if category.startswith("viz.")})
+    if not viz_categories:
+        return None
+    score = sum(VIZ_COMPLEXITY_WEIGHTS.get(category, 2) for category in viz_categories)
+    if score <= 2:
+        tier = "low"
+    elif score <= 5:
+        tier = "medium"
+    else:
+        tier = "high"
+    return {
+        "tier": tier,
+        "score": score,
+        "categories": viz_categories,
+        "source": "traitCategories",
+    }
 
 
 def collect_traits() -> tuple[
@@ -256,21 +285,23 @@ def collect_objects() -> tuple[List[Dict[str, Any]], Dict[str, Set[str]], Dict[s
 def finalize_components(index: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     components: List[Dict[str, Any]] = []
     for comp in index.values():
-        components.append(
-            {
-                "id": comp["id"],
-                "displayName": comp["displayName"],
-                "categories": sorted(comp["categories"]),
-                "tags": sorted(comp["tags"]),
-                "contexts": sorted(comp["contexts"]),
-                "regions": sorted(comp["regions"]),
-                "traitUsages": sorted(
-                    comp["traitUsages"],
-                    key=lambda entry: (entry.get("trait") or "", entry.get("context") or ""),
-                ),
-                "sourceFiles": sorted(comp["sourceFiles"]),
-            }
-        )
+        render_complexity = compute_render_complexity(comp["categories"])
+        payload = {
+            "id": comp["id"],
+            "displayName": comp["displayName"],
+            "categories": sorted(comp["categories"]),
+            "tags": sorted(comp["tags"]),
+            "contexts": sorted(comp["contexts"]),
+            "regions": sorted(comp["regions"]),
+            "traitUsages": sorted(
+                comp["traitUsages"],
+                key=lambda entry: (entry.get("trait") or "", entry.get("context") or ""),
+            ),
+            "sourceFiles": sorted(comp["sourceFiles"]),
+        }
+        if render_complexity:
+            payload["renderComplexity"] = render_complexity
+        components.append(payload)
     return sorted(components, key=lambda item: item["id"])
 
 

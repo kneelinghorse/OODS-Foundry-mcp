@@ -95,6 +95,29 @@
               "type": "string"
             }
           },
+          "renderComplexity": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "score": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "source": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
           "sourceFiles": {
             "type": "array",
             "items": {

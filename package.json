@@ -1,7 +1,7 @@
 {
-  "name": "@oods/trait-engine",
+  "name": "@oods/foundry-mcp",
   "version": "0.1.0",
-  "description": "Object-Oriented Design System Trait Composition Engine",
+  "description": "Agent-first MCP interface and toolchain for the OODS Foundry design system",
   "type": "module",
   "bin": {
     "tokens-governance": "./tools/tokens-governance/index.ts"

@@ -13,6 +13,7 @@ export interface DesignLabShellProps {
   schema?: UiSchema;
   title?: string;
   renderer?: Renderer;
+  researchContext?: Record<string, any>;
 }
 
 type PreviewBuckets = {
@@ -186,7 +187,7 @@ function renderStatusPill(state: ShellState, output?: ReplRenderOutput, fatal?: 
   );
 }
 
-export function DesignLabShell({ schema, title = 'Design Lab', renderer }: DesignLabShellProps) {
+export function DesignLabShell({ schema, title = 'Design Lab', renderer, researchContext }: DesignLabShellProps) {
   const [state, setState] = useState<ShellState>(schema ? 'loading' : 'empty');
   const [preview, setPreview] = useState<ReplRenderOutput | null>(null);
   const [fatal, setFatal] = useState<string | null>(null);
@@ -251,7 +252,7 @@ export function DesignLabShell({ schema, title = 'Design Lab', renderer }: Desig
     setFatal(null);
     let result: RenderResponse;
     try {
-      result = await callRenderer(renderer, request);
+      result = await callRenderer(renderer, { ...request, researchContext });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setFatal(message);

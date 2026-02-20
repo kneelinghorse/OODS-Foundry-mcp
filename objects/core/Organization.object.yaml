@@ -55,10 +55,21 @@ traits:
         - warehouse
         - branch
       defaultRole: headquarters
+  - name: core/Preferenceable
+    alias: OrganizationPreferences
+    parameters:
+      namespaces:
+        - notifications
+        - display
+        - privacy
+      schemaVersion: 2.0.0
+      registryNamespace: org-preferences
   - name: core/Authable
     alias: OrganizationAuthz
     parameters:
       hierarchyDepthLimit: 5
+  - name: core/Communicable
+    alias: OrganizationCommunications
 
 schema:
   organization_id:

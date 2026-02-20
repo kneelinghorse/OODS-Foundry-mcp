@@ -113,6 +113,14 @@
       "ratePerMinute": 12
     },
     {
+      "name": "structuredData.fetch",
+      "description": "Fetches structured component/token/manifest datasets",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
       "name": "repl.validate",
       "description": "Validates Agentic REPL UI JSON against the DSL and registry",
       "modes": ["dry-run"],
@@ -141,6 +149,7 @@
         "brand.apply",
         "billing.reviewKit",
         "billing.switchFixtures",
+        "structuredData.fetch",
         "repl.validate",
         "repl.render"
       ],
@@ -151,7 +160,7 @@
       "provider": "openai",
       "role": "designer",
       "defaultMode": "dry-run",
-      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "repl.validate", "repl.render"],
+      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render"],
       "notes": "Apply requires approval token and is rate limited to prevent context overrun."
     }
   ]

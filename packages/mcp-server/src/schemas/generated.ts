@@ -47,8 +47,8 @@ export type DeltaValue =
   | null
   | DeltaValue[]
   | {
-      [k: string]: DeltaValue;
-    };
+    [k: string]: DeltaValue;
+  };
 
 export interface BrandApplyInput {
   /**
@@ -59,10 +59,10 @@ export interface BrandApplyInput {
    * Alias changes (object) or RFC 6902 patch array when strategy=patch.
    */
   delta:
-    | {
-        [k: string]: DeltaValue;
-      }
-    | PatchOperation[];
+  | {
+    [k: string]: DeltaValue;
+  }
+  | PatchOperation[];
   /**
    * Alias strategy rewrites token values; patch applies RFC 6902 operations.
    */
@@ -91,8 +91,8 @@ export type JsonValue =
   | null
   | JsonValue[]
   | {
-      [k: string]: JsonValue;
-    };
+    [k: string]: JsonValue;
+  };
 
 export type GenericArtifactRef = string | GenericArtifact;
 export interface GenericArtifact {
@@ -327,6 +327,9 @@ export interface ReplRenderInput {
   schema?: UiSchema;
   patch?: ReplPatch;
   baseTree?: UiSchema;
+  researchContext?: {
+    [k: string]: any;
+  };
   options?: {
     includeTree?: boolean;
     previewOnly?: boolean;
@@ -340,6 +343,9 @@ export interface ReplRenderPreview {
   activeScreen?: string | null;
   summary?: string;
   notes?: string[];
+  researchContext?: {
+    [k: string]: any;
+  };
 }
 export interface ReplRenderOutput {
   status: 'ok' | 'error';
@@ -353,4 +359,20 @@ export interface ReplRenderOutput {
   appliedPatch?: boolean;
   meta?: ReplValidationMeta;
   preview?: ReplRenderPreview;
+}
+
+// Source: design.generate.input.json
+export interface DesignGenerateInput {
+  researchContext: Record<string, any>;
+  options?: {
+    theme?: string;
+    [k: string]: any;
+  };
+}
+
+// Source: design.generate.output.json
+export interface DesignGenerateOutput {
+  status: 'ok' | 'error';
+  tree?: UiSchema;
+  errors?: string[];
 }

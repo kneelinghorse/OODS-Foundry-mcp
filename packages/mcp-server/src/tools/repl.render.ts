@@ -62,7 +62,7 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   const status: ReplRenderOutput['status'] = errors.length ? 'error' : 'ok';
   const dslVersion = workingTree?.version ?? input.schema?.version ?? '0.0.0';
 
-  const preview = workingTree ? buildPreview(workingTree) : undefined;
+  const preview = workingTree ? buildPreview(workingTree, input.researchContext) : undefined;
   if (preview && warnings.length) {
     const warningNotes = warnings.map((entry) => entry.message);
     preview.notes = preview.notes ? [...preview.notes, ...warningNotes] : warningNotes;

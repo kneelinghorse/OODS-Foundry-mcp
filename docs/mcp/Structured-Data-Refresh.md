@@ -33,5 +33,6 @@ Flags:
 ## Notes
 
 - Payloads are validated against `cmos/planning/component-schema.json`; the script aborts on schema errors.
+- Viz-related components include `renderComplexity` metadata (tier + score) derived from trait categories when applicable.
 - ETags are computed from canonical payloads with `generatedAt` removed; hashes stay stable for identical content (tests assert the component/token hashes).
 - Trait/object discovery walks `traits/**/*.trait.yaml`, `domains/*/traits/*.trait.yaml`, and object definitions; patterns and sample queries are derived from the current registries.

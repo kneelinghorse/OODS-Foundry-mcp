@@ -1,0 +1,34 @@
+# Structured Data Delta
+- Baseline: 2025-12-18T00:00:00Z
+- Current:  2025-12-19T00:00:00Z
+
+## Catalogue Stats
+- Components: 73 -> 73 (+0)
+- Traits: 35 -> 35 (+0)
+- Objects: 12 -> 12 (+0)
+- Domains: 1 -> 1 (+0)
+- Patterns: 2 -> 2 (+0)
+
+### Added / Removed
+- Added components: none
+- Removed components: none
+- Added traits: none
+- Removed traits: none
+- Added objects: none
+- Removed objects: none
+
+## Token Stats
+- referenceTokens: 39 -> 39 (+0)
+- themeTokens: 110 -> 110 (+0)
+- systemTokens: 59 -> 59 (+0)
+- componentTokens: 74 -> 74 (+0)
+- viewTokens: 40 -> 40 (+0)
+- traitOverlayCount: 33 -> 33 (+0)
+- mapCount: 1 -> 1 (+0)
+
+## Sample Query Coverage
+- formComponents: 19 entries
+- statusComponents: 8 entries
+- timelineComponents: 8 entries
+- mobileFriendly: 9 entries
+- traitOverlaySlices: 33 entries

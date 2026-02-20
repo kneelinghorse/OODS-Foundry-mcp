@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-11-26T02:24:17Z",
+  "generatedAt": "2025-12-19T00:00:00Z",
   "sources": {
     "base": "tokens/base.json",
     "theme": "tokens/theme.json",
@@ -11,7 +11,7 @@
     "maps": [
       "saas-billing.status-map"
     ],
-    "traitOverlays": 32
+    "traitOverlays": 33
   },
   "layers": {
     "reference": {
@@ -2329,6 +2329,18 @@
         "viz.scale.temporal.axis": "var(--cmp-viz-axis-line)",
         "viz.scale.temporal.tick": "var(--cmp-viz-axis-tick)"
       }
+    },
+    {
+      "trait": "Geocodable",
+      "tokens": {
+        "viz.spatial.geocodable.icon": "var(--cmp-viz-spatial-geocodable-icon)",
+        "viz.spatial.geocodable.badge.point": "var(--cmp-viz-spatial-badge-point)",
+        "viz.spatial.geocodable.badge.boundary": "var(--cmp-viz-spatial-badge-boundary)",
+        "viz.spatial.geocodable.badge.both": "var(--cmp-viz-spatial-badge-both)",
+        "viz.spatial.geocodable.confidence.high": "var(--cmp-viz-spatial-confidence-high)",
+        "viz.spatial.geocodable.confidence.medium": "var(--cmp-viz-spatial-confidence-medium)",
+        "viz.spatial.geocodable.confidence.low": "var(--cmp-viz-spatial-confidence-low)"
+      }
     }
   ],
   "stats": {
@@ -2338,6 +2350,6 @@
     "componentTokens": 74,
     "viewTokens": 40,
     "mapCount": 1,
-    "traitOverlayCount": 32
+    "traitOverlayCount": 33
   }
 }

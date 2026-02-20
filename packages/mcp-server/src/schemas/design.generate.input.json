@@ -1,0 +1,29 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://designlab.local/schemas/design.generate.input.json",
+    "title": "Design Generate Input",
+    "type": "object",
+    "properties": {
+        "researchContext": {
+            "type": "object",
+            "description": "Research bundle and metadata from Stage 1 discovery",
+            "additionalProperties": true
+        },
+        "apply": {
+            "type": "boolean"
+        },
+        "options": {
+            "type": "object",
+            "properties": {
+                "theme": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": true
+        }
+    },
+    "required": [
+        "researchContext"
+    ],
+    "additionalProperties": false
+}

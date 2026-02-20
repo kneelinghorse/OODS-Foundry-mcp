@@ -62,6 +62,7 @@ export async function renderDesignLab(request: RenderRequest = {}): Promise<Rend
     schema: request.schema,
     baseTree: request.baseTree,
     patch: request.patch,
+    researchContext: request.researchContext,
     options: { includeTree: true, ...(request.options || {}) }
   };
 

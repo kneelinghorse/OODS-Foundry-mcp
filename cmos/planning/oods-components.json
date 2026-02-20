@@ -1,9 +1,9 @@
 {
   "$schema": "./component-schema.json",
-  "generatedAt": "2025-11-26T02:24:17Z",
+  "generatedAt": "2025-12-19T00:00:00Z",
   "stats": {
-    "componentCount": 70,
-    "traitCount": 34,
+    "componentCount": 73,
+    "traitCount": 35,
     "objectCount": 12,
     "domainCount": 1,
     "patternCount": 2
@@ -915,6 +915,149 @@
       "sourceFiles": [
         "traits/content/Labelled.trait.yaml"
       ]
+    },
+    {
+      "id": "GeoFieldMappingForm",
+      "displayName": "GeoFieldMappingForm",
+      "categories": [
+        "viz.spatial"
+      ],
+      "tags": [
+        "geo",
+        "location",
+        "map",
+        "spatial",
+        "viz"
+      ],
+      "contexts": [
+        "form"
+      ],
+      "regions": [
+        "detail",
+        "form",
+        "list"
+      ],
+      "traitUsages": [
+        {
+          "trait": "Geocodable",
+          "traitCategory": "viz.spatial",
+          "context": "form",
+          "position": "top",
+          "priority": null,
+          "props": {
+            "latitudeField": "geo_latitude_field",
+            "longitudeField": "geo_longitude_field",
+            "identifierField": "geo_identifier_field",
+            "autoDetectField": "geo_auto_detect_enabled"
+          },
+          "source": "traits/viz/spatial/geocodable.trait.yaml"
+        }
+      ],
+      "sourceFiles": [
+        "traits/viz/spatial/geocodable.trait.yaml"
+      ],
+      "renderComplexity": {
+        "tier": "medium",
+        "score": 3,
+        "categories": [
+          "viz.spatial"
+        ],
+        "source": "traitCategories"
+      }
+    },
+    {
+      "id": "GeoResolutionBadge",
+      "displayName": "GeoResolutionBadge",
+      "categories": [
+        "viz.spatial"
+      ],
+      "tags": [
+        "geo",
+        "location",
+        "map",
+        "spatial",
+        "viz"
+      ],
+      "contexts": [
+        "list"
+      ],
+      "regions": [
+        "detail",
+        "form",
+        "list"
+      ],
+      "traitUsages": [
+        {
+          "trait": "Geocodable",
+          "traitCategory": "viz.spatial",
+          "context": "list",
+          "position": null,
+          "priority": null,
+          "props": {
+            "resolutionField": "geo_resolution"
+          },
+          "source": "traits/viz/spatial/geocodable.trait.yaml"
+        }
+      ],
+      "sourceFiles": [
+        "traits/viz/spatial/geocodable.trait.yaml"
+      ],
+      "renderComplexity": {
+        "tier": "medium",
+        "score": 3,
+        "categories": [
+          "viz.spatial"
+        ],
+        "source": "traitCategories"
+      }
+    },
+    {
+      "id": "GeocodablePreview",
+      "displayName": "GeocodablePreview",
+      "categories": [
+        "viz.spatial"
+      ],
+      "tags": [
+        "geo",
+        "location",
+        "map",
+        "spatial",
+        "viz"
+      ],
+      "contexts": [
+        "detail"
+      ],
+      "regions": [
+        "detail",
+        "form",
+        "list"
+      ],
+      "traitUsages": [
+        {
+          "trait": "Geocodable",
+          "traitCategory": "viz.spatial",
+          "context": "detail",
+          "position": "top",
+          "priority": 70,
+          "props": {
+            "resolutionField": "geo_resolution",
+            "requiresLookupField": "geo_requires_lookup",
+            "detectedFieldsField": "geo_detected_fields"
+          },
+          "source": "traits/viz/spatial/geocodable.trait.yaml"
+        }
+      ],
+      "sourceFiles": [
+        "traits/viz/spatial/geocodable.trait.yaml"
+      ],
+      "renderComplexity": {
+        "tier": "medium",
+        "score": 3,
+        "categories": [
+          "viz.spatial"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "InlineLabel",
@@ -2099,7 +2242,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-area.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizAreaPreview",
@@ -2138,7 +2289,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-area.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizAxisControls",
@@ -2200,7 +2359,15 @@
       "sourceFiles": [
         "traits/viz/encoding-position-x.trait.yaml",
         "traits/viz/encoding-position-y.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.encoding"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizAxisSummary",
@@ -2256,7 +2423,15 @@
       "sourceFiles": [
         "traits/viz/encoding-position-x.trait.yaml",
         "traits/viz/encoding-position-y.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.encoding"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizColorControls",
@@ -2295,7 +2470,15 @@
       ],
       "sourceFiles": [
         "traits/viz/encoding-color.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.encoding"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizColorLegendConfig",
@@ -2333,7 +2516,15 @@
       ],
       "sourceFiles": [
         "traits/viz/encoding-color.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.encoding"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizEncodingBadge",
@@ -2413,7 +2604,15 @@
         "traits/viz/encoding-position-x.trait.yaml",
         "traits/viz/encoding-position-y.trait.yaml",
         "traits/viz/encoding-size.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.encoding"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizLineControls",
@@ -2453,7 +2652,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-line.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizLinePreview",
@@ -2492,7 +2699,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-line.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizMarkControls",
@@ -2532,7 +2747,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-bar.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizMarkPreview",
@@ -2571,7 +2794,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-bar.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizPointControls",
@@ -2611,7 +2842,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-point.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizPointPreview",
@@ -2650,7 +2889,15 @@
       ],
       "sourceFiles": [
         "traits/viz/mark-point.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizRoleBadge",
@@ -2729,7 +2976,15 @@
         "traits/viz/mark-bar.trait.yaml",
         "traits/viz/mark-line.trait.yaml",
         "traits/viz/mark-point.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.mark"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizScaleControls",
@@ -2790,7 +3045,15 @@
       "sourceFiles": [
         "traits/viz/scale-linear.trait.yaml",
         "traits/viz/scale-temporal.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 1,
+        "categories": [
+          "viz.scale"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizScaleSummary",
@@ -2846,7 +3109,15 @@
       "sourceFiles": [
         "traits/viz/scale-linear.trait.yaml",
         "traits/viz/scale-temporal.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 1,
+        "categories": [
+          "viz.scale"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizSizeControls",
@@ -2886,7 +3157,15 @@
       ],
       "sourceFiles": [
         "traits/viz/encoding-size.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.encoding"
+        ],
+        "source": "traitCategories"
+      }
     },
     {
       "id": "VizSizeSummary",
@@ -2925,7 +3204,15 @@
       ],
       "sourceFiles": [
         "traits/viz/encoding-size.trait.yaml"
-      ]
+      ],
+      "renderComplexity": {
+        "tier": "low",
+        "score": 2,
+        "categories": [
+          "viz.encoding"
+        ],
+        "source": "traitCategories"
+      }
     }
   ],
   "traits": [
@@ -5308,6 +5595,228 @@
       },
       "objects": [],
       "source": "traits/viz/encoding-size.trait.yaml"
+    },
+    {
+      "name": "Geocodable",
+      "version": "1.0.0",
+      "description": "Indicates that data contains location-resolvable information that can be\nmapped to coordinates or geographic boundaries. Supports auto-detection\nof geo fields based on naming patterns and field types.",
+      "category": "viz.spatial",
+      "tags": [
+        "viz",
+        "spatial",
+        "geo",
+        "location",
+        "map"
+      ],
+      "contexts": [
+        "detail",
+        "form",
+        "list"
+      ],
+      "viewExtensions": [
+        {
+          "component": "GeocodablePreview",
+          "context": "detail",
+          "position": "top",
+          "priority": 70,
+          "props": {
+            "resolutionField": "geo_resolution",
+            "requiresLookupField": "geo_requires_lookup",
+            "detectedFieldsField": "geo_detected_fields"
+          }
+        },
+        {
+          "component": "GeoFieldMappingForm",
+          "context": "form",
+          "position": "top",
+          "priority": null,
+          "props": {
+            "latitudeField": "geo_latitude_field",
+            "longitudeField": "geo_longitude_field",
+            "identifierField": "geo_identifier_field",
+            "autoDetectField": "geo_auto_detect_enabled"
+          }
+        },
+        {
+          "component": "GeoResolutionBadge",
+          "context": "list",
+          "position": null,
+          "priority": null,
+          "props": {
+            "resolutionField": "geo_resolution"
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "autoDetect",
+          "type": "boolean",
+          "required": false,
+          "description": "Enable automatic detection of geo fields based on naming patterns.",
+          "default": true
+        },
+        {
+          "name": "explicitFields",
+          "type": "string[]",
+          "required": false,
+          "description": "Explicitly specify which fields contain geographic data.",
+          "default": []
+        },
+        {
+          "name": "minConfidence",
+          "type": "number",
+          "required": false,
+          "description": "Minimum confidence threshold for auto-detected fields (0-1).",
+          "default": 0.7,
+          "validation": {
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      ],
+      "schema": {
+        "geo_resolution": {
+          "type": "string",
+          "required": true,
+          "description": "Type of geographic resolution available (point, boundary, or both).",
+          "default": "point",
+          "validation": {
+            "enum": [
+              "point",
+              "boundary",
+              "both"
+            ]
+          }
+        },
+        "geo_requires_lookup": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether geographic identifiers require lookup to resolve.",
+          "default": false
+        },
+        "geo_detected_fields": {
+          "type": "object[]",
+          "required": false,
+          "description": "Array of detected geo fields with type and confidence.",
+          "default": []
+        },
+        "geo_latitude_field": {
+          "type": "string",
+          "required": false,
+          "description": "Field name containing latitude values (for point resolution)."
+        },
+        "geo_longitude_field": {
+          "type": "string",
+          "required": false,
+          "description": "Field name containing longitude values (for point resolution)."
+        },
+        "geo_identifier_field": {
+          "type": "string",
+          "required": false,
+          "description": "Primary field name containing geographic identifiers."
+        },
+        "geo_identifier_type": {
+          "type": "string",
+          "required": false,
+          "description": "Type of geographic identifier (e.g., country, state, fips)."
+        },
+        "geo_auto_detect_enabled": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether auto-detection of geo fields is enabled.",
+          "default": true
+        }
+      },
+      "semantics": {
+        "geo_resolution": {
+          "semantic_type": "viz.spatial.resolution",
+          "token_mapping": "tokenMap(viz.spatial.resolution)",
+          "ui_hints": {
+            "component": "GeoResolutionBadge"
+          }
+        },
+        "geo_requires_lookup": {
+          "semantic_type": "viz.spatial.lookup",
+          "token_mapping": "tokenMap(viz.spatial.lookup)",
+          "ui_hints": {
+            "component": "BooleanIndicator",
+            "label_when_true": "Requires geocoding",
+            "label_when_false": "Direct coordinates"
+          }
+        },
+        "geo_detected_fields": {
+          "semantic_type": "viz.spatial.detected_fields",
+          "ui_hints": {
+            "component": "GeoFieldList"
+          }
+        },
+        "geo_latitude_field": {
+          "semantic_type": "viz.spatial.coordinate.lat",
+          "ui_hints": {
+            "component": "FieldSelector",
+            "filter": "numeric"
+          }
+        },
+        "geo_longitude_field": {
+          "semantic_type": "viz.spatial.coordinate.lon",
+          "ui_hints": {
+            "component": "FieldSelector",
+            "filter": "numeric"
+          }
+        },
+        "geo_identifier_field": {
+          "semantic_type": "viz.spatial.identifier",
+          "ui_hints": {
+            "component": "FieldSelector",
+            "filter": "string"
+          }
+        },
+        "geo_identifier_type": {
+          "semantic_type": "viz.spatial.identifier_type",
+          "ui_hints": {
+            "component": "GeoIdentifierTypeSelector"
+          }
+        }
+      },
+      "tokens": {
+        "viz.spatial.geocodable.icon": "var(--cmp-viz-spatial-geocodable-icon)",
+        "viz.spatial.geocodable.badge.point": "var(--cmp-viz-spatial-badge-point)",
+        "viz.spatial.geocodable.badge.boundary": "var(--cmp-viz-spatial-badge-boundary)",
+        "viz.spatial.geocodable.badge.both": "var(--cmp-viz-spatial-badge-both)",
+        "viz.spatial.geocodable.confidence.high": "var(--cmp-viz-spatial-confidence-high)",
+        "viz.spatial.geocodable.confidence.medium": "var(--cmp-viz-spatial-confidence-medium)",
+        "viz.spatial.geocodable.confidence.low": "var(--cmp-viz-spatial-confidence-low)"
+      },
+      "dependencies": [],
+      "metadata": {
+        "created": "2025-11-29",
+        "owners": [
+          "viz@oods.systems",
+          "spatial@oods.systems"
+        ],
+        "maturity": "alpha",
+        "conflicts_with": [],
+        "accessibility": {
+          "rule_reference": "A11Y-R-04",
+          "notes": "Spatial visualizations require table fallback with region/coordinate data."
+        },
+        "regionsUsed": [
+          "detail",
+          "form",
+          "list"
+        ],
+        "examples": [
+          "SalesByState",
+          "StoreLocations",
+          "PopulationByCountry"
+        ],
+        "references": [
+          "cmos/foundational-docs/data-viz-part2/spatial-module/ARCHITECTURE.md",
+          "cmos/research/data-viz-oods/RV.03_Gap Analysis"
+        ]
+      },
+      "objects": [],
+      "source": "traits/viz/spatial/geocodable.trait.yaml"
     },
     {
       "name": "InteractionHighlight",
@@ -11373,6 +11882,12 @@
         ]
       },
       {
+        "id": "GeoFieldMappingForm",
+        "traits": [
+          "Geocodable"
+        ]
+      },
+      {
         "id": "PreferenceEditor",
         "traits": [
           "Preferenceable"
@@ -11888,6 +12403,15 @@
           "viz.scale.temporal.axis",
           "viz.scale.temporal.grid",
           "viz.scale.temporal.tick"
+        ]
+      },
+      {
+        "trait": "Geocodable",
+        "tokenCount": 7,
+        "sampleTokens": [
+          "viz.spatial.geocodable.badge.both",
+          "viz.spatial.geocodable.badge.boundary",
+          "viz.spatial.geocodable.badge.point"
         ]
       }
     ]

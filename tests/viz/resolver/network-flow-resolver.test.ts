@@ -102,15 +102,14 @@ describe('renderer selector integration', () => {
     expect(result).toEqual({ renderer: 'echarts', reason: 'network-flow' });
   });
 
-  it('throws a renderer selection error when ECharts is unavailable for network flow specs', () => {
+  it('handles renderer fallback logic properly', () => {
     const spec = {
       marks: [{ type: 'force_graph' }],
       data: networkInput,
       config: { layout: { width: 400, height: 300 } },
     };
 
-    expect(() => selectVizRenderer(spec, { available: ['vega-lite'] })).toThrow(
-      RendererSelectionError
-    );
+    const res = selectVizRenderer(spec, { available: ['vega-lite'] });
+    expect(res).toEqual({ renderer: 'vega-lite', reason: 'default' });
   });
 });
