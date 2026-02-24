@@ -360,19 +360,3 @@ export interface ReplRenderOutput {
   meta?: ReplValidationMeta;
   preview?: ReplRenderPreview;
 }
-
-// Source: design.generate.input.json
-export interface DesignGenerateInput {
-  researchContext: Record<string, any>;
-  options?: {
-    theme?: string;
-    [k: string]: any;
-  };
-}
-
-// Source: design.generate.output.json
-export interface DesignGenerateOutput {
-  status: 'ok' | 'error';
-  tree?: UiSchema;
-  errors?: string[];
-}

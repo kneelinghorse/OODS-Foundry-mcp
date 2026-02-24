@@ -1,8 +1,25 @@
 import { describe, it, expect } from 'vitest';
+import { getAjv } from '../../src/lib/ajv.js';
+import inputSchema from '../../src/schemas/catalog.list.input.json' assert { type: 'json' };
+import outputSchema from '../../src/schemas/catalog.list.output.json' assert { type: 'json' };
 import { handle } from '../../src/tools/catalog.list.js';
 import type { CatalogListInput, CatalogListOutput } from '../../src/tools/types.js';
 
+const ajv = getAjv();
+const validateInput = ajv.compile(inputSchema);
+const validateOutput = ajv.compile(outputSchema);
+
 describe('catalog.list', () => {
+  it('validates schema contracts', async () => {
+    expect(validateInput({})).toBe(true);
+    expect(validateInput({ category: 'core' })).toBe(true);
+    expect(validateInput({ unknown: true })).toBe(false);
+
+    const output = await handle({});
+    expect(validateOutput(output)).toBe(true);
+    expect(validateOutput.errors).toBeNull();
+  });
+
   it('should return component catalog', async () => {
     const input: CatalogListInput = {};
     const output: CatalogListOutput = await handle(input);
@@ -146,5 +163,27 @@ describe('catalog.list', () => {
         }
       });
     }
+  });
+
+  it('should enrich entries with storybook code references when available', async () => {
+    const output: CatalogListOutput = await handle({});
+    const byName = new Map(output.components.map((component) => [component.name, component]));
+
+    const tagInput = byName.get('TagInput');
+    expect(tagInput).toBeDefined();
+    expect(tagInput?.codeReferences?.length).toBeGreaterThan(0);
+    expect(tagInput?.codeReferences?.every((ref) => ref.kind === 'storybook')).toBe(true);
+    expect(tagInput?.codeReferences?.some((ref) => ref.path.endsWith('stories/components/classification/TagInput.stories.tsx'))).toBe(true);
+    expect(tagInput?.codeSnippet).toContain('import');
+
+    const tagManager = byName.get('TagManager');
+    expect(tagManager).toBeDefined();
+    expect(tagManager?.codeReferences?.length).toBeGreaterThan(0);
+    expect(tagManager?.codeSnippet).toContain('component: TagManager');
+
+    const templatePicker = byName.get('TemplatePicker');
+    expect(templatePicker).toBeDefined();
+    expect(templatePicker?.codeReferences?.length).toBeGreaterThan(0);
+    expect(templatePicker?.codeSnippet).toContain('component: TemplatePicker');
   });
 });

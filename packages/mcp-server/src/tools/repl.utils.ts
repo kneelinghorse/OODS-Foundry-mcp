@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAjv } from '../lib/ajv.js';
+import { withinAllowed } from '../lib/security.js';
+import { isUnsafeKey } from '../lib/safety.js';
 import type {
   ReplIssue,
   ReplJsonPatchOperation,
@@ -21,6 +23,11 @@ const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const STRUCTURED_DATA_DIR = path.join(REPO_ROOT, 'artifacts', 'structured-data');
 const COMPONENT_MANIFEST = path.join(STRUCTURED_DATA_DIR, 'manifest.json');
 const FALLBACK_COMPONENTS = path.join(REPO_ROOT, 'cmos', 'planning', 'oods-components.json');
+
+function relativeToRepo(target: string): string {
+  const rel = path.relative(REPO_ROOT, target);
+  return rel.startsWith('..') || path.isAbsolute(rel) ? target : rel.split(path.sep).join('/');
+}
 
 const ajv = getAjv();
 const uiSchemaJson = JSON.parse(fs.readFileSync(UI_SCHEMA_PATH, 'utf8'));
@@ -91,14 +98,29 @@ function decodePointerSegment(segment: string): string {
   return segment.replace(/~1/g, '/').replace(/~0/g, '~');
 }
 
-function pointerSegments(pointer: string): string[] {
+function pointerSegments(pointer: string, issues: ReplIssue[]): string[] | null {
   if (!pointer.startsWith('/')) {
-    throw new Error(`Invalid JSON pointer: ${pointer}`);
+    issues.push(issue('PATCH_POINTER_INVALID', `Invalid JSON pointer: ${pointer}`, pointer));
+    return null;
   }
-  return pointer
+  const segments = pointer
     .split('/')
     .slice(1)
     .map((value) => decodePointerSegment(value));
+  for (const segment of segments) {
+    if (isUnsafeKey(segment)) {
+      issues.push(
+        issue(
+          'PATCH_UNSAFE_PATH',
+          `Unsafe JSON pointer segment '${segment}' is not allowed`,
+          pointer,
+          'Prototype access segments are blocked for safety.'
+        )
+      );
+      return null;
+    }
+  }
+  return segments;
 }
 
 function resolveParent(container: any, segments: string[]): { parent: any; key: string } | null {
@@ -106,7 +128,10 @@ function resolveParent(container: any, segments: string[]): { parent: any; key: 
   let cursor: any = container;
   for (let i = 0; i < segments.length - 1; i += 1) {
     const segment = segments[i];
-    const next = cursor?.[segment];
+    const next =
+      cursor && (typeof cursor === 'object' || typeof cursor === 'function') && Object.prototype.hasOwnProperty.call(cursor, segment)
+        ? cursor[segment]
+        : undefined;
     if (next === undefined || next === null) {
       return null;
     }
@@ -125,7 +150,10 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
       continue;
     }
     try {
-      const segments = pointerSegments(op.path);
+      const segments = pointerSegments(op.path, issues);
+      if (!segments) {
+        continue;
+      }
       if (!segments.length) {
         issues.push(issue('PATCH_ROOT_UNSUPPORTED', 'Root-level patch operations are not supported', op.path));
         continue;
@@ -182,10 +210,19 @@ function normalizeNodePatch(baseTree: UiSchema, patch: ReplNodePatch): { operati
   }
 
   const rawPath = patch.path.startsWith('/') ? patch.path.slice(1) : patch.path;
-  const segments = rawPath
+  const segmentsRaw = rawPath
     .split(/[/.]/)
     .filter((segment) => segment.length > 0)
-    .map((segment) => escapePointerSegment(segment));
+    .map((segment) => segment.trim());
+
+  for (const segment of segmentsRaw) {
+    if (isUnsafeKey(segment)) {
+      issues.push(issue('PATCH_UNSAFE_PATH', `Unsafe patch path segment '${segment}' is not allowed`, patch.path));
+      return { operations: [], issues };
+    }
+  }
+
+  const segments = segmentsRaw.map((segment) => escapePointerSegment(segment));
   const pointer = `${ref.pointer}/${segments.join('/')}`;
   const op: ReplJsonPatchOperation = {
     op: patch.op ?? 'replace',
@@ -308,7 +345,10 @@ export function loadComponentRegistry(): RegistryInfo {
       ? manifest.artifacts.find((entry: any) => entry?.name === 'components')
       : null;
     const targetPath = artifact?.path ? resolveInRepo(String(artifact.path)) : null;
-    const resolved = targetPath && fs.existsSync(targetPath) ? targetPath : null;
+    const resolved =
+      targetPath && withinAllowed(REPO_ROOT, targetPath) && withinAllowed(STRUCTURED_DATA_DIR, targetPath) && fs.existsSync(targetPath)
+        ? targetPath
+        : null;
     if (resolved) {
       const data = readJson(resolved);
       const components = Array.isArray(data?.components) ? data.components : [];
@@ -317,7 +357,9 @@ export function loadComponentRegistry(): RegistryInfo {
       }
     }
   } catch {
-    warnings.push(issue('REGISTRY_MANIFEST_MISSING', 'Structured-data manifest missing or unreadable', COMPONENT_MANIFEST));
+    warnings.push(
+      issue('REGISTRY_MANIFEST_MISSING', 'Structured-data manifest missing or unreadable', relativeToRepo(COMPONENT_MANIFEST))
+    );
   }
 
   if (names.size === 0) {
@@ -329,9 +371,17 @@ export function loadComponentRegistry(): RegistryInfo {
         for (const entry of components) {
           if (entry?.id) names.add(String(entry.id));
         }
-        warnings.push(issue('REGISTRY_FALLBACK', 'Used fallback component export from cmos/planning', fallback));
+        warnings.push(
+          issue('REGISTRY_FALLBACK', 'Used fallback component export from cmos/planning', relativeToRepo(fallback))
+        );
       } catch {
-        warnings.push(issue('REGISTRY_FALLBACK_UNREADABLE', 'Fallback component export could not be read', fallback));
+        warnings.push(
+          issue(
+            'REGISTRY_FALLBACK_UNREADABLE',
+            'Fallback component export could not be read',
+            relativeToRepo(fallback)
+          )
+        );
       }
     } else {
       warnings.push(issue('REGISTRY_UNAVAILABLE', 'No component registry available for validation'));

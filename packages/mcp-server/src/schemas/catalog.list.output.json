@@ -63,6 +63,38 @@
                 }
               }
             }
+          },
+          "codeReferences": {
+            "type": "array",
+            "description": "References into Storybook `.stories.tsx` files (usage patterns + minimal snippets).",
+            "items": {
+              "type": "object",
+              "required": ["kind", "path", "snippet"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["storybook"],
+                  "description": "Reference kind."
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Repo-relative POSIX path to a `.stories.tsx` file."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Storybook title when available."
+                },
+                "snippet": {
+                  "type": "string",
+                  "description": "Concise usage snippet extracted from the story file."
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "codeSnippet": {
+            "type": "string",
+            "description": "Convenience: best single snippet picked from codeReferences."
           }
         },
         "additionalProperties": false

@@ -1,6 +1,6 @@
 {
   "$schema": "./component-schema.json",
-  "generatedAt": "2025-12-19T00:00:00Z",
+  "generatedAt": "2026-02-24T05:09:44Z",
   "stats": {
     "componentCount": 73,
     "traitCount": 35,
@@ -4622,11 +4622,6 @@
         {
           "trait": "Authable",
           "version": ">=1.0.0"
-        },
-        {
-          "trait": "Classifiable",
-          "version": ">=1.0.0",
-          "optional": true
         }
       ],
       "metadata": {
@@ -4644,7 +4639,10 @@
           "R20.6 Foundational Analysis of Modern Message and Communication Systems"
         ]
       },
-      "objects": [],
+      "objects": [
+        "Organization",
+        "User"
+      ],
       "source": "traits/core/Communicable.trait.yaml"
     },
     {
@@ -8279,6 +8277,7 @@
         ]
       },
       "objects": [
+        "Organization",
         "User"
       ],
       "source": "traits/core/Preferenceable.trait.yaml"
@@ -10621,11 +10620,29 @@
           }
         },
         {
+          "reference": "core/Preferenceable",
+          "alias": "OrganizationPreferences",
+          "parameters": {
+            "namespaces": [
+              "notifications",
+              "display",
+              "privacy"
+            ],
+            "schemaVersion": "2.0.0",
+            "registryNamespace": "org-preferences"
+          }
+        },
+        {
           "reference": "core/Authable",
           "alias": "OrganizationAuthz",
           "parameters": {
             "hierarchyDepthLimit": 5
           }
+        },
+        {
+          "reference": "core/Communicable",
+          "alias": "OrganizationCommunications",
+          "parameters": {}
         }
       ],
       "fields": [
@@ -11728,6 +11745,11 @@
           "parameters": {
             "hierarchyDepthLimit": 5
           }
+        },
+        {
+          "reference": "core/Communicable",
+          "alias": "UserCommunications",
+          "parameters": {}
         }
       ],
       "fields": [

@@ -119,7 +119,7 @@ Research transforms to:
 }
 ```
 
-Passed to `repl.render` or `design.generate`.
+Passed to `repl.render`.
 
 ---
 

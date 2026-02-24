@@ -23,8 +23,7 @@
             "additionalProperties": false
           }
         ]
-      },
-      "minItems": 1
+      }
     },
     "diagnosticsPath": { "type": "string" },
     "transcriptPath": { "type": "string" },
