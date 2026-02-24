@@ -65,7 +65,7 @@ Usage patterns:
 2. Connect an MCP client via `docs/mcp/Connections.md`.
 3. Refresh structured data if needed:
    ```bash
-   python cmos/scripts/refresh_structured_data.py --artifact-dir artifacts/structured-data --version-tag YYYY-MM-DD
+   pnpm refresh:data
    ```
 4. Run a small MCP call via the CLI:
    ```bash

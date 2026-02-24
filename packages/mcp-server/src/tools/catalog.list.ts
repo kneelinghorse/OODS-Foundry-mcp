@@ -13,6 +13,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const ARTIFACT_DIR = path.join(REPO_ROOT, 'artifacts', 'structured-data');
 const MANIFEST_PATH = path.join(ARTIFACT_DIR, 'manifest.json');
+const CODE_CONNECT_PATH = path.join(ARTIFACT_DIR, 'code-connect.json');
 const STORIES_DIR = path.join(REPO_ROOT, 'stories');
 
 type ManifestArtifact = {
@@ -27,6 +28,17 @@ type ManifestDoc = {
   generatedAt?: string;
   version?: string;
   artifacts?: ManifestArtifact[];
+};
+
+type CodeConnectRef = {
+  path?: string;
+  snippet?: string;
+  title?: string;
+};
+
+type CodeConnectDoc = {
+  components?: Record<string, CodeConnectRef[]>;
+  references?: Array<CodeConnectRef & { component?: string }>;
 };
 
 type TraitUsage = {
@@ -394,7 +406,63 @@ function getStoryIndex(componentNames: string[]): StoryIndex {
 }
 
 function pickBestSnippet(codeReferences: ComponentCodeReference[]): string | undefined {
-  return codeReferences.find((ref) => ref.snippet.includes('import '))?.snippet ?? codeReferences[0]?.snippet;
+  const kindOrder: ComponentCodeReference['kind'][] = ['code-connect', 'storybook'];
+  for (const kind of kindOrder) {
+    const candidates = codeReferences.filter((ref) => ref.kind === kind);
+    if (candidates.length === 0) continue;
+    return candidates.find((ref) => ref.snippet.includes('import '))?.snippet ?? candidates[0]?.snippet;
+  }
+
+  return undefined;
+}
+
+function loadCodeConnectIndex(): StoryIndex {
+  const index: StoryIndex = new Map();
+
+  if (!fs.existsSync(CODE_CONNECT_PATH)) {
+    return index;
+  }
+
+  let doc: CodeConnectDoc;
+  try {
+    doc = JSON.parse(fs.readFileSync(CODE_CONNECT_PATH, 'utf8')) as CodeConnectDoc;
+  } catch {
+    return index;
+  }
+
+  const add = (componentName: string, ref: CodeConnectRef) => {
+    if (!ref.path || !ref.snippet) return;
+
+    const entry: ComponentCodeReference = {
+      kind: 'code-connect',
+      path: ref.path,
+      snippet: ref.snippet,
+      ...(ref.title ? { title: ref.title } : {}),
+    };
+
+    const existing = index.get(componentName);
+    if (existing) {
+      existing.push(entry);
+    } else {
+      index.set(componentName, [entry]);
+    }
+  };
+
+  if (doc.components && typeof doc.components === 'object') {
+    for (const [componentName, refs] of Object.entries(doc.components)) {
+      if (!Array.isArray(refs)) continue;
+      refs.forEach((ref) => add(componentName, ref));
+    }
+  }
+
+  if (Array.isArray(doc.references)) {
+    doc.references.forEach((ref) => {
+      if (!ref.component) return;
+      add(ref.component, ref);
+    });
+  }
+
+  return index;
 }
 
 function extractPropSchema(traitUsages: TraitUsage[]): Record<string, unknown> {
@@ -479,9 +547,14 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
     }
 
     const storyIndex = getStoryIndex(catalog.map((c) => c.name));
+    const codeConnectIndex = loadCodeConnectIndex();
     const enrichedCatalog = filteredCatalog.map((component) => {
-      const codeReferences = storyIndex.get(component.name);
-      if (!codeReferences || codeReferences.length === 0) {
+      const codeReferences = [
+        ...(codeConnectIndex.get(component.name) ?? []),
+        ...(storyIndex.get(component.name) ?? []),
+      ];
+
+      if (codeReferences.length === 0) {
         return component;
       }
 

@@ -27,6 +27,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "refresh:data": "node scripts/refresh-data.mjs",
     "pkg:build": "tsx scripts/pkg/build.ts",
     "pkg:version": "tsx scripts/pkg/version.ts",
     "pkg:compat": "node scripts/pkg-compat.mjs",

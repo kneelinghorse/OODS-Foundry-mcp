@@ -6,7 +6,7 @@ Practical runbooks that tie the Design Lab shell, structured data exports, seman
 
 1) Refresh registries so Design Lab and MCP tools see current data:
 ```bash
-python cmos/scripts/refresh_structured_data.py --artifact-dir artifacts/structured-data
+pnpm refresh:data
 ```
 2) Build the MCP server once (or rely on sources):
 ```bash

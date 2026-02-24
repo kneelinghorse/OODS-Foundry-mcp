@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["generatedAt", "version", "source", "artifacts"],
+  "properties": {
+    "generatedAt": {
+      "type": "string",
+      "description": "ISO timestamp for the refresh run."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version tag for the artifacts (usually YYYY-MM-DD)."
+    },
+    "source": {
+      "type": "object",
+      "required": ["components", "tokens"],
+      "properties": {
+        "components": { "type": "string" },
+        "tokens": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "file", "path", "etag", "sizeBytes"],
+        "properties": {
+          "name": { "type": "string" },
+          "file": { "type": "string" },
+          "path": { "type": "string" },
+          "etag": { "type": "string" },
+          "sizeBytes": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "delta": {
+      "type": "object",
+      "required": ["file", "path"],
+      "properties": {
+        "file": { "type": "string" },
+        "path": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
+

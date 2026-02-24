@@ -68,6 +68,7 @@ OODS-Foundry-mcp/
 ```bash
 pnpm storybook
 pnpm build:tokens
+pnpm refresh:data
 pnpm local:pr-check
 pnpm --filter @oods/mcp-server run build
 ```
