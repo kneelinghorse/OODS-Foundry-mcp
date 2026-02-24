@@ -139,6 +139,22 @@ export type CatalogListInput = {
   context?: string;
 };
 
+export type ComponentCodeReference = {
+  kind: 'storybook';
+  /**
+   * Repo-relative path (POSIX) to a `.stories.tsx` file.
+   */
+  path: string;
+  /**
+   * Storybook title when available (e.g., `Traits/Core/Taggable`).
+   */
+  title?: string;
+  /**
+   * Concise usage snippet extracted from the story file.
+   */
+  snippet: string;
+};
+
 export type ComponentCatalogEntry = {
   name: string;
   displayName: string;
@@ -149,6 +165,14 @@ export type ComponentCatalogEntry = {
   traits: string[];
   propSchema: Record<string, unknown>;
   slots: Record<string, { accept?: string[]; role?: string }>;
+  /**
+   * References into `.stories.tsx` files that show real usage patterns.
+   */
+  codeReferences?: ComponentCodeReference[];
+  /**
+   * Convenience: best single snippet picked from `codeReferences`.
+   */
+  codeSnippet?: string;
 };
 
 export type CatalogListOutput = {

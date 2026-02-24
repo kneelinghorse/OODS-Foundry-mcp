@@ -3,6 +3,14 @@
   "roles": ["designer", "maintainer"],
   "rules": [
     {
+      "tool": "tokens.build",
+      "allow": ["designer", "maintainer"],
+      "writes": ["${BASE}/${DATE}/**"],
+      "timeoutMs": 60000,
+      "ratePerMinute": 30,
+      "concurrency": 1
+    },
+    {
       "tool": "brand.apply",
       "allow": ["designer", "maintainer"],
       "writes": ["${BASE}/${DATE}/**"],
@@ -19,7 +27,31 @@
       "concurrency": 1
     },
     {
+      "tool": "catalog.list",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
       "tool": "structuredData.fetch",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
+      "tool": "repl.validate",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
+      "tool": "repl.render",
       "allow": ["designer", "maintainer"],
       "readOnly": true,
       "timeoutMs": 30000,
@@ -51,6 +83,30 @@
       "concurrency": 1
     },
     {
+      "tool": "a11y.scan",
+      "allow": ["designer", "maintainer"],
+      "writes": ["${BASE}/${DATE}/**"],
+      "timeoutMs": 120000,
+      "ratePerMinute": 12,
+      "concurrency": 1
+    },
+    {
+      "tool": "purity.audit",
+      "allow": ["designer", "maintainer"],
+      "writes": ["${BASE}/${DATE}/**"],
+      "timeoutMs": 120000,
+      "ratePerMinute": 12,
+      "concurrency": 1
+    },
+    {
+      "tool": "vrt.run",
+      "allow": ["designer", "maintainer"],
+      "writes": ["${BASE}/${DATE}/**"],
+      "timeoutMs": 120000,
+      "ratePerMinute": 12,
+      "concurrency": 1
+    },
+    {
       "tool": "billing.reviewKit",
       "allow": ["designer", "maintainer"],
       "writes": ["${BASE}/${DATE}/**"],
@@ -65,8 +121,7 @@
       "timeoutMs": 90000,
       "ratePerMinute": 20,
       "concurrency": 1
-    },
-    { "tool": "*", "allow": ["designer", "maintainer"], "writes": ["${BASE}/${DATE}/**"], "readOnly": false }
+    }
   ],
   "limits": {
     "defaultTimeoutMs": 120000,

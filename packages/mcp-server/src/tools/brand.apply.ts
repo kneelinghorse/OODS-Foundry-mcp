@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { todayDir, loadPolicy, withinAllowed, type Policy } from '../lib/security.js';
+import { isUnsafeKey } from '../lib/safety.js';
 import { writeTranscript, writeBundleIndex, sha256File } from '../lib/transcript.js';
 import type {
   ArtifactDetail,
@@ -50,6 +51,9 @@ function normalizeKey(key: string): string {
   if (key === 'value') return '$value';
   if (key === 'description') return '$description';
   if (key === 'type') return '$type';
+  if (isUnsafeKey(key)) {
+    throw new Error(`Unsafe key "${key}" is not allowed in token deltas.`);
+  }
   return key;
 }
 
@@ -73,6 +77,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function deepMerge(target: TokenDocument, source: TokenDocument): void {
   for (const [key, value] of Object.entries(source)) {
+    if (isUnsafeKey(key)) {
+      throw new Error(`Unsafe key "${key}" is not allowed in token deltas.`);
+    }
     if (isPlainObject(value)) {
       if (!isPlainObject(target[key])) {
         target[key] = {};

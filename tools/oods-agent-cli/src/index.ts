@@ -398,7 +398,11 @@ async function runTool(
 ) {
   const apply = command === 'apply';
   const payload = { ...(args ?? {}) };
-  payload.apply = apply;
+  if (apply) {
+    payload.apply = true;
+  } else if ('apply' in payload) {
+    delete (payload as any).apply;
+  }
 
   const startedAt = new Date();
   const user = detectUser();

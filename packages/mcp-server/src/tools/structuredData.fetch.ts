@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAjv } from '../lib/ajv.js';
+import { withinAllowed } from '../lib/security.js';
 import type { StructuredDataFetchInput, StructuredDataFetchOutput, StructuredDataset } from './types.js';
 
 type ManifestArtifact = {
@@ -73,7 +74,7 @@ function stableSort(value: unknown): unknown {
   if (value && typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>);
     entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-    const ordered: Record<string, unknown> = {};
+    const ordered: Record<string, unknown> = Object.create(null);
     for (const [key, val] of entries) {
       ordered[key] = stableSort(val);
     }
@@ -83,7 +84,10 @@ function stableSort(value: unknown): unknown {
 }
 
 export function computeStructuredDataEtag(payload: unknown): string {
-  const base = payload && typeof payload === 'object' && !Array.isArray(payload) ? { ...(payload as Record<string, unknown>) } : payload ?? {};
+  const base =
+    payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? Object.assign(Object.create(null), payload as Record<string, unknown>)
+      : payload ?? {};
   if (base && typeof base === 'object' && !Array.isArray(base)) {
     delete (base as Record<string, unknown>).generatedAt;
   }
@@ -100,6 +104,15 @@ function resolvePath(target: string): string {
   if (path.isAbsolute(target)) return target;
   const trimmed = target.startsWith('OODS-Foundry-mcp/') ? target.replace(/^OODS-Foundry-mcp\//, '') : target;
   return path.resolve(REPO_ROOT, trimmed);
+}
+
+function resolveStructuredDataPath(source: string): string | null {
+  const resolved = resolvePath(source);
+  if (!withinAllowed(REPO_ROOT, resolved)) return null;
+  if (withinAllowed(ARTIFACT_DIR, resolved) || withinAllowed(PLANNING_DIR, resolved)) {
+    return resolved;
+  }
+  return null;
 }
 
 function formatErrors(errors: Array<{ instancePath?: string; message?: string }> | null | undefined): string[] {
@@ -129,7 +142,8 @@ function datasetPath(dataset: StructuredDataset, manifest: ManifestDoc | undefin
   const manifestArtifact = findArtifact(manifest, dataset);
   const fallback = path.join(PLANNING_DIR, dataset === 'components' ? 'oods-components.json' : 'oods-tokens.json');
   const source = manifestArtifact?.path ?? manifestArtifact?.file ?? fallback;
-  return { path: resolvePath(source), manifestArtifact };
+  const resolved = resolveStructuredDataPath(source);
+  return { path: resolved ?? fallback, manifestArtifact };
 }
 
 function validatePayload(dataset: StructuredDataset, payload: Record<string, unknown>): { ok: boolean; errors: string[] } {
@@ -174,7 +188,7 @@ export async function handle(input: StructuredDataFetchInput): Promise<Structure
   const { path: dataPath, manifestArtifact } = datasetPath(dataset, manifestInfo.manifest);
 
   if (!fs.existsSync(dataPath)) {
-    throw new Error(`Dataset not found: ${dataPath}`);
+    throw new Error(`Dataset not found for "${dataset}".`);
   }
 
   const payload = dataset === 'manifest' && manifestInfo.manifest ? manifestInfo.manifest : readJson(dataPath);

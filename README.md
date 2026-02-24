@@ -1,34 +1,52 @@
 # OODS Foundry MCP
 
-Agent interface and MCP toolchain for the OODS Foundry design system.
+Production MCP server + toolchain for the OODS Foundry design system.
 
-This repo is where agents design with OODS. It ships the MCP server, structured data exports, runbooks, and diagnostics so agents can reason about traits, objects, tokens, and views with confidence. Agents are first-class citizens here.
+This repo turns the OODS design system into an agent-usable surface: a semantic catalog you can query, schemas you can validate, and governed token theming you can apply.
 
 Design system source of truth: https://github.com/kneelinghorse/OODS-Foundry
 Design system Storybook: https://kneelinghorse.github.io/OODS-Foundry/
 
+## Three capability pillars
+
+### 1) Discover (semantic registry)
+
+- Query structured exports of the design system (components, traits, objects, tokens).
+- Use `structuredData.fetch` for raw datasets and `catalog.list` for an agent-friendly component catalog.
+- Current inventory (structured-data version `2026-02-24`): **73 components**, **35 traits**, **12 objects**.
+
+### 2) Validate (schema checking)
+
+- Validate and normalize Design Lab UiSchema payloads (and patches) deterministically.
+- Use `repl.validate` to check trees and `repl.render` to apply patches + emit preview metadata.
+
+### 3) Theme (governed token overlays)
+
+- Preview or apply brand token deltas safely.
+- Use `brand.apply` for governed overlays and `tokens.build` for token artifact generation.
+
 ## Two repos, two roles
 
-- OODS Foundry (design system): canonical traits, objects, components, tokens, and release history.
-- OODS Foundry MCP (this repo): agent tools and automation that sit on top of the design system.
+- **OODS Foundry (design system):** canonical traits, objects, components, tokens, release history.
+- **OODS Foundry MCP (this repo):** MCP server + agent tooling built on top of the design system snapshot.
 
-This repo keeps a synced snapshot of the design system so MCP tools stay grounded in real, current data.
-
-## What agents can do here
-
-- Discover traits, objects, and components via structured data exports.
-- Use MCP tools to render, validate, and transform design system artifacts.
-- Capture diagnostics and transcripts for repeatable workflows.
-- Follow task runbooks for traits, objects, charts, and tokens.
-- Track work in CMOS missions and sessions.
-
-## Fast start (agents)
+## Quick start
 
 1. Read `agents.md` for the agent charter and workflow.
-2. Connect an MCP client with `docs/mcp/Connections.md`.
-3. Use structured data in `artifacts/structured-data/` (refresh guide: `docs/mcp/Structured-Data-Refresh.md`).
-4. Pick a runbook from `docs/runbooks/` once available.
-5. For architecture depth, jump to the upstream OODS Foundry repo.
+2. Install dependencies:
+   ```bash
+   corepack enable
+   pnpm i
+   ```
+3. Build the MCP server:
+   ```bash
+   pnpm --filter @oods/mcp-server run build
+   ```
+4. Make a first MCP call (local CLI runner):
+   ```bash
+   pnpm exec tsx tools/oods-agent-cli/src/index.ts plan catalog.list '{}'
+   ```
+5. Connect an MCP client (Cursor/Claude/Desktop/etc) using `docs/mcp/Connections.md`.
 
 ## Repo layout (agent-first)
 
@@ -45,14 +63,7 @@ OODS-Foundry-mcp/
 └── packages/tokens/         # DTCG tokens used by tools
 ```
 
-## Local setup (optional)
-
-```bash
-corepack enable
-pnpm i
-```
-
-Common commands:
+## Common commands
 
 ```bash
 pnpm storybook
@@ -76,5 +87,9 @@ pnpm --filter @oods/mcp-server run build
 Use the upstream repo for canonical architecture docs, release notes, and package usage:
 https://github.com/kneelinghorse/OODS-Foundry
 
-## Demos
-You can start a local demo using `pnpm exec tsx scripts/demo/sprint03.tsx`.
+## Demo (optional)
+
+Start a local demo:
+```bash
+pnpm exec tsx scripts/demo/sprint03.tsx
+```

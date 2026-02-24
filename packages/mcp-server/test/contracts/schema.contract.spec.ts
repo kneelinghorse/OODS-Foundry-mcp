@@ -87,6 +87,17 @@ describe('schema contracts', () => {
     expect(validateGenericOutput.errors).toBeNull();
   });
 
+  it('accepts generic outputs with no artifacts', () => {
+    const payload: GenericOutput = {
+      artifacts: [],
+      transcriptPath: '/tmp/artifacts/transcript.json',
+      bundleIndexPath: '/tmp/artifacts/bundle.json',
+    };
+
+    expect(validateGenericOutput(payload)).toBe(true);
+    expect(validateGenericOutput.errors).toBeNull();
+  });
+
   it('rejects outputs missing transcript path', () => {
     const invalidPayload = {
       artifacts: ['/tmp/missing-transcript.json'],

@@ -5,8 +5,7 @@
     "repl.validate",
     "repl.render",
     "brand.apply",
-    "catalog.list",
-    "design.generate"
+    "catalog.list"
   ],
   "onDemand": [
     "diag.snapshot",
