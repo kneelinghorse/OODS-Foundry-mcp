@@ -73,12 +73,12 @@
               "properties": {
                 "kind": {
                   "type": "string",
-                  "enum": ["storybook"],
+                  "enum": ["storybook", "code-connect"],
                   "description": "Reference kind."
                 },
                 "path": {
                   "type": "string",
-                  "description": "Repo-relative POSIX path to a `.stories.tsx` file."
+                  "description": "Repo-relative POSIX path to a source file containing a usage example."
                 },
                 "title": {
                   "type": "string",

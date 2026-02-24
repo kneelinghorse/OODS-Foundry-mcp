@@ -109,7 +109,9 @@ export default defineConfig({
           'tests/**/*.test.ts',
           'tests/**/*.test.tsx',
           'tests/**/*.spec.ts',
-          'tests/**/*.spec.tsx'
+          'tests/**/*.spec.tsx',
+          'packages/mcp-server/test/**/*.test.ts',
+          'packages/mcp-server/test/**/*.spec.ts'
         ],
         exclude: ['tests/a11y/**'],
         environment: 'node'

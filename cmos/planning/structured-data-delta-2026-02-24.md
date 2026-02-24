@@ -1,5 +1,5 @@
 # Structured Data Delta
-- Baseline: 2025-12-19T00:00:00Z
+- Baseline: 2026-02-24T05:09:44Z
 - Current:  2026-02-24T05:09:44Z
 
 ## Catalogue Stats
@@ -32,3 +32,10 @@
 - timelineComponents: 8 entries
 - mobileFriendly: 9 entries
 - traitOverlaySlices: 33 entries
+
+## Code Connect Snippets
+- Baseline etag: 7efe47b609eb9a47289978d94adbedb6f7e28a935e86514f72fda336da3cd445
+- Current etag:  7efe47b609eb9a47289978d94adbedb6f7e28a935e86514f72fda336da3cd445
+- Changed: no
+- Components with snippets: 0
+- Total references: 0

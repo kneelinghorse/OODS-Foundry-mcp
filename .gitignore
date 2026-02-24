@@ -12,7 +12,14 @@ coverage/
 # Storybook static builds
 storybook-static/
 **/storybook-static/
+# Artifacts are generally generated (don't commit), but keep:
+# - `/artifacts/structured-data/**` (structured data snapshots + manifest)
+# - `packages/artifacts/` (workspace package; name collides with this rule)
 artifacts/
+!/artifacts/
+/artifacts/*
+!/artifacts/structured-data/
+!/artifacts/structured-data/**
 !packages/artifacts/
 
 # Temp and logs

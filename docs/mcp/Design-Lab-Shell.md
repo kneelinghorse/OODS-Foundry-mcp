@@ -13,7 +13,7 @@ A three-pane React harness for editing and validating Design Lab UI schemas agai
 
 Prereqs:
 - Build or use sources from `packages/mcp-server` so `repl.render.js` and `repl.validate.js` are available.
-- Refresh structured data once so registry hints are present (`python cmos/scripts/refresh_structured_data.py` writes `cmos/planning/oods-components.json` and `oods-tokens.json`).
+- Refresh structured data once so registry hints are present (`pnpm refresh:data` writes `cmos/planning/oods-components.json` and `oods-tokens.json`).
 
 Embed the shell in Storybook or any React view:
 
@@ -43,5 +43,5 @@ To point at a remote renderer, pass a `renderer` prop that matches `RenderReques
 ## Integration tips
 
 - Ensure `@oods/mcp-server` is built (`pnpm --filter @oods/mcp-server build`) if you rely on dist outputs; otherwise the shell imports the TS sources.
-- Keep registry hints fresh by running `python cmos/scripts/refresh_structured_data.py` before demos so the agent lane can cite current component/token summaries.
+- Keep registry hints fresh by running `pnpm refresh:data` before demos so the agent lane can cite current component/token summaries.
 - For Storybook embeds, give the container ~1100px width for the three-column layout; the shell collapses to a single column automatically on smaller viewports.

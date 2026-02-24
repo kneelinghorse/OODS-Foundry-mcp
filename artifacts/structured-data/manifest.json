@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-02-24T05:09:44Z",
+  "version": "2026-02-24",
+  "source": {
+    "components": "cmos/planning/oods-components.json",
+    "tokens": "cmos/planning/oods-tokens.json"
+  },
+  "artifacts": [
+    {
+      "name": "components",
+      "file": "oods-components-2026-02-24.json",
+      "path": "artifacts/structured-data/oods-components-2026-02-24.json",
+      "etag": "60c44643e57a55566ebb216000b57f3617a3ee6ef2c410b9cc10f1d72185be42",
+      "sizeBytes": 348465
+    },
+    {
+      "name": "tokens",
+      "file": "oods-tokens-2026-02-24.json",
+      "path": "artifacts/structured-data/oods-tokens-2026-02-24.json",
+      "etag": "6075b0688222792508151ec4e86051ae6261882a359f9d1c6bef2962e0156d65",
+      "sizeBytes": 80192
+    },
+    {
+      "name": "code-connect",
+      "file": "code-connect.json",
+      "path": "artifacts/structured-data/code-connect.json",
+      "etag": "7efe47b609eb9a47289978d94adbedb6f7e28a935e86514f72fda336da3cd445",
+      "sizeBytes": 156
+    }
+  ],
+  "delta": {
+    "file": "structured-data-delta-2026-02-24.md",
+    "path": "cmos/planning/structured-data-delta-2026-02-24.md"
+  }
+}

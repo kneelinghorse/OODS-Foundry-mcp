@@ -140,13 +140,13 @@ export type CatalogListInput = {
 };
 
 export type ComponentCodeReference = {
-  kind: 'storybook';
+  kind: 'storybook' | 'code-connect';
   /**
-   * Repo-relative path (POSIX) to a `.stories.tsx` file.
+   * Repo-relative path (POSIX) to a source file containing a usage example.
    */
   path: string;
   /**
-   * Storybook title when available (e.g., `Traits/Core/Taggable`).
+   * Storybook title (or equivalent label) when available (e.g., `Traits/Core/Taggable`).
    */
   title?: string;
   /**

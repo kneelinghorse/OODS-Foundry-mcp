@@ -1,15 +1,39 @@
-import { describe, it, expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getAjv } from '../../src/lib/ajv.js';
 import inputSchema from '../../src/schemas/catalog.list.input.json' assert { type: 'json' };
 import outputSchema from '../../src/schemas/catalog.list.output.json' assert { type: 'json' };
 import { handle } from '../../src/tools/catalog.list.js';
 import type { CatalogListInput, CatalogListOutput } from '../../src/tools/types.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const ajv = getAjv();
 const validateInput = ajv.compile(inputSchema);
 const validateOutput = ajv.compile(outputSchema);
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, '../../../../');
+const codeConnectPath = path.join(repoRoot, 'artifacts', 'structured-data', 'code-connect.json');
+
 describe('catalog.list', () => {
+  let preservedCodeConnect: string | null = null;
+
+  beforeAll(() => {
+    preservedCodeConnect = fs.existsSync(codeConnectPath) ? fs.readFileSync(codeConnectPath, 'utf8') : null;
+    fs.rmSync(codeConnectPath, { force: true });
+  });
+
+  afterAll(() => {
+    if (preservedCodeConnect === null) {
+      fs.rmSync(codeConnectPath, { force: true });
+      return;
+    }
+
+    fs.writeFileSync(codeConnectPath, preservedCodeConnect);
+  });
+
   it('validates schema contracts', async () => {
     expect(validateInput({})).toBe(true);
     expect(validateInput({ category: 'core' })).toBe(true);
@@ -185,5 +209,39 @@ describe('catalog.list', () => {
     expect(templatePicker).toBeDefined();
     expect(templatePicker?.codeReferences?.length).toBeGreaterThan(0);
     expect(templatePicker?.codeSnippet).toContain('component: TemplatePicker');
+  });
+
+  it('should prefer code-connect snippets when available', async () => {
+    const previous = fs.existsSync(codeConnectPath) ? fs.readFileSync(codeConnectPath, 'utf8') : null;
+
+    try {
+      const payload = {
+        generatedAt: new Date().toISOString(),
+        components: {
+          TagInput: [
+            {
+              path: 'upstream/stories/components/classification/TagInput.stories.tsx',
+              snippet: '// code-connect: TagInput usage example',
+            },
+          ],
+        },
+      };
+
+      fs.writeFileSync(codeConnectPath, JSON.stringify(payload, null, 2));
+
+      const output: CatalogListOutput = await handle({});
+      const byName = new Map(output.components.map((component) => [component.name, component]));
+      const tagInput = byName.get('TagInput');
+
+      expect(tagInput).toBeDefined();
+      expect(tagInput?.codeReferences?.some((ref) => ref.kind === 'code-connect')).toBe(true);
+      expect(tagInput?.codeSnippet).toBe('// code-connect: TagInput usage example');
+    } finally {
+      if (previous === null) {
+        fs.rmSync(codeConnectPath, { force: true });
+      } else {
+        fs.writeFileSync(codeConnectPath, previous);
+      }
+    }
   });
 });
