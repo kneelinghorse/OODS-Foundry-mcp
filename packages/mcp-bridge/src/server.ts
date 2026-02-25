@@ -17,26 +17,15 @@ import {
 } from './config.js';
 import { registerArtifactEndpoints } from './endpoints/artifacts.js';
 import { buildErrorPayload, normalizeRunErrorCode, sendError, statusForCode } from './middleware/errors.js';
+import { buildToolNameMaps, resolveInternalToolName } from './tool-names.js';
 
-// MCP tool name translation: dots → underscores for Claude Desktop compatibility
-// Pattern: ^[a-zA-Z0-9_-]{1,64}$ (no dots allowed)
-function toExternalName(internal: string): string {
-  return internal.replace(/\./g, '_');
-}
-function toInternalName(external: string): string {
-  return external.replace(/_/g, '.');
-}
-
-// Build lookup maps for both directions
+// MCP tool name translation: dots → underscores for clients that cannot send dot-delimited names.
 const INTERNAL_TOOLS = new Set(bridgeConfig.tools.allowed);
-const EXTERNAL_TO_INTERNAL = new Map<string, string>();
-const INTERNAL_TO_EXTERNAL = new Map<string, string>();
-for (const internal of INTERNAL_TOOLS) {
-  const external = toExternalName(internal);
-  EXTERNAL_TO_INTERNAL.set(external, internal);
-  INTERNAL_TO_EXTERNAL.set(internal, external);
-}
-const ALLOWED_EXTERNAL_TOOLS = new Set(EXTERNAL_TO_INTERNAL.keys());
+const {
+  externalToInternal: EXTERNAL_TO_INTERNAL,
+  internalToExternal: INTERNAL_TO_EXTERNAL,
+  allowedExternalTools: ALLOWED_EXTERNAL_TOOLS,
+} = buildToolNameMaps(INTERNAL_TOOLS);
 
 const APPROVAL_REQUIRED_TOOLS = approvalRequiredTools;
 const APPLY_CAPABLE_TOOLS = applyCapableTools;
@@ -259,7 +248,7 @@ async function main() {
       return;
     }
     // Accept both external (underscore) and internal (dot) names for backward compatibility
-    const internalTool = EXTERNAL_TO_INTERNAL.get(externalTool) ?? EXTERNAL_TO_INTERNAL.get(toExternalName(externalTool));
+    const internalTool = resolveInternalToolName(externalTool, EXTERNAL_TO_INTERNAL);
     if (!internalTool) {
       sendError(reply, 403, 'POLICY_DENIED', `Tool not allowed: ${externalTool}`, {
         details: { reason: 'FORBIDDEN_TOOL', tool: externalTool, docs: POLICY_RULES_DOC },

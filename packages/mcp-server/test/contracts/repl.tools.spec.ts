@@ -112,4 +112,45 @@ describe('Agentic REPL render handler', () => {
     expect(result.errors.some((err) => err.code === 'MISSING_BASE_TREE')).toBe(true);
     expect(validateRenderOutput(result)).toBe(true);
   });
+
+  it('returns standalone html when apply=true and render is valid', async () => {
+    const result = await renderHandle({
+      mode: 'full',
+      schema: baseTree,
+      apply: true,
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<!DOCTYPE html>');
+    expect(result.html).toContain('<html');
+    expect(result.html).toContain('<main id="oods-preview-root">');
+    expect(validateRenderOutput(result)).toBe(true);
+  });
+
+  it('keeps dry-run output backward-compatible (no html field)', async () => {
+    const result = await renderHandle({
+      mode: 'full',
+      schema: baseTree,
+      apply: false,
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.html).toBeUndefined();
+    expect(validateRenderOutput(result)).toBe(true);
+  });
+
+  it('omits html when apply=true but validation fails', async () => {
+    const invalidTree = structuredClone(baseTree);
+    invalidTree.screens[0].children![0].component = 'UnknownComponent';
+
+    const result = await renderHandle({
+      mode: 'full',
+      schema: invalidTree,
+      apply: true,
+    });
+
+    expect(result.status).toBe('error');
+    expect(result.html).toBeUndefined();
+    expect(validateRenderOutput(result)).toBe(true);
+  });
 });

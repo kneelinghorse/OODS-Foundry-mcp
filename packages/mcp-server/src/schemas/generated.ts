@@ -334,6 +334,7 @@ export interface ReplRenderInput {
     includeTree?: boolean;
     previewOnly?: boolean;
   };
+  apply?: boolean;
 }
 
 // Source: repl.render.output.json
@@ -359,4 +360,5 @@ export interface ReplRenderOutput {
   appliedPatch?: boolean;
   meta?: ReplValidationMeta;
   preview?: ReplRenderPreview;
+  html?: string;
 }

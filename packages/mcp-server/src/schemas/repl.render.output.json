@@ -93,6 +93,10 @@
       },
       "additionalProperties": false
     },
+    "html": {
+      "type": "string",
+      "description": "Standalone HTML5 document generated when apply=true and render validation passes."
+    },
     "meta": {
       "type": "object",
       "properties": {
