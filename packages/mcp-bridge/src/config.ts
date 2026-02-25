@@ -109,8 +109,9 @@ const FALLBACK_POLICY: AgentPolicyDoc = {
     { name: 'release.verify', modes: ['dry-run'], approval: 'optional', allow: ['maintainer'] },
     { name: 'release.tag', modes: ['dry-run', 'apply'], approval: 'required', allow: ['maintainer'] },
     { name: 'tokens.build', modes: ['dry-run'], approval: 'optional' },
+    { name: 'structuredData.fetch', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
     { name: 'repl.validate', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
-    { name: 'repl.render', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
+    { name: 'repl.render', modes: ['dry-run', 'apply'], approval: 'optional', allow: ['designer'] },
   ],
 };
 

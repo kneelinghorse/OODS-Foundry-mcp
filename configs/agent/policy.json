@@ -131,7 +131,7 @@
     {
       "name": "repl.render",
       "description": "Applies REPL patches or full trees for preview generation",
-      "modes": ["dry-run"],
+      "modes": ["dry-run", "apply"],
       "approval": "optional",
       "allow": ["designer", "maintainer"],
       "ratePerMinute": 20

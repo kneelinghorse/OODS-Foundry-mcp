@@ -6,6 +6,8 @@ import {
   validateComponents,
   validateSchema,
 } from './repl.utils.js';
+import { renderDocument } from '../render/document.js';
+import { renderTree } from '../render/tree-renderer.js';
 import type {
   ReplIssue,
   ReplJsonPatchOperation,
@@ -90,6 +92,13 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   }
   if (meta) {
     output.meta = meta;
+  }
+  if (input.apply === true && status === 'ok' && workingTree) {
+    const screenHtml = renderTree(workingTree);
+    output.html = renderDocument({
+      screenHtml,
+      schema: workingTree,
+    });
   }
 
   return output;

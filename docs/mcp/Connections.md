@@ -1,6 +1,6 @@
 # OODS MCP Connections
 
-Local developers can point external agent clients at the OODS MCP bridge to exercise the read-only toolchain. This guide covers setup, connection profiles for Claude Desktop and the OpenAI Responses/Agents API, and the `agents-smoke` harness used to validate the bridge.
+Local developers can point external agent clients at the OODS MCP bridge to exercise the MCP toolchain. This guide covers setup, connection profiles for Claude Desktop and the OpenAI Responses/Agents API, and the `agents-smoke` harness used to validate the bridge.
 
 ## Prerequisites
 
@@ -39,7 +39,7 @@ The bridge listens on `http://127.0.0.1:${MCP_BRIDGE_PORT:-4466}` and exposes `G
 
 Key points:
 
-- The bridge serves read-only tools (including `structuredData.fetch`, `tokens.build`, `repl.validate`, `repl.render`, `a11y.scan`, `purity.audit`, `vrt.run`, `diag.snapshot`), plus write-gated tools that remain locked until an approval header is supplied.
+- The bridge serves diagnostics/read tools plus apply-gated tools. `repl.render` supports both `dry-run` and `apply` modes, while write-gated tools still require an approval header when `apply:true`.
 - Because Claude Desktop omits custom headers for remote servers, keep token enforcement disabled when using this profile.
 - If the default port is busy, start the bridge with `MCP_BRIDGE_PORT=<port>` and update the `url` accordingly.
 
@@ -48,8 +48,8 @@ Key points:
 `configs/agents/openai.agents.json` captures a thin agent profile pointing to the bridge:
 
 - Default base URL: `http://127.0.0.1:4466`
-- Function tool definition: `diag_snapshot` (maps to the bridge tool `diag.snapshot`)
-- Request template: `POST /run` with `{"tool":"diag.snapshot","input":{"apply":false}}`
+- Function tool definition: `diag_snapshot` (maps to internal MCP tool `diag.snapshot`)
+- Request template: `POST /run` with `{"tool":"diag_snapshot","input":{"apply":false}}`
 
 Integrate it by:
 
@@ -58,6 +58,19 @@ Integrate it by:
 3. Keeping `apply` set to `false` for diagnostics-only runs.
 
 Before each session, call `GET /tools` to refresh the allowlisted names; the harness logs them for reference.
+
+## Tool Name Translation (Workbench)
+
+Bridge `/run` accepts either:
+
+- External bridge names (underscores, returned by `GET /tools`): `structuredData_fetch`, `repl_render`, `diag_snapshot`
+- Internal MCP names (dots, accepted for backward compatibility): `structuredData.fetch`, `repl.render`, `diag.snapshot`
+
+Recommendation for Synthesis Workbench:
+
+- Use the exact names returned by `GET /tools` (underscore form) when calling `/run`.
+- Keep existing dot-form callers temporarily; bridge maps them to the same internal MCP tools.
+- For the full endpoint/header/request/response contract, use `docs/mcp/Workbench-Integration-Contract.md`.
 
 ## Smoke Harness
 

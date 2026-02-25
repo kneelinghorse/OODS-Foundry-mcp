@@ -53,7 +53,7 @@
     {
       "tool": "repl.render",
       "allow": ["designer", "maintainer"],
-      "readOnly": true,
+      "writes": ["${BASE}/${DATE}/**"],
       "timeoutMs": 30000,
       "ratePerMinute": 60,
       "concurrency": 4
