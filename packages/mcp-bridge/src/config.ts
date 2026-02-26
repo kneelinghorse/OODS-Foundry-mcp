@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export type CorsConfig = {
-  origin: string;
+  origin: string | string[];
   methods: readonly string[];
   allowHeaders: readonly string[];
   exposeHeaders: readonly string[];
@@ -172,7 +172,9 @@ const allowedTools = Array.from(toolPolicyIndex.keys());
 const approvalRequiredList = allowedTools.filter((name) => toolPolicyIndex.get(name)?.approval === 'required');
 const applyCapableList = allowedTools.filter((name) => toolPolicyIndex.get(name)?.modes.includes('apply'));
 
-const corsOrigin = 'http://localhost:6006';
+const corsOrigin: string | string[] = process.env.MCP_BRIDGE_CORS_ORIGIN
+  ? process.env.MCP_BRIDGE_CORS_ORIGIN.split(',').map((o) => o.trim())
+  : ['http://localhost:6006', 'http://localhost:3000'];
 
 const approvalHeader = agentPolicyDoc.approvals?.header?.trim() || 'X-Bridge-Approval';
 

@@ -3,14 +3,14 @@
 - Current:  2026-02-24T05:09:44Z
 
 ## Catalogue Stats
-- Components: 73 -> 73 (+0)
+- Components: 73 -> 83 (+10)
 - Traits: 35 -> 35 (+0)
 - Objects: 12 -> 12 (+0)
 - Domains: 1 -> 1 (+0)
 - Patterns: 2 -> 2 (+0)
 
 ### Added / Removed
-- Added components: none
+- Added components: Badge, Banner, Button, Card, Input, Select, Stack, Table, Tabs, Text
 - Removed components: none
 - Added traits: none
 - Removed traits: none

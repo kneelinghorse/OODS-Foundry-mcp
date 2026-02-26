@@ -66,6 +66,69 @@ VIZ_COMPLEXITY_WEIGHTS: Dict[str, int] = {
     "viz.interaction": 3,
 }
 
+BASIC_COMPONENT_DEFINITIONS: Tuple[Dict[str, Any], ...] = (
+    {
+        "id": "Button",
+        "tags": ["action", "interactive", "primitive"],
+        "contexts": ["detail", "form", "list"],
+        "regions": ["actions", "main"],
+    },
+    {
+        "id": "Card",
+        "tags": ["container", "primitive", "surface"],
+        "contexts": ["card", "detail", "list"],
+        "regions": ["card", "main"],
+    },
+    {
+        "id": "Stack",
+        "tags": ["layout", "primitive", "structure"],
+        "contexts": ["card", "detail", "form", "list", "timeline"],
+        "regions": ["card", "contextPanel", "detail", "form", "list", "main", "timeline"],
+    },
+    {
+        "id": "Text",
+        "tags": ["content", "primitive", "typography"],
+        "contexts": ["card", "detail", "form", "list", "timeline"],
+        "regions": ["card", "contextPanel", "detail", "form", "list", "main", "timeline"],
+    },
+    {
+        "id": "Input",
+        "tags": ["field", "form", "primitive"],
+        "contexts": ["form"],
+        "regions": ["form", "main"],
+    },
+    {
+        "id": "Select",
+        "tags": ["field", "form", "primitive"],
+        "contexts": ["form"],
+        "regions": ["form", "main"],
+    },
+    {
+        "id": "Badge",
+        "tags": ["badge", "primitive", "status"],
+        "contexts": ["card", "detail", "list"],
+        "regions": ["card", "contextPanel", "detail", "list", "main"],
+    },
+    {
+        "id": "Banner",
+        "tags": ["feedback", "notice", "primitive"],
+        "contexts": ["detail", "form", "list"],
+        "regions": ["contextPanel", "detail", "form", "list", "main"],
+    },
+    {
+        "id": "Table",
+        "tags": ["data", "primitive", "table"],
+        "contexts": ["detail", "list"],
+        "regions": ["detail", "list", "main"],
+    },
+    {
+        "id": "Tabs",
+        "tags": ["navigation", "primitive", "tabs"],
+        "contexts": ["detail", "form"],
+        "regions": ["detail", "form", "main"],
+    },
+)
+
 
 def iso_now() -> str:
     return datetime.now(tz=timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -308,6 +371,30 @@ def finalize_components(index: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]
             payload["renderComplexity"] = render_complexity
         components.append(payload)
     return sorted(components, key=lambda item: item["id"])
+
+
+def ensure_basic_components(index: Dict[str, Dict[str, Any]]) -> None:
+    source_file = "cmos/scripts/refresh_structured_data.py"
+    for definition in BASIC_COMPONENT_DEFINITIONS:
+        component_id = str(definition["id"])
+        comp = index.setdefault(
+            component_id,
+            {
+                "id": component_id,
+                "displayName": component_id,
+                "categories": set(),
+                "tags": set(),
+                "contexts": set(),
+                "regions": set(),
+                "traitUsages": [],
+                "sourceFiles": set(),
+            },
+        )
+        comp["categories"].add("primitive")
+        comp["tags"].update(definition.get("tags") or [])
+        comp["contexts"].update(definition.get("contexts") or [])
+        comp["regions"].update(definition.get("regions") or [])
+        comp["sourceFiles"].add(source_file)
 
 
 def summarize_domains(domain_traits: Dict[str, Set[str]], domain_objects: Dict[str, Set[str]]) -> List[Dict[str, Any]]:
@@ -581,6 +668,7 @@ def generate_structured_payloads(*, generated_at: Optional[str] = None) -> Tuple
     for trait in traits:
         trait["objects"] = sorted(trait_object_map.get(trait["name"]) or [])
 
+    ensure_basic_components(components_index)
     components = finalize_components(components_index)
     domains = summarize_domains(domain_traits, domain_objects)
     patterns = extract_patterns()
