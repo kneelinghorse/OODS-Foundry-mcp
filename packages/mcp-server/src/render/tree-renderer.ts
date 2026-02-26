@@ -2,6 +2,20 @@ import type { UiElement, UiLayout, UiSchema, UiStyle } from '../schemas/generate
 import { renderMappedComponent } from './component-map.js';
 
 type CssDeclarations = Record<string, string>;
+export interface FragmentResult {
+  nodeId: string;
+  component: string;
+  html: string;
+}
+export interface FragmentRenderError {
+  nodeId: string;
+  component: string;
+  message: string;
+}
+export interface FragmentRenderBatch {
+  fragments: Map<string, FragmentResult>;
+  errors: FragmentRenderError[];
+}
 
 const ALIGN_MAP: Record<NonNullable<UiLayout['align']>, string> = {
   start: 'flex-start',
@@ -133,6 +147,36 @@ function renderNode(node: UiElement): string {
 
 export function renderTree(schema: UiSchema): string {
   return schema.screens.map((screen) => renderNode(screen)).join('');
+}
+
+export function renderFragments(schema: UiSchema): Map<string, FragmentResult> {
+  return renderFragmentsWithErrors(schema).fragments;
+}
+
+export function renderFragmentsWithErrors(schema: UiSchema): FragmentRenderBatch {
+  const fragments = new Map<string, FragmentResult>();
+  const errors: FragmentRenderError[] = [];
+
+  for (const screen of schema.screens) {
+    const topLevelChildren = Array.isArray(screen.children) ? screen.children : [];
+    for (const node of topLevelChildren) {
+      try {
+        fragments.set(node.id, {
+          nodeId: node.id,
+          component: node.component,
+          html: renderNode(node),
+        });
+      } catch (error: unknown) {
+        errors.push({
+          nodeId: node.id,
+          component: node.component,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+
+  return { fragments, errors };
 }
 
 export function resolveStyleTokensToCssVars(style?: UiStyle): CssDeclarations {

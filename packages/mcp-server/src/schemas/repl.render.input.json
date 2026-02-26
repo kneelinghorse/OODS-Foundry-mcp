@@ -41,6 +41,33 @@
       "additionalProperties": false,
       "default": {}
     },
+    "output": {
+      "type": "object",
+      "description": "Optional render output controls. Omitting this object preserves full-document behavior.",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "document",
+            "fragments"
+          ],
+          "default": "document"
+        },
+        "strict": {
+          "type": "boolean",
+          "default": false
+        },
+        "includeCss": {
+          "type": "boolean",
+          "default": true
+        },
+        "depth": {
+          "type": "number",
+          "description": "Reserved for v2 fragment-depth controls; currently ignored."
+        }
+      },
+      "additionalProperties": false
+    },
     "apply": {
       "type": "boolean"
     }

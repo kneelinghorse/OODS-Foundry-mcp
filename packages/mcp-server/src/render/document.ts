@@ -143,3 +143,7 @@ export function renderDocument(input: RenderDocumentInput): string {
 export function readTokensCssForDocument(): string {
   return loadTokensCss();
 }
+
+export function readDefaultComponentCssForDocument(): string {
+  return DEFAULT_COMPONENT_CSS;
+}

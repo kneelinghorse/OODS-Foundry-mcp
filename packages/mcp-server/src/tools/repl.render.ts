@@ -6,11 +6,13 @@ import {
   validateComponents,
   validateSchema,
 } from './repl.utils.js';
+import { getCssForComponents } from '../render/css-extractor.js';
 import { renderDocument } from '../render/document.js';
-import { renderTree } from '../render/tree-renderer.js';
+import { renderFragmentsWithErrors, renderTree } from '../render/tree-renderer.js';
 import type {
   ReplIssue,
   ReplJsonPatchOperation,
+  ReplRenderFormat,
   ReplRenderInput,
   ReplRenderOutput,
   ReplValidationMeta,
@@ -23,6 +25,31 @@ function asWarnings(issues: ReplIssue[]): ReplIssue[] {
 
 function cloneTree(tree: UiSchema | undefined): UiSchema | undefined {
   return tree ? structuredClone(tree) : undefined;
+}
+
+function normalizeOutputFormat(input: ReplRenderInput): ReplRenderFormat {
+  return input.output?.format === 'fragments' ? 'fragments' : 'document';
+}
+
+function normalizeStrict(input: ReplRenderInput): boolean {
+  return input.output?.strict ?? false;
+}
+
+function normalizeIncludeCss(input: ReplRenderInput): boolean {
+  return input.output?.includeCss ?? true;
+}
+
+function toComponentCssRef(componentName: string): string {
+  return `cmp.${componentName.trim().toLowerCase()}.base`;
+}
+
+function toFragmentRenderIssue(nodeId: string, component: string, message: string): ReplIssue {
+  return {
+    code: 'FRAGMENT_RENDER_FAILED',
+    message: `Fragment render failed for node '${nodeId}': ${message}`,
+    path: `/fragments/${nodeId}`,
+    component,
+  };
 }
 
 export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> {
@@ -61,7 +88,7 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
     meta = summarizeMeta(workingTree, registry);
   }
 
-  const status: ReplRenderOutput['status'] = errors.length ? 'error' : 'ok';
+  let status: ReplRenderOutput['status'] = errors.length ? 'error' : 'ok';
   const dslVersion = workingTree?.version ?? input.schema?.version ?? '0.0.0';
 
   const preview = workingTree ? buildPreview(workingTree, input.researchContext) : undefined;
@@ -93,13 +120,72 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   if (meta) {
     output.meta = meta;
   }
+
   if (input.apply === true && status === 'ok' && workingTree) {
-    const screenHtml = renderTree(workingTree);
-    output.html = renderDocument({
-      screenHtml,
-      schema: workingTree,
-    });
+    const format = normalizeOutputFormat(input);
+    const strict = normalizeStrict(input);
+
+    if (format === 'fragments') {
+      const includeCss = normalizeIncludeCss(input);
+      const { fragments: fragmentMap, errors: fragmentErrors } = renderFragmentsWithErrors(workingTree);
+
+      if (fragmentErrors.length > 0) {
+        const mapped = fragmentErrors.map((entry) => toFragmentRenderIssue(entry.nodeId, entry.component, entry.message));
+        output.errors.push(...mapped);
+      }
+
+      const hasFragmentFailures = fragmentErrors.length > 0;
+      if (strict && hasFragmentFailures) {
+        status = 'error';
+      }
+
+      if (!strict || !hasFragmentFailures) {
+        const components = Array.from(fragmentMap.values()).map((entry) => entry.component);
+        const cssPayload = getCssForComponents(components, includeCss);
+        const includesTokensCss = cssPayload.cssRefs.includes('css.tokens');
+        const fragments: NonNullable<ReplRenderOutput['fragments']> = {};
+
+        for (const [nodeId, fragment] of fragmentMap.entries()) {
+          const cssRefs = ['css.base'];
+          if (includesTokensCss) {
+            cssRefs.push('css.tokens');
+          }
+          const componentRef = toComponentCssRef(fragment.component);
+          if (cssPayload.css[componentRef]) {
+            cssRefs.push(componentRef);
+          }
+
+          fragments[nodeId] = {
+            nodeId: fragment.nodeId,
+            component: fragment.component,
+            html: fragment.html,
+            cssRefs,
+          };
+        }
+
+        if (Object.keys(fragments).length > 0) {
+          output.fragments = fragments;
+          output.css = cssPayload.css;
+        }
+      }
+
+      if (!strict && hasFragmentFailures && fragmentMap.size > 0) {
+        status = 'ok';
+      } else if (hasFragmentFailures && fragmentMap.size === 0) {
+        status = 'error';
+      }
+    } else {
+      const screenHtml = renderTree(workingTree);
+      output.html = renderDocument({
+        screenHtml,
+        schema: workingTree,
+      });
+    }
+
+    output.output = { format, strict };
   }
+
+  output.status = status;
 
   return output;
 }

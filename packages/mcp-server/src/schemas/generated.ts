@@ -322,6 +322,8 @@ export interface ReplValidateOutput {
 }
 
 // Source: repl.render.input.json
+export type ReplRenderFormat = 'document' | 'fragments';
+
 export interface ReplRenderInput {
   mode?: 'full' | 'patch';
   schema?: UiSchema;
@@ -333,6 +335,15 @@ export interface ReplRenderInput {
   options?: {
     includeTree?: boolean;
     previewOnly?: boolean;
+  };
+  output?: {
+    format?: ReplRenderFormat;
+    strict?: boolean;
+    includeCss?: boolean;
+    /**
+     * Reserved for v2 fragment-depth controls; currently ignored.
+     */
+    depth?: number;
   };
   apply?: boolean;
 }
@@ -348,6 +359,12 @@ export interface ReplRenderPreview {
     [k: string]: any;
   };
 }
+export interface ReplRenderFragment {
+  nodeId: string;
+  component: string;
+  html: string;
+  cssRefs: string[];
+}
 export interface ReplRenderOutput {
   status: 'ok' | 'error';
   mode: 'full' | 'patch';
@@ -361,4 +378,14 @@ export interface ReplRenderOutput {
   meta?: ReplValidationMeta;
   preview?: ReplRenderPreview;
   html?: string;
+  fragments?: {
+    [k: string]: ReplRenderFragment;
+  };
+  css?: {
+    [k: string]: string;
+  };
+  output?: {
+    format: ReplRenderFormat;
+    strict: boolean;
+  };
 }
