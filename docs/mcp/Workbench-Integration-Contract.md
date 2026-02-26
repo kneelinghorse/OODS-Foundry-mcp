@@ -105,3 +105,36 @@ Expected outcomes:
 
 - `structuredData_fetch` returns `ok:true` and component catalog metadata.
 - `repl_render` returns `ok:true`, `mode:"apply"`, and `result.html` containing a self-contained HTML5 document with inlined token/component CSS.
+
+## Stage1 Hand-off Contract
+
+Stage1 should call the same bridge endpoint and tool (`POST /run`, `tool: "repl_render"`), passing the generated UiSchema as `input.schema`.
+
+Payload normalization for Stage1 producers:
+
+- If the payload already has `{ version, screens }`, pass it directly as `input.schema`.
+- If UiSchema is nested, map to `input.schema` before calling bridge (for example `payload.uiSchema` or `payload.render.schema`).
+- Keep `input.mode: "full"` and `input.apply: true` for HTML generation.
+
+Minimum Stage1 request shape:
+
+```json
+{
+  "tool": "repl_render",
+  "input": {
+    "apply": true,
+    "mode": "full",
+    "schema": { "version": "2026.02", "screens": [] }
+  }
+}
+```
+
+## Verification Snapshot (2026-02-26)
+
+- Verified three diverse integration fixtures (basic, trait, viz):
+  - `packages/mcp-server/test/fixtures/ui/basic-mix.ui-schema.json`
+  - `packages/mcp-server/test/fixtures/ui/trait-mix.ui-schema.json`
+  - `packages/mcp-server/test/fixtures/ui/viz-mix.ui-schema.json`
+- Verified `repl_render` apply mode returns self-contained HTML with no fallback markers for all fixtures.
+- Verified renderer-registry parity audit `83/83` with zero missing renderers in:
+  - `packages/mcp-server/test/contracts/repl.e2e.integration.spec.ts`

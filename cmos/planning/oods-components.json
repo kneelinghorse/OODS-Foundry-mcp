@@ -2,7 +2,7 @@
   "$schema": "./component-schema.json",
   "generatedAt": "2026-02-24T05:09:44Z",
   "stats": {
-    "componentCount": 73,
+    "componentCount": 83,
     "traitCount": 35,
     "objectCount": 12,
     "domainCount": 1,
@@ -367,6 +367,87 @@
       ]
     },
     {
+      "id": "Badge",
+      "displayName": "Badge",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "badge",
+        "primitive",
+        "status"
+      ],
+      "contexts": [
+        "card",
+        "detail",
+        "list"
+      ],
+      "regions": [
+        "card",
+        "contextPanel",
+        "detail",
+        "list",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
+      ]
+    },
+    {
+      "id": "Banner",
+      "displayName": "Banner",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "feedback",
+        "notice",
+        "primitive"
+      ],
+      "contexts": [
+        "detail",
+        "form",
+        "list"
+      ],
+      "regions": [
+        "contextPanel",
+        "detail",
+        "form",
+        "list",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
+      ]
+    },
+    {
+      "id": "Button",
+      "displayName": "Button",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "action",
+        "interactive",
+        "primitive"
+      ],
+      "contexts": [
+        "detail",
+        "form",
+        "list"
+      ],
+      "regions": [
+        "actions",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
+      ]
+    },
+    {
       "id": "CancellationBadge",
       "displayName": "CancellationBadge",
       "categories": [
@@ -525,6 +606,31 @@
       ],
       "sourceFiles": [
         "traits/lifecycle/Cancellable.trait.yaml"
+      ]
+    },
+    {
+      "id": "Card",
+      "displayName": "Card",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "container",
+        "primitive",
+        "surface"
+      ],
+      "contexts": [
+        "card",
+        "detail",
+        "list"
+      ],
+      "regions": [
+        "card",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
       ]
     },
     {
@@ -1096,6 +1202,29 @@
       ],
       "sourceFiles": [
         "traits/content/Labelled.trait.yaml"
+      ]
+    },
+    {
+      "id": "Input",
+      "displayName": "Input",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "field",
+        "form",
+        "primitive"
+      ],
+      "contexts": [
+        "form"
+      ],
+      "regions": [
+        "form",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
       ]
     },
     {
@@ -1804,6 +1933,61 @@
       ]
     },
     {
+      "id": "Select",
+      "displayName": "Select",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "field",
+        "form",
+        "primitive"
+      ],
+      "contexts": [
+        "form"
+      ],
+      "regions": [
+        "form",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
+      ]
+    },
+    {
+      "id": "Stack",
+      "displayName": "Stack",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "layout",
+        "primitive",
+        "structure"
+      ],
+      "contexts": [
+        "card",
+        "detail",
+        "form",
+        "list",
+        "timeline"
+      ],
+      "regions": [
+        "card",
+        "contextPanel",
+        "detail",
+        "form",
+        "list",
+        "main",
+        "timeline"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
+      ]
+    },
+    {
       "id": "StateTransitionEvent",
       "displayName": "StateTransitionEvent",
       "categories": [
@@ -2009,6 +2193,56 @@
       ]
     },
     {
+      "id": "Table",
+      "displayName": "Table",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "data",
+        "primitive",
+        "table"
+      ],
+      "contexts": [
+        "detail",
+        "list"
+      ],
+      "regions": [
+        "detail",
+        "list",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
+      ]
+    },
+    {
+      "id": "Tabs",
+      "displayName": "Tabs",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "navigation",
+        "primitive",
+        "tabs"
+      ],
+      "contexts": [
+        "detail",
+        "form"
+      ],
+      "regions": [
+        "detail",
+        "form",
+        "main"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
+      ]
+    },
+    {
       "id": "TagInput",
       "displayName": "TagInput",
       "categories": [
@@ -2202,6 +2436,38 @@
       ],
       "sourceFiles": [
         "traits/core/Communicable.trait.yaml"
+      ]
+    },
+    {
+      "id": "Text",
+      "displayName": "Text",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "content",
+        "primitive",
+        "typography"
+      ],
+      "contexts": [
+        "card",
+        "detail",
+        "form",
+        "list",
+        "timeline"
+      ],
+      "regions": [
+        "card",
+        "contextPanel",
+        "detail",
+        "form",
+        "list",
+        "main",
+        "timeline"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "cmos/scripts/refresh_structured_data.py"
       ]
     },
     {
