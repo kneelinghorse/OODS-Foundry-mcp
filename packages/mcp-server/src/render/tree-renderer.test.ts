@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { UiSchema } from '../schemas/generated.js';
-import { renderTree, resolveStyleTokensToCssVars } from './tree-renderer.js';
+import { renderFragments, renderTree, resolveStyleTokensToCssVars } from './tree-renderer.js';
 
 const schemaFixture: UiSchema = {
   version: '2026.02',
@@ -47,6 +47,33 @@ const schemaFixture: UiSchema = {
       layout: { type: 'section' },
       style: { typographyToken: 'body-default' },
       children: [{ id: 'settings-copy', component: 'Text', props: { text: 'Settings section' } }],
+    },
+  ],
+};
+
+const fragmentFixture: UiSchema = {
+  version: '2026.02',
+  screens: [
+    {
+      id: 'fragment-screen',
+      component: 'Stack',
+      children: [
+        {
+          id: 'fragment-a',
+          component: 'Card',
+          children: [
+            { id: 'fragment-a-child', component: 'Text', props: { text: 'Nested A' } },
+          ],
+        },
+        {
+          id: 'fragment-b',
+          component: 'Stack',
+          children: [
+            { id: 'fragment-b-child', component: 'Badge', props: { label: 'Nested B' } },
+          ],
+        },
+        { id: 'fragment-c', component: 'Text', props: { text: 'Leaf C' } },
+      ],
     },
   ],
 };
@@ -111,5 +138,35 @@ describe('tree-renderer', () => {
     expect(resolved['box-shadow']).toBe('var(--ref-shadow-md)');
     expect(resolved.color).toBe('var(--ref-color-text-primary)');
     expect(resolved.font).toBe('var(--ref-typography-body-default)');
+  });
+
+  it('creates fragments for each top-level screen child in a single-screen tree', () => {
+    const fragments = renderFragments(fragmentFixture);
+
+    expect(fragments.size).toBe(3);
+    expect(Array.from(fragments.keys())).toEqual(['fragment-a', 'fragment-b', 'fragment-c']);
+    expect(fragments.get('fragment-a')).toMatchObject({ nodeId: 'fragment-a', component: 'Card' });
+    expect(fragments.get('fragment-b')).toMatchObject({ nodeId: 'fragment-b', component: 'Stack' });
+    expect(fragments.get('fragment-c')).toMatchObject({ nodeId: 'fragment-c', component: 'Text' });
+  });
+
+  it('renders nested fragment subtrees inline without document wrapper tags', () => {
+    const fragments = renderFragments(fragmentFixture);
+    const fragmentA = fragments.get('fragment-a');
+
+    expect(fragmentA?.html).toContain('data-oods-node-id="fragment-a"');
+    expect(fragmentA?.html).toContain('data-oods-node-id="fragment-a-child"');
+    expect(fragmentA?.html).not.toContain('<!DOCTYPE html>');
+    expect(fragmentA?.html).not.toContain('<html');
+    expect(fragmentA?.html).not.toContain('<body');
+  });
+
+  it('collects fragments across all screens while excluding screen root nodes', () => {
+    const fragments = renderFragments(schemaFixture);
+
+    expect(Array.from(fragments.keys())).toEqual(['panel-grid', 'panel-sidebar', 'settings-copy']);
+    expect(fragments.has('screen-home')).toBe(false);
+    expect(fragments.has('screen-settings')).toBe(false);
+    expect(fragments.get('settings-copy')).toMatchObject({ nodeId: 'settings-copy', component: 'Text' });
   });
 });

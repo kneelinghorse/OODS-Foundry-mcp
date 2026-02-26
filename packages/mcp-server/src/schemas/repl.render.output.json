@@ -97,6 +97,65 @@
       "type": "string",
       "description": "Standalone HTML5 document generated when apply=true and render validation passes."
     },
+    "fragments": {
+      "type": "object",
+      "description": "Fragment payload keyed by canonical node id when output.format=fragments.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "nodeId",
+          "component",
+          "html",
+          "cssRefs"
+        ],
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "component": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "cssRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "css": {
+      "type": "object",
+      "description": "Resolved CSS map keyed by cssRef identifier.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "output": {
+      "type": "object",
+      "description": "Echoes normalized output controls used by the renderer.",
+      "required": [
+        "format",
+        "strict"
+      ],
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "document",
+            "fragments"
+          ]
+        },
+        "strict": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "meta": {
       "type": "object",
       "properties": {
