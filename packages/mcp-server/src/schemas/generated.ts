@@ -287,6 +287,7 @@ export interface ReplIssue {
   hint?: string;
   severity?: ReplIssueSeverity;
   component?: string;
+  nodeId?: string;
 }
 export interface ReplValidationMeta {
   screenCount?: number;

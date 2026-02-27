@@ -88,6 +88,22 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
     meta = summarizeMeta(workingTree, registry);
   }
 
+  const format = normalizeOutputFormat(input);
+  const strict = normalizeStrict(input);
+
+  // In non-strict fragment mode, UNKNOWN_COMPONENT errors should not block the
+  // entire render. They are deferred and reported as per-node errors after
+  // rendering, so known components still produce fragments.
+  let deferredUnknownErrors: ReplIssue[] = [];
+  if (input.apply === true && format === 'fragments' && !strict) {
+    deferredUnknownErrors = errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    if (deferredUnknownErrors.length > 0) {
+      const remaining = errors.filter((e) => e.code !== 'UNKNOWN_COMPONENT');
+      errors.length = 0;
+      errors.push(...remaining);
+    }
+  }
+
   let status: ReplRenderOutput['status'] = errors.length ? 'error' : 'ok';
   const dslVersion = workingTree?.version ?? input.schema?.version ?? '0.0.0';
 
@@ -122,19 +138,36 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   }
 
   if (input.apply === true && status === 'ok' && workingTree) {
-    const format = normalizeOutputFormat(input);
-    const strict = normalizeStrict(input);
-
     if (format === 'fragments') {
       const includeCss = normalizeIncludeCss(input);
       const { fragments: fragmentMap, errors: fragmentErrors } = renderFragmentsWithErrors(workingTree);
+
+      // Per-node isolation: remove fallback fragments for unknown top-level
+      // components and report them as per-node UNKNOWN_COMPONENT errors.
+      if (deferredUnknownErrors.length > 0) {
+        for (const screen of workingTree.screens) {
+          const children = Array.isArray(screen.children) ? screen.children : [];
+          for (const node of children) {
+            if (registry.names.size > 0 && !registry.names.has(node.component)) {
+              fragmentMap.delete(node.id);
+              output.errors.push({
+                code: 'UNKNOWN_COMPONENT',
+                message: `Component '${node.component}' is not in the OODS registry`,
+                path: `/fragments/${node.id}`,
+                component: node.component,
+                nodeId: node.id,
+              });
+            }
+          }
+        }
+      }
 
       if (fragmentErrors.length > 0) {
         const mapped = fragmentErrors.map((entry) => toFragmentRenderIssue(entry.nodeId, entry.component, entry.message));
         output.errors.push(...mapped);
       }
 
-      const hasFragmentFailures = fragmentErrors.length > 0;
+      const hasFragmentFailures = fragmentErrors.length > 0 || deferredUnknownErrors.length > 0;
       if (strict && hasFragmentFailures) {
         status = 'error';
       }

@@ -36,7 +36,8 @@
         "path": { "type": "string" },
         "hint": { "type": "string" },
         "severity": { "type": "string", "enum": ["error", "warning"] },
-        "component": { "type": "string" }
+        "component": { "type": "string" },
+        "nodeId": { "type": "string" }
       },
       "additionalProperties": false
     }

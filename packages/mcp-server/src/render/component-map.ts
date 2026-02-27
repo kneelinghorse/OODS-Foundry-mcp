@@ -213,6 +213,48 @@ function renderStack(node: UiElement, childrenHtml = ''): string {
   return `<div${attrs}>${childrenHtml}</div>`;
 }
 
+function normalizeGridToken(token: string): string {
+  return token.trim().replace(/[.\s_]+/g, '-');
+}
+
+function renderGrid(node: UiElement, childrenHtml = ''): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const columns = asNumber(props.columns);
+  const rows = asNumber(props.rows);
+  const gap = asString(props.gap);
+  const columnGap = asString(props.columnGap);
+  const rowGap = asString(props.rowGap);
+
+  const gridStyles: string[] = ['display:grid'];
+  if (columns) {
+    gridStyles.push(`grid-template-columns:repeat(${columns}, minmax(0, 1fr))`);
+  }
+  if (rows) {
+    gridStyles.push(`grid-template-rows:repeat(${rows}, minmax(0, 1fr))`);
+  }
+  if (gap) {
+    gridStyles.push(`gap:var(--ref-spacing-${normalizeGridToken(gap)})`);
+  }
+  if (columnGap) {
+    gridStyles.push(`column-gap:var(--ref-spacing-${normalizeGridToken(columnGap)})`);
+  }
+  if (rowGap) {
+    gridStyles.push(`row-gap:var(--ref-spacing-${normalizeGridToken(rowGap)})`);
+  }
+
+  // Merge with any existing style from layout/style token resolution
+  const existingStyle = typeof props.style === 'string' && props.style.trim() ? props.style.trim().replace(/;+\s*$/, '') : '';
+  const mergedStyle = existingStyle ? `${existingStyle};${gridStyles.join(';')}` : gridStyles.join(';');
+
+  const attrs = buildAttributes(node, {
+    allowedHtmlAttrs: GENERIC_HTML_ATTRS,
+    consumedProps: new Set(['columns', 'rows', 'gap', 'columnGap', 'rowGap', 'style']),
+    htmlOverrides: { style: mergedStyle },
+    dataOverrides: { 'data-layout': 'grid' },
+  });
+  return `<div${attrs}>${childrenHtml}</div>`;
+}
+
 function renderText(node: UiElement, childrenHtml = ''): string {
   const props = isRecord(node.props) ? node.props : {};
   const tagCandidate = asString(props.as)?.toLowerCase();
@@ -1683,6 +1725,7 @@ export const componentRenderers: Record<string, ComponentRenderer> = {
   InlineLabel: renderInlineLabel,
   LabelCell: renderLabelCell,
   Stack: renderStack,
+  Grid: renderGrid,
   Text: renderText,
   Input: renderInput,
   Select: renderSelect,

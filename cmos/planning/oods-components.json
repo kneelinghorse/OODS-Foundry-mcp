@@ -2,7 +2,7 @@
   "$schema": "./component-schema.json",
   "generatedAt": "2026-02-24T05:09:44Z",
   "stats": {
-    "componentCount": 83,
+    "componentCount": 84,
     "traitCount": 35,
     "objectCount": 12,
     "domainCount": 1,
@@ -1116,6 +1116,39 @@
         ],
         "source": "traitCategories"
       }
+    },
+    {
+      "id": "Grid",
+      "displayName": "Grid",
+      "categories": [
+        "primitive"
+      ],
+      "tags": [
+        "grid",
+        "layout",
+        "primitive",
+        "structure"
+      ],
+      "contexts": [
+        "card",
+        "detail",
+        "form",
+        "list",
+        "timeline"
+      ],
+      "regions": [
+        "card",
+        "contextPanel",
+        "detail",
+        "form",
+        "list",
+        "main",
+        "timeline"
+      ],
+      "traitUsages": [],
+      "sourceFiles": [
+        "packages/mcp-server/src/render/component-map.ts"
+      ]
     },
     {
       "id": "GeocodablePreview",
