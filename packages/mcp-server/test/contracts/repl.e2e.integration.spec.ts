@@ -64,6 +64,8 @@ function minimalPropsFor(component: string): Record<string, unknown> | undefined
       return { axis: 'x', field: 'revenue' };
     case 'VizRoleBadge':
       return { role: 'mark' };
+    case 'Grid':
+      return { columns: 2, gap: 'md' };
     default:
       return undefined;
   }
@@ -108,10 +110,10 @@ describe('REPL e2e integration verification', () => {
     expect(render.html).not.toContain('data-oods-fallback="true"');
   });
 
-  it('renders every registry component (83/83) with no fallback markers', async () => {
+  it('renders every registry component (84/84) with no fallback markers', async () => {
     const registry = loadComponentRegistry();
     const componentNames = Array.from(registry.names).sort();
-    expect(componentNames).toHaveLength(83);
+    expect(componentNames).toHaveLength(84);
 
     const schema = buildCoverageSchema(componentNames);
     const render = await renderHandle({ mode: 'full', schema, apply: true });

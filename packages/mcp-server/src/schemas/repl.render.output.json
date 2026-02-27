@@ -213,6 +213,9 @@
         },
         "component": {
           "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
         }
       },
       "additionalProperties": false
