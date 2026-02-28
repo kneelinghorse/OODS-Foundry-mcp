@@ -184,3 +184,38 @@ export type CatalogListOutput = {
     traitCount: number;
   };
 };
+
+export type CodegenFramework = 'react' | 'vue' | 'html';
+
+export type CodegenStyling = 'inline' | 'css-modules' | 'tokens';
+
+export type CodeGenerateInput = {
+  schema: import('../schemas/generated.js').UiSchema;
+  framework: CodegenFramework;
+  options?: {
+    typescript?: boolean;
+    styling?: CodegenStyling;
+  };
+};
+
+export type CodegenIssue = {
+  code: string;
+  message: string;
+  nodeId?: string;
+  component?: string;
+};
+
+export type CodeGenerateOutput = {
+  status: 'ok' | 'error';
+  framework: CodegenFramework;
+  code: string;
+  fileExtension: string;
+  imports: string[];
+  warnings: CodegenIssue[];
+  errors?: CodegenIssue[];
+  meta?: {
+    nodeCount?: number;
+    componentCount?: number;
+    unknownComponents?: string[];
+  };
+};
