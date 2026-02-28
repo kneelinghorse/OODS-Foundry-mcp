@@ -114,6 +114,8 @@ export type StructuredDataFetchInput = {
   dataset: StructuredDataset;
   ifNoneMatch?: string;
   includePayload?: boolean;
+  version?: string;
+  listVersions?: boolean;
 };
 
 export type StructuredDataFetchOutput = {
@@ -131,6 +133,9 @@ export type StructuredDataFetchOutput = {
   warnings?: string[];
   meta?: Record<string, unknown>;
   payload?: Record<string, unknown>;
+  availableVersions?: string[];
+  requestedVersion?: string | null;
+  resolvedVersion?: string | null;
 };
 
 export type CatalogListInput = {
@@ -218,4 +223,67 @@ export type CodeGenerateOutput = {
     componentCount?: number;
     unknownComponents?: string[];
   };
+};
+
+// -- Mapping tools --
+
+export type MapCreateInput = {
+  externalSystem: string;
+  externalComponent: string;
+  oodsTraits: string[];
+  propMappings?: Array<{
+    externalProp: string;
+    oodsProp: string;
+    coercion?: {
+      type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
+      values?: Record<string, string>;
+      template?: string;
+      targetType?: 'string' | 'number' | 'boolean';
+    } | null;
+  }>;
+  confidence?: 'auto' | 'manual';
+  metadata?: {
+    author?: string;
+    notes?: string;
+  };
+};
+
+export type MapCreateOutput = {
+  status: 'ok' | 'error';
+  mapping: Record<string, unknown>;
+  etag: string;
+  warnings?: string[];
+};
+
+export type MapListInput = {
+  externalSystem?: string;
+};
+
+export type MapListOutput = {
+  mappings: Record<string, unknown>[];
+  totalCount: number;
+  stats: {
+    mappingCount: number;
+    systemCount: number;
+  };
+  etag: string;
+};
+
+export type MapPropTranslation = {
+  externalProp: string;
+  oodsProp: string;
+  coercionType: string | null;
+  coercionDetail: Record<string, unknown> | null;
+};
+
+export type MapResolveInput = {
+  externalSystem: string;
+  externalComponent: string;
+};
+
+export type MapResolveOutput = {
+  status: 'ok' | 'not_found';
+  mapping?: Record<string, unknown>;
+  propTranslations?: MapPropTranslation[];
+  message?: string;
 };

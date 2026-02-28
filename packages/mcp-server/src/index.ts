@@ -105,6 +105,21 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/design.compose.input.json',
     outputSchema: './schemas/design.compose.output.json',
   },
+  'map.create': {
+    modulePath: './tools/map.create.js',
+    inputSchema: './schemas/map.create.input.json',
+    outputSchema: './schemas/map.create.output.json',
+  },
+  'map.list': {
+    modulePath: './tools/map.list.js',
+    inputSchema: './schemas/map.list.input.json',
+    outputSchema: './schemas/map.list.output.json',
+  },
+  'map.resolve': {
+    modulePath: './tools/map.resolve.js',
+    inputSchema: './schemas/map.resolve.input.json',
+    outputSchema: './schemas/map.resolve.output.json',
+  },
 };
 
 const schemaCache = new Map<string, object>();

@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/component-mapping.schema.json",
+  "title": "Component Mapping Schema",
+  "description": "Schema for external design system component-to-OODS-trait mapping records. Enables onboarding external systems (Material, Ant, Chakra, etc.) into OODS.",
+  "type": "object",
+  "required": ["generatedAt", "version", "stats", "mappings"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp of last modification."
+    },
+    "version": {
+      "type": "string",
+      "description": "Date-stamped version (e.g., '2026-02-28')."
+    },
+    "stats": {
+      "type": "object",
+      "required": ["mappingCount", "systemCount"],
+      "additionalProperties": false,
+      "properties": {
+        "mappingCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of component mappings."
+        },
+        "systemCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of distinct external systems."
+        }
+      }
+    },
+    "mappings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ComponentMapping" },
+      "description": "Array of component mapping records."
+    }
+  },
+  "$defs": {
+    "ComponentMapping": {
+      "type": "object",
+      "required": ["id", "externalSystem", "externalComponent", "oodsTraits", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Unique mapping identifier (e.g., 'material-button')."
+        },
+        "externalSystem": {
+          "type": "string",
+          "minLength": 1,
+          "description": "External design system name (e.g., 'material', 'ant-design', 'chakra')."
+        },
+        "externalComponent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Component name in the external system (e.g., 'Button', 'TextField')."
+        },
+        "oodsTraits": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "OODS trait names this component maps to (e.g., ['Stateful', 'Taggable'])."
+        },
+        "propMappings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PropMapping" },
+          "default": [],
+          "description": "Property translations from external to OODS prop names."
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["auto", "manual"],
+          "description": "'auto' for machine-generated mappings, 'manual' for human-curated."
+        },
+        "metadata": { "$ref": "#/$defs/MappingMetadata" }
+      }
+    },
+    "PropMapping": {
+      "type": "object",
+      "required": ["externalProp", "oodsProp"],
+      "additionalProperties": false,
+      "properties": {
+        "externalProp": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Property name in the external system."
+        },
+        "oodsProp": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Corresponding OODS property name."
+        },
+        "coercion": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/CoercionHint" }
+          ],
+          "default": null,
+          "description": "Type coercion hint. null for direct pass-through."
+        }
+      }
+    },
+    "CoercionHint": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["enum-map", "boolean-invert", "string-template", "type-cast"],
+          "description": "Coercion strategy: enum-map (value mapping), boolean-invert (negate), string-template (format transform), type-cast (type conversion)."
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "For enum-map: external value to OODS value mapping."
+        },
+        "template": {
+          "type": "string",
+          "description": "For string-template: template string with {value} placeholder."
+        },
+        "targetType": {
+          "type": "string",
+          "enum": ["string", "number", "boolean"],
+          "description": "For type-cast: target type to cast to."
+        }
+      }
+    },
+    "MappingMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the mapping was first created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the mapping was last updated."
+        },
+        "author": {
+          "type": "string",
+          "description": "Who created or last edited this mapping."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form notes about this mapping."
+        }
+      }
+    }
+  }
+}

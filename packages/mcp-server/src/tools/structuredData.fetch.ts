@@ -146,6 +146,60 @@ function datasetPath(dataset: StructuredDataset, manifest: ManifestDoc | undefin
   return { path: resolved ?? fallback, manifestArtifact };
 }
 
+function datasetFilePrefix(dataset: StructuredDataset): string {
+  return dataset === 'components' ? 'oods-components' : 'oods-tokens';
+}
+
+export function listAvailableVersions(dataset: StructuredDataset): string[] {
+  if (dataset === 'manifest') return [];
+  if (!fs.existsSync(ARTIFACT_DIR)) return [];
+
+  const prefix = datasetFilePrefix(dataset);
+  const pattern = new RegExp(`^${prefix}-(\\d{4}-\\d{2}-\\d{2})\\.json$`);
+  const dates: string[] = [];
+
+  for (const entry of fs.readdirSync(ARTIFACT_DIR)) {
+    const match = entry.match(pattern);
+    if (match?.[1]) dates.push(match[1]);
+  }
+
+  return dates.sort();
+}
+
+function resolveVersionedPath(
+  dataset: StructuredDataset,
+  version: string,
+): { path: string; resolvedVersion: string; exact: boolean } | null {
+  if (dataset === 'manifest') return null;
+
+  const prefix = datasetFilePrefix(dataset);
+  const exactFile = path.join(ARTIFACT_DIR, `${prefix}-${version}.json`);
+  if (fs.existsSync(exactFile) && withinAllowed(ARTIFACT_DIR, exactFile)) {
+    return { path: exactFile, resolvedVersion: version, exact: true };
+  }
+
+  // Nearest-available: find closest date
+  const available = listAvailableVersions(dataset);
+  if (available.length === 0) return null;
+
+  // Find closest earlier or later date
+  let nearest: string | undefined;
+  for (let i = available.length - 1; i >= 0; i--) {
+    if (available[i] <= version) {
+      nearest = available[i];
+      break;
+    }
+  }
+  if (!nearest) nearest = available[0]; // All dates are after requested; use earliest
+
+  const nearestFile = path.join(ARTIFACT_DIR, `${prefix}-${nearest}.json`);
+  if (fs.existsSync(nearestFile) && withinAllowed(ARTIFACT_DIR, nearestFile)) {
+    return { path: nearestFile, resolvedVersion: nearest, exact: false };
+  }
+
+  return null;
+}
+
 function validatePayload(dataset: StructuredDataset, payload: Record<string, unknown>): { ok: boolean; errors: string[] } {
   if (dataset === 'components') {
     const valid = Boolean(validateComponents(payload));
@@ -185,7 +239,54 @@ export async function handle(input: StructuredDataFetchInput): Promise<Structure
   const dataset = input.dataset;
   const includePayload = input.includePayload !== false;
   const manifestInfo = loadManifest();
-  const { path: dataPath, manifestArtifact } = datasetPath(dataset, manifestInfo.manifest);
+  const warnings: string[] = [];
+
+  // --- listVersions mode ---
+  if (input.listVersions) {
+    const versions = listAvailableVersions(dataset);
+    const versionListEtag = computeStructuredDataEtag({ dataset, versions });
+    return {
+      dataset,
+      version: manifestInfo.manifest?.version ?? null,
+      etag: versionListEtag,
+      matched: false,
+      payloadIncluded: false,
+      path: relativeToRepo(ARTIFACT_DIR),
+      sizeBytes: 0,
+      schemaValidated: true,
+      availableVersions: versions,
+      requestedVersion: null,
+      resolvedVersion: null,
+    };
+  }
+
+  // --- Version resolution ---
+  let dataPath: string;
+  let manifestArtifact: ManifestArtifact | undefined;
+  let requestedVersion: string | null = input.version ?? null;
+  let resolvedVersion: string | null = null;
+
+  if (input.version && dataset !== 'manifest') {
+    const versionResult = resolveVersionedPath(dataset, input.version);
+    if (!versionResult) {
+      throw new Error(`No versioned artifact found for "${dataset}" near version "${input.version}".`);
+    }
+    dataPath = versionResult.path;
+    resolvedVersion = versionResult.resolvedVersion;
+    if (!versionResult.exact) {
+      warnings.push(
+        `Exact version "${input.version}" not found for ${dataset}. Resolved to nearest: "${versionResult.resolvedVersion}".`,
+      );
+    }
+    // No manifest artifact for versioned requests — ETag will be computed fresh
+  } else {
+    if (input.version && dataset === 'manifest') {
+      warnings.push('Version parameter is not supported for the manifest dataset; returning latest.');
+    }
+    const resolved = datasetPath(dataset, manifestInfo.manifest);
+    dataPath = resolved.path;
+    manifestArtifact = resolved.manifestArtifact;
+  }
 
   if (!fs.existsSync(dataPath)) {
     throw new Error(`Dataset not found for "${dataset}".`);
@@ -197,7 +298,6 @@ export async function handle(input: StructuredDataFetchInput): Promise<Structure
   const payloadIncluded = includePayload && !matched;
   const validation = validatePayload(dataset, payload);
   const generatedAt = (payload as Record<string, any>).generatedAt ?? manifestInfo.manifest?.generatedAt ?? null;
-  const warnings: string[] = [];
 
   if (manifestArtifact?.etag && manifestArtifact.etag !== etag) {
     warnings.push(`Manifest ETag mismatch for ${dataset}: expected ${manifestArtifact.etag}, computed ${etag}`);
@@ -206,7 +306,7 @@ export async function handle(input: StructuredDataFetchInput): Promise<Structure
   const sizeBytes = fs.statSync(dataPath).size;
   const output: StructuredDataFetchOutput = {
     dataset,
-    version: manifestInfo.manifest?.version ?? null,
+    version: resolvedVersion ?? manifestInfo.manifest?.version ?? null,
     generatedAt,
     etag,
     matched,
@@ -219,6 +319,8 @@ export async function handle(input: StructuredDataFetchInput): Promise<Structure
     warnings: warnings.length ? warnings : undefined,
     meta: metaFor(dataset, payload as Record<string, any>),
     payload: payloadIncluded ? (payload as Record<string, unknown>) : undefined,
+    ...(requestedVersion !== null ? { requestedVersion } : {}),
+    ...(resolvedVersion !== null ? { resolvedVersion } : {}),
   };
 
   return output;
