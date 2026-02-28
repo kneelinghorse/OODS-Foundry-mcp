@@ -1,5 +1,6 @@
 import type { UiElement, UiLayout, UiSchema, UiStyle } from '../schemas/generated.js';
 import { renderMappedComponent } from './component-map.js';
+import { escapeHtml } from './escape-html.js';
 
 type CssDeclarations = Record<string, string>;
 export interface FragmentResult {
@@ -137,8 +138,8 @@ function renderNode(node: UiElement): string {
   if (node.layout?.type === 'section') {
     const inner = renderMappedComponent(node, childHtml);
     const sectionStyle = toCssString(declarations);
-    const styleAttribute = sectionStyle ? ` style="${sectionStyle}"` : '';
-    return `<section data-layout="section" data-layout-node-id="${node.id}"${styleAttribute}>${inner}</section>`;
+    const styleAttribute = sectionStyle ? ` style="${escapeHtml(sectionStyle)}"` : '';
+    return `<section data-layout="section" data-layout-node-id="${escapeHtml(node.id)}"${styleAttribute}>${inner}</section>`;
   }
 
   const styledNode = withComputedStyle(node, declarations);

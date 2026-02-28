@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { UiSchema } from '../schemas/generated.js';
+import { escapeHtml } from './escape-html.js';
 
 export type RenderDocumentInput = {
   screenHtml: string;
@@ -77,15 +78,6 @@ const DEFAULT_COMPONENT_CSS = `
 `.trim();
 
 let cachedTokensCss: string | null = null;
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
 
 function loadTokensCss(): string {
   if (cachedTokensCss !== null) return cachedTokensCss;
