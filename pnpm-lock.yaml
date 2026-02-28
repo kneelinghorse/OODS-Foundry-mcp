@@ -299,6 +299,9 @@ importers:
 
   packages/mcp-server:
     dependencies:
+      '@oods/a11y-tools':
+        specifier: workspace:*
+        version: link:../a11y-tools
       '@oods/artifacts':
         specifier: workspace:*
         version: link:../artifacts

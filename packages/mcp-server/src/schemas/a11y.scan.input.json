@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/a11y.scan.input.json",
+  "title": "a11y.scan input",
+  "description": "Accessibility scan input. Runs WCAG contrast checks against design tokens.",
+  "type": "object",
+  "properties": {
+    "apply": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, write the a11y report artifact to the artifacts directory."
+    },
+    "schema": {
+      "$ref": "./repl.ui.schema.json",
+      "description": "Optional UiSchema to include component inventory in the report."
+    }
+  },
+  "additionalProperties": false
+}

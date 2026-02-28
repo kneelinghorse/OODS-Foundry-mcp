@@ -305,6 +305,8 @@ export interface ReplValidateInput {
   options?: {
     includeNormalized?: boolean;
     checkComponents?: boolean;
+    /** When true, run WCAG contrast checks against design tokens. */
+    checkA11y?: boolean;
   };
 }
 

@@ -47,7 +47,7 @@ const toolSpecs: Record<string, ToolSpec> = {
   },
   'a11y.scan': {
     modulePath: './tools/a11y.scan.js',
-    inputSchema: './schemas/generic.input.json',
+    inputSchema: './schemas/a11y.scan.input.json',
     outputSchema: './schemas/generic.output.json',
   },
   'purity.audit': {

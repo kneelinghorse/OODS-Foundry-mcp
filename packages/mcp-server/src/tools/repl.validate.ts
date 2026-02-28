@@ -5,6 +5,7 @@ import {
   validateComponents,
   validateSchema,
 } from './repl.utils.js';
+import { loadTokenData, validateContrast } from '../a11y/validate-contrast.js';
 import type {
   ReplIssue,
   ReplJsonPatchOperation,
@@ -60,6 +61,20 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
       errors.push(...validateComponents(workingTree, registry));
     }
     meta = summarizeMeta(workingTree, registry);
+  }
+
+  // A11y contrast checks — only when explicitly requested and structural validation passed.
+  if (input.options?.checkA11y && errors.length === 0) {
+    const tokenData = loadTokenData();
+    if (tokenData) {
+      warnings.push(...validateContrast(tokenData));
+    } else {
+      warnings.push({
+        code: 'A11Y_TOKEN_DATA_MISSING',
+        message: 'Token data could not be loaded; a11y contrast checks skipped.',
+        severity: 'warning',
+      });
+    }
   }
 
   const status = errors.length ? 'invalid' : 'ok';

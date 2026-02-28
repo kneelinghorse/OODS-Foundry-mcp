@@ -12,7 +12,8 @@
       "type": "object",
       "properties": {
         "includeNormalized": { "type": "boolean", "default": true },
-        "checkComponents": { "type": "boolean", "default": true }
+        "checkComponents": { "type": "boolean", "default": true },
+        "checkA11y": { "type": "boolean", "default": false, "description": "When true, run WCAG contrast checks against design tokens and surface failures as A11Y_CONTRAST warnings." }
       },
       "additionalProperties": false,
       "default": {}
