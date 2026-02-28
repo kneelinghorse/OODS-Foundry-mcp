@@ -121,6 +121,14 @@
       "timeoutMs": 90000,
       "ratePerMinute": 20,
       "concurrency": 1
+    },
+    {
+      "tool": "code.generate",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
     }
   ],
   "limits": {

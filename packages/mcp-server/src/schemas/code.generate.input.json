@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/code.generate.input.json",
+  "title": "Code export input",
+  "description": "Generate framework-specific code from a validated UiSchema.",
+  "type": "object",
+  "required": ["schema", "framework"],
+  "properties": {
+    "schema": {
+      "$ref": "./repl.ui.schema.json",
+      "description": "A validated UiSchema tree to generate code from."
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["react", "vue", "html"],
+      "description": "Target framework for code generation. HTML delegates to existing repl.render document mode."
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "typescript": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, emit TypeScript prop types (React) or typed defineProps (Vue). Ignored for HTML."
+        },
+        "styling": {
+          "type": "string",
+          "enum": ["inline", "css-modules", "tokens"],
+          "default": "tokens",
+          "description": "Styling strategy: inline style objects, CSS module references, or design-token CSS variables."
+        }
+      },
+      "additionalProperties": false,
+      "default": {}
+    }
+  },
+  "additionalProperties": false
+}

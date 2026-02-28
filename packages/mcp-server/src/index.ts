@@ -95,6 +95,11 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/catalog.list.input.json',
     outputSchema: './schemas/catalog.list.output.json',
   },
+  'code.generate': {
+    modulePath: './tools/code.generate.js',
+    inputSchema: './schemas/code.generate.input.json',
+    outputSchema: './schemas/code.generate.output.json',
+  },
 };
 
 const schemaCache = new Map<string, object>();

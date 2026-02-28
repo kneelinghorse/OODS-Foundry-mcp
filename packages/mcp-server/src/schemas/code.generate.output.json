@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/code.generate.output.json",
+  "title": "Code export output",
+  "description": "Generated framework-specific code from a UiSchema.",
+  "type": "object",
+  "required": ["status", "framework", "code", "fileExtension", "imports", "warnings"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "error"],
+      "description": "Whether code generation succeeded."
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["react", "vue", "html"],
+      "description": "The target framework that was used."
+    },
+    "code": {
+      "type": "string",
+      "description": "The generated source code. Empty string on error."
+    },
+    "fileExtension": {
+      "type": "string",
+      "description": "Suggested file extension including the dot (e.g., '.tsx', '.vue', '.html')."
+    },
+    "imports": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Import statements or package names required by the generated code."
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/codegenIssue" },
+      "description": "Non-fatal issues encountered during generation."
+    },
+    "errors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/codegenIssue" },
+      "description": "Fatal issues that prevented code generation."
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "nodeCount": { "type": "number" },
+        "componentCount": { "type": "number" },
+        "unknownComponents": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "codegenIssue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "nodeId": { "type": "string" },
+        "component": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
