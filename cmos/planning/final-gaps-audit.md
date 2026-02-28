@@ -22,3 +22,7 @@ Code export from schemas	code.generate — validated schema → React/Vue/HTML	M
 Mapping/onboarding tool	map.create — relate your existing components to OODS traits	Lower — generalization story, longer-term
 Versioned structured data	Agent can request "components as of version X"	Lower — ETag caching covers the basics
 The a11y-in-validation-loop is the one that would strengthen the article most. If repl.validate could flag "this StatusChip color combination fails WCAG AA contrast" alongside "QuickActions isn't a valid component," that takes governed rendering from structural governance to accessibility governance. That's a differentiator nobody would expect.
+
+
+notes from work, sprint 50:
+css-modules styling option is defined in schema but not yet producing output
