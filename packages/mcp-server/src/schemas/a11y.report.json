@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/a11y.report.json",
+  "title": "a11y scan report",
+  "description": "Structured WCAG accessibility scan report with per-rule contrast results.",
+  "type": "object",
+  "required": ["generatedAt", "summary", "rules"],
+  "properties": {
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "tokenSource": { "type": "string", "description": "Path to the token data used for evaluation." },
+    "summary": {
+      "type": "object",
+      "required": ["totalChecks", "passed", "failed", "complianceStatus"],
+      "properties": {
+        "totalChecks": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "complianceStatus": { "type": "string", "enum": ["compliant", "non-compliant"] }
+      },
+      "additionalProperties": false
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ruleId", "target", "passed", "threshold"],
+        "properties": {
+          "ruleId": { "type": "string" },
+          "target": { "type": "string" },
+          "summary": { "type": "string" },
+          "passed": { "type": "boolean" },
+          "ratio": { "type": "number" },
+          "threshold": { "type": "number" },
+          "foreground": {
+            "type": "object",
+            "properties": {
+              "token": { "type": "string" },
+              "hex": { "type": "string" },
+              "cssVariable": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "background": {
+            "type": "object",
+            "properties": {
+              "token": { "type": "string" },
+              "hex": { "type": "string" },
+              "cssVariable": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "hint": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Component names from the scanned UiSchema, if provided."
+    }
+  },
+  "additionalProperties": false
+}
