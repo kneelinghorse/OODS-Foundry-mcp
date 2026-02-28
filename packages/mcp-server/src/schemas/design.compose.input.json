@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/design.compose.input.json",
+  "title": "Design compose input",
+  "description": "Generate a complete UiSchema from an intent description using layout templates and component selection.",
+  "type": "object",
+  "required": ["intent"],
+  "properties": {
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Natural-language description of the desired UI (e.g., 'dashboard with metrics and sidebar', 'user registration form')."
+    },
+    "layout": {
+      "type": "string",
+      "enum": ["dashboard", "form", "detail", "list", "auto"],
+      "default": "auto",
+      "description": "Layout template to use. 'auto' infers the best template from intent keywords."
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "description": "Theme token (e.g., 'light', 'dark')."
+        },
+        "metricColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Number of metric columns for dashboard layout."
+        },
+        "fieldGroups": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Number of field groups for form layout."
+        },
+        "tabCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of tabs for detail layout."
+        },
+        "tabLabels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Custom tab labels for detail layout."
+        },
+        "componentOverrides": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Slot-name → component-name overrides (e.g., { 'items': 'Table' })."
+        }
+      },
+      "additionalProperties": false
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "validate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-validate the generated schema via repl.validate."
+        },
+        "topN": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3,
+          "description": "Number of component candidates to return per slot."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -6,7 +6,8 @@
     "repl.render",
     "brand.apply",
     "catalog.list",
-    "code.generate"
+    "code.generate",
+    "design.compose"
   ],
   "onDemand": [
     "diag.snapshot",

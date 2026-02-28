@@ -100,6 +100,11 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/code.generate.input.json',
     outputSchema: './schemas/code.generate.output.json',
   },
+  'design.compose': {
+    modulePath: './tools/design.compose.js',
+    inputSchema: './schemas/design.compose.input.json',
+    outputSchema: './schemas/design.compose.output.json',
+  },
 };
 
 const schemaCache = new Map<string, object>();

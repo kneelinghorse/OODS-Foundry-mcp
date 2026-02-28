@@ -135,6 +135,30 @@
       "approval": "optional",
       "allow": ["designer", "maintainer"],
       "ratePerMinute": 20
+    },
+    {
+      "name": "catalog.list",
+      "description": "Lists component catalog with filtering and code references",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "code.generate",
+      "description": "Generates framework-specific code from validated UiSchema",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "design.compose",
+      "description": "Composes UiSchema from intent using layout templates and component selection",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
     }
   ],
   "connectors": [
@@ -151,7 +175,10 @@
         "billing.switchFixtures",
         "structuredData.fetch",
         "repl.validate",
-        "repl.render"
+        "repl.render",
+        "catalog.list",
+        "code.generate",
+        "design.compose"
       ],
       "notes": "Apply requests must include the approval header value defined above."
     },
@@ -160,7 +187,7 @@
       "provider": "openai",
       "role": "designer",
       "defaultMode": "dry-run",
-      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render"],
+      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render", "catalog.list", "code.generate", "design.compose"],
       "notes": "Apply requires approval token and is rate limited to prevent context overrun."
     }
   ]

@@ -112,6 +112,9 @@ const FALLBACK_POLICY: AgentPolicyDoc = {
     { name: 'structuredData.fetch', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
     { name: 'repl.validate', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
     { name: 'repl.render', modes: ['dry-run', 'apply'], approval: 'optional', allow: ['designer'] },
+    { name: 'catalog.list', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
+    { name: 'code.generate', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
+    { name: 'design.compose', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
   ],
 };
 
