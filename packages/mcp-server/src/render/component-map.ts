@@ -1,4 +1,5 @@
 import type { UiElement } from '../schemas/generated.js';
+import { escapeHtml } from './escape-html.js';
 
 export type ComponentRenderer = (node: UiElement, childrenHtml?: string) => string;
 
@@ -56,15 +57,6 @@ function asNumber(value: unknown): number | undefined {
     if (Number.isFinite(parsed)) return parsed;
   }
   return undefined;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
 }
 
 function kebabCase(value: string): string {
