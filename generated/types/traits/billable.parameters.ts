@@ -18,4 +18,16 @@ export interface BillableTraitParameters {
    * Number of fractional units comprising a single currency unit (typically 100).
    */
   minorUnits?: number;
+  /**
+   * Whether billing charges at period start (prepaid) or end (postpaid).
+   */
+  paymentTiming?: 'prepaid' | 'postpaid';
+  /**
+   * Whether mid-cycle plan changes generate prorated charges or credits.
+   */
+  supportProration?: boolean;
+  /**
+   * Day of the month for renewal anchoring. 0 means no anchoring.
+   */
+  cycleAnchorDay?: number;
 }

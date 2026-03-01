@@ -222,13 +222,10 @@ tokens:
   cmp.banner.border: "var(--sys-border-default)"
   cmp.banner.text: "var(--sys-text-default)"
 
-dependencies:
-  - trait: Stateful
-    required: false
-    description: |
-      Statusable can work standalone with static status strings.
-      When composed with Stateful, status values are driven by the
-      state machine and transition events flow through state_history.
+# Statusable can work standalone with static status strings.
+# When composed with Stateful, status values are driven by the state machine.
+# Stateful is optional — not listed as a dep to avoid required-dep enforcement.
+dependencies: []
 
 metadata:
   created: "2026-02-28"
