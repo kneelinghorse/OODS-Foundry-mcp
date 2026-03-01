@@ -13,16 +13,16 @@ All recipes follow the same flow:
 
 ## Prereqs
 
-- Policy + connectors configured (`configs/agent/policy.json`)
+- MCP server built (`pnpm --filter @oods/mcp-server run build`)
+- MCP bridge running (`pnpm bridge:dev`) or stdio client connected
+- Policy configured (`packages/mcp-server/src/security/policy.json`)
 - PR-first CI enabled (build, lint, types, coverage, tokens, a11y, VR)
 - Secrets for preview (e.g., Chromatic) if used by your repo
 
-Useful commands:
-```bash
-pnpm panel            # Agent Panel UI
-pnpm agent:dryrun     # CLI dry-run
-pnpm agent:approve    # CLI approve last dry-run (requires token/permission)
-````
+> **Note**: The recipes below describe MCP tool workflows. Execute them through your MCP client (Cursor, Claude Desktop, etc.) or via the CLI runner:
+> ```bash
+> pnpm exec tsx tools/oods-agent-cli/src/index.ts plan <tool-name> '<json-input>'
+> ```
 
 Artifacts & logs:
 
@@ -41,14 +41,14 @@ Artifacts & logs:
 * Updates/creates proof stories if provided
 * Opens/updates a PR with preview link
 
-**CLI**
+**MCP tools used**: `tokens.build`, `brand.apply`
 
 ```bash
-# Dry-run: fetch export, run transform, stage changes, compute VR/a11y impact
-pnpm agent:dryrun --recipe tokens.roundtrip --brand all
+# Preview token build (dry-run)
+tokens.build { "brand": "A", "theme": "dark", "apply": false }
 
-# Approve + execute: commit, push, open/update PR, attach label
-pnpm agent:approve --recipe tokens.roundtrip
+# Apply token build
+tokens.build { "brand": "A", "theme": "dark", "apply": true }
 ```
 
 **Labels**: `qa-tweak`, `tokens`
@@ -63,11 +63,14 @@ pnpm agent:approve --recipe tokens.roundtrip
 * Rebuilds curated story baselines after intentional visual changes
 * Posts a human summary (changed stories, diffs) on the PR
 
-**CLI**
+**MCP tools used**: `vrt.run` (on-demand, enable with `MCP_EXTRA_TOOLS=vrt.run`)
 
 ```bash
-pnpm agent:dryrun --recipe vr.baseline --stories curated
-pnpm agent:approve --recipe vr.baseline
+# Preview VR run
+vrt.run { “apply”: false }
+
+# Apply VR baseline updates
+vrt.run { “apply”: true }
 ```
 
 **Labels**: `vr-baseline`
@@ -83,11 +86,14 @@ pnpm agent:approve --recipe vr.baseline
 * Suggests targeted fixes (ARIA roles, labels, focus order, contrast)
 * Can open one PR per logical group (optional)
 
-**CLI**
+**MCP tools used**: `a11y.scan` (on-demand), `repl.validate` (with `checkA11y: true`)
 
 ```bash
-pnpm agent:dryrun --recipe a11y.fix --scope curated
-pnpm agent:approve --recipe a11y.fix
+# Run accessibility scan
+a11y.scan { "apply": true }
+
+# Validate with a11y checks enabled
+repl.validate { "mode": "full", "checkA11y": true, "schema": { ... } }
 ```
 
 **Labels**: `a11y-fix`
@@ -103,11 +109,11 @@ pnpm agent:approve --recipe a11y.fix
 * Rewrites to `configs/ui/status-map.json` lookups
 * Adds/updates stories to prove each mapped state
 
-**CLI**
+**MCP tools used**: `purity.audit` (on-demand)
 
 ```bash
-pnpm agent:dryrun --recipe status.map-repair --domain billing
-pnpm agent:approve --recipe status.map-repair
+# Run purity audit to detect drift
+purity.audit { "apply": true }
 ```
 
 **Labels**: `enum-token`, `qa-tweak`
@@ -123,11 +129,14 @@ pnpm agent:approve --recipe status.map-repair
 * Generates a token-diff report (added/removed/aliased) with risk hints
 * Optionally splits fixes into separate PRs (by namespace)
 
-**CLI**
+**MCP tools used**: `brand.apply`, `tokens.build`
 
 ```bash
-pnpm agent:dryrun --recipe tokens.govern --brands "brand-a,brand-b"
-pnpm agent:approve --recipe tokens.govern
+# Preview brand overlay
+brand.apply { "brand": "A", "strategy": "alias", "apply": false }
+
+# Apply brand overlay
+brand.apply { "brand": "A", "strategy": "alias", "apply": true }
 ```
 
 **Labels**: `token-governance`, `token-change:breaking` (if high-risk)
@@ -142,11 +151,14 @@ pnpm agent:approve --recipe tokens.govern
 * Creates minimal proof stories for components/states missing coverage
 * Ensures matrix coverage (brand × theme × HC × key modifiers)
 
-**CLI**
+**MCP tools used**: `diag.snapshot` (on-demand), `reviewKit.create` (on-demand)
 
 ```bash
-pnpm agent:dryrun --recipe stories.curate --component Button --matrix "brand,theme,HC,size"
-pnpm agent:approve --recipe stories.curate
+# Create diagnostics snapshot for coverage analysis
+diag.snapshot { "apply": true }
+
+# Create review kit bundle
+reviewKit.create { "apply": true }
 ```
 
 **Labels**: `stories`
@@ -162,11 +174,14 @@ pnpm agent:approve --recipe stories.curate
 * Ensures PR template includes checklist links
 * Can fix common doc link rot
 
-**CLI**
+**MCP tools used**: `structuredData.fetch`, `catalog.list`
 
 ```bash
-pnpm agent:dryrun --recipe docs.onboarding
-pnpm agent:approve --recipe docs.onboarding
+# Fetch current structured data
+structuredData.fetch { "dataset": "components", "includePayload": true }
+
+# List catalog for documentation coverage check
+catalog.list {}
 ```
 
 **Labels**: `docs`, `onboarding`
@@ -183,8 +198,8 @@ Every recipe writes **JSONL telemetry** with:
 
 Approvals:
 
-* Agent Panel UI: Review diff → **Approve**
-* CLI: `pnpm agent:approve --recipe <name>`
+* All write operations use `apply: false` (preview) → review → `apply: true` (execute)
+* MCP bridge enforces policy rules from `packages/mcp-server/src/security/policy.json`
 * All executions cross-link PRs to their IncidentId in logs
 
 ---

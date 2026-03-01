@@ -128,13 +128,13 @@ The same object component renders differently in different **contexts**:
 ### 🔧 Technical Reference
 - [CLI Reference](cli-reference.md)
 - [Validation Rules](validation/composition-validator.md)
-- [Performance Benchmarks](validation/benchmarks/)
+- [Composition Validation](validation/composition-validator.md)
 - [MCP Agent Tools](mcp/Agent%20Recipes%20—%20Quick%20Index.md)
 
 ### 🎨 Design Resources
 - [Figma Integration Guidelines](Figma%20Integration%20Guidelines%20for%20Traits.md)
 - [Figma Roundtrip Checklist](figma/roundtrip-checklist.md)
-- [Brand A Implementation](themes/brand-a/)
+- [Dark Theme Guide](themes/dark-guidelines.md)
 
 ### 🧪 Testing & Quality
 - [Visual Regression Strategy](testing/visual-regression.md)
@@ -244,7 +244,7 @@ OODS includes Model Context Protocol servers that enable AI agents to:
 
 ## License
 
-[Your license here]
+[MIT](../LICENSE)
 
 ---
 
