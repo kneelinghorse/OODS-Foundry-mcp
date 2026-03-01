@@ -18,7 +18,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REGISTRY_PATH = path.join(__dirname, 'registry.json');
 
 const FALLBACK_REGISTRY: ToolRegistry = {
-  auto: ['tokens.build', 'structuredData.fetch', 'repl.validate', 'repl.render', 'brand.apply'],
+  auto: [
+    'tokens.build',
+    'structuredData.fetch',
+    'repl.validate',
+    'repl.render',
+    'brand.apply',
+    'catalog.list',
+    'code.generate',
+    'design.compose',
+    'map.create',
+    'map.list',
+    'map.resolve',
+  ],
   onDemand: [
     'diag.snapshot',
     'reviewKit.create',

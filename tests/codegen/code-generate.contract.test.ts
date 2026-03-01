@@ -474,3 +474,39 @@ describe('code.generate contracts — backward compatibility', () => {
     expect(result.code).toContain('var(--ref-');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Styling option validation
+// ---------------------------------------------------------------------------
+
+describe('code.generate contracts — styling options', () => {
+  it('accepts styling:inline and produces output', async () => {
+    const result = await handle({
+      schema: SIMPLE_SCHEMA,
+      framework: 'react',
+      options: { styling: 'inline' },
+    });
+    expect(result.status).toBe('ok');
+    expect(result.code.length).toBeGreaterThan(0);
+  });
+
+  it('accepts styling:tokens and produces output', async () => {
+    const result = await handle({
+      schema: SIMPLE_SCHEMA,
+      framework: 'react',
+      options: { styling: 'tokens' },
+    });
+    expect(result.status).toBe('ok');
+    expect(result.code.length).toBeGreaterThan(0);
+  });
+
+  it('schema enum does not include css-modules', async () => {
+    const schema = await import(
+      '../../packages/mcp-server/src/schemas/code.generate.input.json',
+      { with: { type: 'json' } }
+    );
+    const stylingEnum = schema.default.properties.options.properties.styling.enum;
+    expect(stylingEnum).toEqual(['inline', 'tokens']);
+    expect(stylingEnum).not.toContain('css-modules');
+  });
+});

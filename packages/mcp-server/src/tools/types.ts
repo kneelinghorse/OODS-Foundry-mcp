@@ -192,7 +192,7 @@ export type CatalogListOutput = {
 
 export type CodegenFramework = 'react' | 'vue' | 'html';
 
-export type CodegenStyling = 'inline' | 'css-modules' | 'tokens';
+export type CodegenStyling = 'inline' | 'tokens';
 
 export type CodeGenerateInput = {
   schema: import('../schemas/generated.js').UiSchema;

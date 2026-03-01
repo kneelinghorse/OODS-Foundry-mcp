@@ -25,9 +25,9 @@
         },
         "styling": {
           "type": "string",
-          "enum": ["inline", "css-modules", "tokens"],
+          "enum": ["inline", "tokens"],
           "default": "tokens",
-          "description": "Styling strategy: inline style objects, CSS module references, or design-token CSS variables."
+          "description": "Styling strategy: inline style objects or design-token CSS variables."
         }
       },
       "additionalProperties": false,

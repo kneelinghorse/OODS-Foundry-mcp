@@ -136,11 +136,22 @@
   },
   "keywords": [
     "design-system",
+    "mcp",
+    "model-context-protocol",
+    "design-tokens",
+    "dtcg",
+    "agent",
+    "ai",
     "traits",
     "composition",
     "typescript"
   ],
-  "author": "",
+  "author": "Design System Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kneelinghorse/OODS-Foundry-mcp.git"
+  },
+  "homepage": "https://github.com/kneelinghorse/OODS-Foundry-mcp#readme",
   "license": "MIT",
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.1",

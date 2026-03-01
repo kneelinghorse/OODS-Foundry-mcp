@@ -14,9 +14,8 @@ This guide walks you through your first interactions with the OODS Foundry desig
 - Tokens Studio plugin installed in Figma
 
 ### For Developers
-- Node.js 18+ and pnpm 8+
+- Node.js 20+ and pnpm 9.12+
 - Code editor with TypeScript support
-- Docker (optional, for MCP tools)
 
 ## Choose Your Path
 
@@ -41,8 +40,8 @@ These tasks take 10-15 minutes and give you hands-on experience with the system.
 
 ```bash
 # Clone and run Storybook
-git clone [repo-url]
-cd oods-foundry
+git clone https://github.com/kneelinghorse/OODS-Foundry-mcp.git
+cd OODS-Foundry-mcp
 pnpm install
 pnpm storybook
 
@@ -287,12 +286,13 @@ The same object component changes based on **context**:
 
 In addition to dev setup:
 
-1. **MCP Tools (Optional)**
+1. **MCP Tools**
    ```bash
    # Build MCP server
-   cd mcp
-   docker build -t oods-mcp .
-   docker run -p 3000:3000 oods-mcp
+   pnpm --filter @oods/mcp-server run build
+
+   # Start the MCP bridge for remote agents
+   pnpm bridge:dev
    ```
 
 2. **Visual Regression Setup**

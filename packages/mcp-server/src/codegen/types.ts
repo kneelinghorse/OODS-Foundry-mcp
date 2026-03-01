@@ -2,7 +2,7 @@ import type { UiSchema } from '../schemas/generated.js';
 
 export type CodegenFramework = 'react' | 'vue' | 'html';
 
-export type CodegenStyling = 'inline' | 'css-modules' | 'tokens';
+export type CodegenStyling = 'inline' | 'tokens';
 
 export type CodegenOptions = {
   typescript: boolean;

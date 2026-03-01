@@ -40,4 +40,6 @@ cmos/**/__pycache__/
 cmos/**/*.pyc
 
 # Local environment secrets
-.env.local
+.env
+.env.*
+!.env.example

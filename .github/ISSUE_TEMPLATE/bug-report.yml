@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a bug in the OODS Foundry MCP server or tools
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill in the details below so we can reproduce and fix it.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: What happened? What did you expect to happen?
+      placeholder: "When I call `repl.validate` with..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the issue.
+      placeholder: |
+        1. Call `catalog.list` with `{ "category": "core" }`
+        2. Observe the output...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which MCP tool is affected?
+      options:
+        - tokens.build
+        - structuredData.fetch
+        - repl.validate
+        - repl.render
+        - brand.apply
+        - catalog.list
+        - code.generate
+        - design.compose
+        - map.create
+        - map.list
+        - map.resolve
+        - a11y.scan
+        - diag.snapshot
+        - reviewKit.create
+        - purity.audit
+        - vrt.run
+        - billing.reviewKit
+        - billing.switchFixtures
+        - release.verify
+        - release.tag
+        - Other / not tool-specific
+    validations:
+      required: true
+
+  - type: dropdown
+    id: transport
+    attributes:
+      label: How are you connecting?
+      options:
+        - stdio (direct)
+        - MCP bridge (HTTP)
+        - Cursor
+        - Claude Desktop
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node version, OS, pnpm version.
+      placeholder: |
+        - Node: v20.x
+        - OS: macOS 15
+        - pnpm: 9.12.2
+    validations:
+      required: false
