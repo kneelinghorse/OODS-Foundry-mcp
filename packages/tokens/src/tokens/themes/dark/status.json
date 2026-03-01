@@ -252,6 +252,48 @@
             }
           }
         }
+      },
+      "archive": {
+        "surface": {
+          "$type": "color",
+          "$value": "oklch(0.30 0.06 280)",
+          "$description": "Archive surface for dark mode archived entities.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#302D50"
+            }
+          }
+        },
+        "border": {
+          "$type": "color",
+          "$value": "oklch(0.42 0.08 280)",
+          "$description": "Archive border on dark backgrounds.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#4A4780"
+            }
+          }
+        },
+        "text": {
+          "$type": "color",
+          "$value": "oklch(0.87 0.05 280)",
+          "$description": "Archive text meeting AA on dark archive surface.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#C8C6E0"
+            }
+          }
+        },
+        "icon": {
+          "$type": "color",
+          "$value": "oklch(0.77 0.08 280)",
+          "$description": "Archive icon tone for dark mode.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#A5A2D0"
+            }
+          }
+        }
       }
     }
   }

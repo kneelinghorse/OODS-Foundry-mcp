@@ -132,6 +132,28 @@
           "$value": "{ref.color.neutral.700}",
           "$description": "Neutral status icon colour."
         }
+      },
+      "archive": {
+        "surface": {
+          "$type": "color",
+          "$value": "{ref.color.archive.100}",
+          "$description": "Archive status background tone."
+        },
+        "border": {
+          "$type": "color",
+          "$value": "{ref.color.archive.300}",
+          "$description": "Archive status border tone."
+        },
+        "text": {
+          "$type": "color",
+          "$value": "{ref.color.archive.900}",
+          "$description": "Archive status text colour."
+        },
+        "icon": {
+          "$type": "color",
+          "$value": "{ref.color.archive.700}",
+          "$description": "Archive status icon colour."
+        }
       }
     }
   }

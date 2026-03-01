@@ -168,6 +168,48 @@
             }
           }
         }
+      },
+      "archive": {
+        "100": {
+          "$type": "color",
+          "$value": "oklch(0.955 0.012 280)",
+          "$description": "Archive 100; muted lavender-grey surface for archived entities.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#EEEEF6"
+            }
+          }
+        },
+        "300": {
+          "$type": "color",
+          "$value": "oklch(0.79 0.04 280)",
+          "$description": "Archive 300; subtle border tone for archive status.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#B4B8D0"
+            }
+          }
+        },
+        "700": {
+          "$type": "color",
+          "$value": "oklch(0.56 0.065 280)",
+          "$description": "Archive 700; muted indigo icon tone.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#6E72A0"
+            }
+          }
+        },
+        "900": {
+          "$type": "color",
+          "$value": "oklch(0.40 0.05 280)",
+          "$description": "Archive 900; deep indigo text for archived items.",
+          "$extensions": {
+            "ods": {
+              "fallback": "#454068"
+            }
+          }
+        }
       }
     }
   }
