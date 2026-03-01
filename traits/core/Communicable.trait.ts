@@ -160,10 +160,10 @@ const CommunicableTrait = {
     'communication.status.error': 'var(--sys-communication-error)',
   },
 
+  // Classifiable is optional upstream enrichment — not yet defined in this system.
   dependencies: [
     { trait: 'Preferenceable', version: '>=1.0.0' },
     { trait: 'Authable', version: '>=1.0.0' },
-    { trait: 'Classifiable', version: '>=1.0.0', optional: true },
   ] as const,
 
   metadata: {
