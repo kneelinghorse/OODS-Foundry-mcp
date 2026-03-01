@@ -21,7 +21,7 @@
       },
       "minItems": 1,
       "uniqueItems": true,
-      "default": ["monthly", "yearly"]
+      "default": ["monthly", "quarterly", "annual"]
     },
     "minorUnits": {
       "type": "integer",
@@ -29,6 +29,24 @@
       "minimum": 1,
       "maximum": 1000,
       "default": 100
+    },
+    "paymentTiming": {
+      "type": "string",
+      "description": "Whether billing charges at period start (prepaid) or end (postpaid).",
+      "enum": ["prepaid", "postpaid"],
+      "default": "prepaid"
+    },
+    "supportProration": {
+      "type": "boolean",
+      "description": "Whether mid-cycle plan changes generate prorated charges or credits.",
+      "default": false
+    },
+    "cycleAnchorDay": {
+      "type": "integer",
+      "description": "Day of the month for renewal anchoring. 0 means no anchoring.",
+      "minimum": 0,
+      "maximum": 31,
+      "default": 0
     }
   },
   "additionalProperties": false,
