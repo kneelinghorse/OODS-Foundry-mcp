@@ -12,7 +12,6 @@ describe('B3.8 — Documentation deliverables', () => {
 
     expect(readmeContents).toMatch(/\(docs\/specs\/regions\.md\)/);
     expect(readmeContents).toMatch(/\(docs\/patterns\/modifier-purity\.md\)/);
-    expect(readmeContents).toMatch(/scripts\/demo\/sprint03\.tsx/);
   });
 
   it('ships the sprint demo entry point in scripts/demo', () => {

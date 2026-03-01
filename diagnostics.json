@@ -35,13 +35,20 @@
         "durationMs": 15,
         "tokensCount": 309,
         "writtenAt": "2025-10-28T21:51:18.004Z"
+      },
+      {
+        "mission": "unspecified",
+        "phase": "transform",
+        "durationMs": 11,
+        "tokensCount": 326,
+        "writtenAt": "2025-12-03T02:15:34.952Z"
       }
     ],
     "lastRun": {
       "mission": "unspecified",
-      "durationMs": 15,
-      "tokensCount": 309,
-      "writtenAt": "2025-10-28T21:51:18.004Z"
+      "durationMs": 11,
+      "tokensCount": 326,
+      "writtenAt": "2025-12-03T02:15:34.952Z"
     },
     "guardrails": {
       "history": [
@@ -148,15 +155,47 @@
           "passes": 6,
           "failures": 0,
           "durationMs": 5
+        },
+        {
+          "mission": "unspecified",
+          "evaluatedAt": "2025-11-29T02:38:26.843Z",
+          "checks": 6,
+          "passes": 6,
+          "failures": 0,
+          "durationMs": 41
+        },
+        {
+          "mission": "unspecified",
+          "evaluatedAt": "2025-11-29T04:32:18.967Z",
+          "checks": 6,
+          "passes": 6,
+          "failures": 0,
+          "durationMs": 23
+        },
+        {
+          "mission": "unspecified",
+          "evaluatedAt": "2025-11-29T04:54:00.219Z",
+          "checks": 6,
+          "passes": 6,
+          "failures": 0,
+          "durationMs": 16
+        },
+        {
+          "mission": "unspecified",
+          "evaluatedAt": "2025-12-03T02:15:21.150Z",
+          "checks": 6,
+          "passes": 6,
+          "failures": 0,
+          "durationMs": 6
         }
       ],
       "lastRun": {
         "mission": "unspecified",
-        "evaluatedAt": "2025-10-21T19:11:28.737Z",
+        "evaluatedAt": "2025-12-03T02:15:21.150Z",
         "checks": 6,
         "passes": 6,
         "failures": 0,
-        "durationMs": 5
+        "durationMs": 6
       }
     },
     "governance": {
@@ -1670,6 +1709,268 @@
       "indexes": 6,
       "triggers": 1,
       "lastMigration": "20251119_008_create_sod_trigger.sql"
+    }
+  },
+  "viz": {
+    "spatial": {
+      "choroplethCount": 0,
+      "bubbleMapCount": 0,
+      "rendererUsage": {
+        "echarts": 0,
+        "vegaLite": 0
+      },
+      "avgFeatureCount": 0,
+      "avgPointCount": 0
+    },
+    "networkFlow": {
+      "status": "complete",
+      "completedAt": "2025-12-01T23:02:08Z",
+      "components": [
+        "Treemap",
+        "Sunburst",
+        "ForceGraph",
+        "Sankey"
+      ],
+      "adapters": {
+        "echarts": {
+          "treemap": true,
+          "sunburst": true,
+          "graph": true,
+          "sankey": true
+        }
+      },
+      "schemas": {
+        "inputs": [
+          "hierarchy",
+          "network",
+          "sankey"
+        ],
+        "outputs": [
+          "treemap",
+          "sunburst",
+          "force",
+          "sankey"
+        ]
+      },
+      "tests": {
+        "adapterTests": 123,
+        "componentTests": 38,
+        "dashboardTests": 102,
+        "coverage": ">90%"
+      }
+    }
+  },
+  "sprint31": {
+    "missionRange": "B31.1-B31.5",
+    "status": "Completed",
+    "completedAt": "2025-11-29T06:09:18Z",
+    "title": "Spatial Visualization Foundation",
+    "deliverables": [
+      "Spatial schema extensions and DTCG token namespace",
+      "Geocodable trait with auto-detection",
+      "HasProjection & LayeredOverlay traits",
+      "Geo data resolver with format parsing",
+      "SpatialContainer component infrastructure"
+    ]
+  },
+  "sprint32": {
+    "missionRange": "B32.1-B32.10",
+    "status": "Completed",
+    "completedAt": "2025-12-01T01:11:44Z",
+    "title": "Spatial Visualization Components & Release",
+    "deliverables": [
+      "ChoroplethMap and BubbleMap React components",
+      "MapLegend, MapControls, AccessibleMapFallback",
+      "Vega-Lite and ECharts spatial adapters",
+      "Dashboard integration with cross-filter",
+      "Spatial CLI support (viz:suggest, viz:scaffold-spatial)",
+      "Comprehensive documentation and Storybook polish"
+    ]
+  },
+  "sprint33": {
+    "missionRange": "B33.1-B33.6",
+    "status": "Completed",
+    "completedAt": "2025-12-01T20:20:29Z",
+    "title": "Network & Flow Visualization Foundation",
+    "deliverables": [
+      "Network & flow input schemas (hierarchy, network, sankey)",
+      "Transform output schemas (treemap, sunburst, force, sankey)",
+      "ECharts-first resolver service with format detection",
+      "ECharts hierarchy adapters (treemap, sunburst)",
+      "ECharts graph adapter with force layout (59 tests, 96.56% coverage)",
+      "ECharts sankey adapter with gradient/source/target coloring (64 tests)"
+    ]
+  },
+  "sprint34": {
+    "missionRange": "B34.1-B34.3",
+    "status": "Completed",
+    "completedAt": "2025-12-01T23:02:08Z",
+    "title": "Network & Flow Visualization Components & Release",
+    "deliverables": [
+      "Treemap, Sunburst, ForceGraph, Sankey React components (38 tests)",
+      "Dashboard widget definitions and cross-filter actions (102 tests)",
+      "CLI scaffold generator for network visualizations",
+      "Documentation and Storybook polish"
+    ]
+  },
+  "navigationRestructureEpic": {
+    "sprintRange": "Sprint 36-40",
+    "status": "Completed",
+    "completedAt": "2025-12-04T01:30:00Z",
+    "title": "Navigation Restructure Epic",
+    "traitStoryCoverage": "9/16",
+    "deliverables": [
+      "7 Understanding OODS MDX documentation pages",
+      "9 trait stories (Addressable, Authable, Statusable, Stateful, Timestampable, Archivable, Cancellable, Billable, Classifiable)",
+      "Object Explorer with context switching and matrix view",
+      "Consolidated story navigation with object-centric architecture",
+      "26+ story files renamed for consistent hierarchy"
+    ]
+  },
+  "meta": {
+    "lastMission": "B43.5",
+    "lastUpdated": "2026-02-28",
+    "lastSprint": "Sprint 43"
+  },
+  "inventory": {
+    "generatedAt": "2026-02-28T02:24:00Z",
+    "sprint": "Sprint 43",
+    "traits": {
+      "total": 33,
+      "breakdown": {
+        "core": {
+          "count": 5,
+          "traits": [
+            "Addressable",
+            "Authable",
+            "Classifiable",
+            "Communicable",
+            "Preferenceable"
+          ]
+        },
+        "lifecycle": {
+          "count": 5,
+          "traits": [
+            "Archivable",
+            "Auditable",
+            "Cancellable",
+            "Stateful",
+            "Timestampable"
+          ]
+        },
+        "visual": {
+          "count": 2,
+          "traits": [
+            "Colorized",
+            "Statusable"
+          ]
+        },
+        "behavioral": {
+          "count": 1,
+          "traits": [
+            "Taggable"
+          ]
+        },
+        "content": {
+          "count": 1,
+          "traits": [
+            "Labelled"
+          ]
+        },
+        "structural": {
+          "count": 1,
+          "traits": [
+            "Ownerable"
+          ]
+        },
+        "financial": {
+          "count": 2,
+          "traits": [
+            "Billable",
+            "Priceable"
+          ]
+        },
+        "viz": {
+          "count": 16,
+          "subcategories": {
+            "marks": {
+              "count": 4,
+              "traits": [
+                "MarkBar",
+                "MarkLine",
+                "MarkPoint",
+                "MarkArea"
+              ]
+            },
+            "encodings": {
+              "count": 4,
+              "traits": [
+                "EncodingColor",
+                "EncodingPositionX",
+                "EncodingPositionY",
+                "EncodingSize"
+              ]
+            },
+            "layouts": {
+              "count": 3,
+              "traits": [
+                "LayoutConcat",
+                "LayoutFacet",
+                "LayoutLayer"
+              ]
+            },
+            "interactions": {
+              "count": 2,
+              "traits": [
+                "InteractionHighlight",
+                "InteractionTooltip"
+              ]
+            },
+            "scales": {
+              "count": 2,
+              "traits": [
+                "ScaleLinear",
+                "ScaleTemporal"
+              ]
+            },
+            "spatial": {
+              "count": 1,
+              "traits": [
+                "Geocodable"
+              ]
+            }
+          }
+        }
+      },
+      "articleClaimReconciliation": {
+        "articleClaim": 35,
+        "actualCount": 33,
+        "discrepancy": -2,
+        "explanation": "Article counted 35 traits. Actual YAML count is 33. Delta likely from planned but not-yet-created traits (Identifiable and Subscribable were referenced in early design docs but were absorbed into other traits). The 33 count includes 17 core/behavioral/lifecycle/domain traits + 16 viz traits."
+      }
+    },
+    "components": {
+      "total": 80,
+      "source": "src/components/**/*.tsx (excluding .test. and .stories.)"
+    },
+    "stories": {
+      "total": 28,
+      "source": "src/**/*.stories.tsx"
+    },
+    "tests": {
+      "total": 566,
+      "source": "**/*.test.ts + **/*.test.tsx"
+    },
+    "objects": {
+      "core": 8,
+      "examples": 23,
+      "domain": 4,
+      "total": 35,
+      "source": "objects/ + examples/objects/ + domains/**/objects/"
+    },
+    "tokens": {
+      "count": 326,
+      "lastTransform": "2025-12-03T02:15:34.952Z"
     }
   }
 }

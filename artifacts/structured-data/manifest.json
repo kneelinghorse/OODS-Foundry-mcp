@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-02-24T05:09:44Z",
-  "version": "2026-02-24",
+  "generatedAt": "2026-03-01T06:18:26Z",
+  "version": "2026-03-01",
   "source": {
     "components": "cmos/planning/oods-components.json",
     "tokens": "cmos/planning/oods-tokens.json"
@@ -8,17 +8,17 @@
   "artifacts": [
     {
       "name": "components",
-      "file": "oods-components-2026-02-24.json",
-      "path": "artifacts/structured-data/oods-components-2026-02-24.json",
-      "etag": "2e0297fae61767efe99cc09cc803c64c9c5fc54d6e44f3ed40a861e2052df9ab",
-      "sizeBytes": 353181
+      "file": "oods-components-2026-03-01.json",
+      "path": "artifacts/structured-data/oods-components-2026-03-01.json",
+      "etag": "8a02cb1d016677ce852111af1420a05435dfee0f08a54f67d53f7fa51e7ab284",
+      "sizeBytes": 438882
     },
     {
       "name": "tokens",
-      "file": "oods-tokens-2026-02-24.json",
-      "path": "artifacts/structured-data/oods-tokens-2026-02-24.json",
-      "etag": "6075b0688222792508151ec4e86051ae6261882a359f9d1c6bef2962e0156d65",
-      "sizeBytes": 80192
+      "file": "oods-tokens-2026-03-01.json",
+      "path": "artifacts/structured-data/oods-tokens-2026-03-01.json",
+      "etag": "ff13f6d9cd07d548b394eb9759bd151ff49e0db827ccb0412072922282a8ec59",
+      "sizeBytes": 87977
     },
     {
       "name": "code-connect",
@@ -29,7 +29,7 @@
     }
   ],
   "delta": {
-    "file": "structured-data-delta-2026-02-24.md",
-    "path": "cmos/planning/structured-data-delta-2026-02-24.md"
+    "file": "structured-data-delta-2026-03-01.md",
+    "path": "cmos/planning/structured-data-delta-2026-03-01.md"
   }
 }

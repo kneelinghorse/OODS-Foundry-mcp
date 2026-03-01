@@ -132,6 +132,61 @@
           "$value": "{theme.status.neutral.icon}",
           "$description": "Neutral icon colour."
         }
+      },
+      "archive": {
+        "surface": {
+          "$type": "color",
+          "$value": "{theme.status.archive.surface}",
+          "$description": "Archive feedback background."
+        },
+        "border": {
+          "$type": "color",
+          "$value": "{theme.status.archive.border}",
+          "$description": "Archive border colour."
+        },
+        "text": {
+          "$type": "color",
+          "$value": "{theme.status.archive.text}",
+          "$description": "Archive text colour."
+        },
+        "icon": {
+          "$type": "color",
+          "$value": "{theme.status.archive.icon}",
+          "$description": "Archive icon colour."
+        }
+      },
+      "timeline": {
+        "node": {
+          "surface": {
+            "$type": "color",
+            "$value": "{theme.surface.subtle}",
+            "$description": "Timeline node background."
+          },
+          "border": {
+            "$type": "color",
+            "$value": "{sys.border.subtle}",
+            "$description": "Timeline node border."
+          }
+        },
+        "actor": {
+          "text": {
+            "$type": "color",
+            "$value": "{theme.text.secondary}",
+            "$description": "Actor name text in timeline entries."
+          }
+        },
+        "reason": {
+          "text": {
+            "$type": "color",
+            "$value": "{theme.text.primary}",
+            "$description": "Reason text in timeline entries."
+          }
+        },
+        "connector": {
+          "$type": "color",
+          "$value": "{sys.border.subtle}",
+          "$description": "Vertical connector line between timeline nodes."
+        }
       }
     }
   }

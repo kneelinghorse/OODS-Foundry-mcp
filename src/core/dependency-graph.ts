@@ -69,9 +69,11 @@ export class DependencyGraph {
     const node = this.nodes.get(traitId)!;
     node.trait = trait;
 
-    // Parse dependencies
+    // Parse dependencies (skip optional ones — they may not be present in the composition)
     if (trait.dependencies) {
       for (const dep of trait.dependencies) {
+        const isOptional = typeof dep !== 'string' && dep.optional === true;
+        if (isOptional) continue;
         const depName = typeof dep === 'string' ? dep : dep.trait;
         node.dependencies.add(depName);
 
