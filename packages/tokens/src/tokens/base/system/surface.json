@@ -31,6 +31,11 @@
         "$value": "{theme.surface.disabled}",
         "$description": "Surface colour for disabled or inactive UI."
       },
+      "neutral": {
+        "$type": "color",
+        "$value": "{theme.status.neutral.surface}",
+        "$description": "Neutral surface for status-agnostic backgrounds and banners."
+      },
       "interactive": {
         "primary": {
           "default": {
@@ -57,10 +62,20 @@
         "$value": "{theme.border.subtle}",
         "$description": "Default border for surfaces."
       },
+      "default": {
+        "$type": "color",
+        "$value": "{theme.border.subtle}",
+        "$description": "Default border alias. Used by Archivable and Stateful traits."
+      },
       "strong": {
         "$type": "color",
         "$value": "{theme.border.strong}",
         "$description": "High-emphasis border."
+      },
+      "neutral": {
+        "$type": "color",
+        "$value": "{theme.status.neutral.border}",
+        "$description": "Neutral border for status-agnostic containers and banners."
       }
     }
   }
