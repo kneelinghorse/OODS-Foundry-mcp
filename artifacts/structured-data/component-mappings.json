@@ -1,17 +1,19 @@
 {
   "$schema": "../../packages/mcp-server/src/schemas/component-mapping.schema.json",
-  "generatedAt": "2026-02-28T22:30:00Z",
-  "version": "2026-02-28",
+  "generatedAt": "2026-03-01T06:23:01.884Z",
+  "version": "2026-03-01",
   "stats": {
-    "mappingCount": 3,
+    "mappingCount": 1,
     "systemCount": 1
   },
   "mappings": [
     {
-      "id": "material-button",
-      "externalSystem": "material",
-      "externalComponent": "Button",
-      "oodsTraits": ["Stateful"],
+      "id": "e2e-test-test-button",
+      "externalSystem": "e2e-test",
+      "externalComponent": "TestButton",
+      "oodsTraits": [
+        "Stateful"
+      ],
       "propMappings": [
         {
           "externalProp": "variant",
@@ -19,119 +21,14 @@
           "coercion": {
             "type": "enum-map",
             "values": {
-              "contained": "primary",
-              "outlined": "secondary",
-              "text": "ghost"
-            }
-          }
-        },
-        {
-          "externalProp": "disabled",
-          "oodsProp": "disabled",
-          "coercion": null
-        },
-        {
-          "externalProp": "size",
-          "oodsProp": "size",
-          "coercion": {
-            "type": "enum-map",
-            "values": {
-              "small": "sm",
-              "medium": "md",
-              "large": "lg"
+              "primary": "primary"
             }
           }
         }
       ],
-      "confidence": "manual",
+      "confidence": "auto",
       "metadata": {
-        "createdAt": "2026-02-28T22:30:00Z",
-        "author": "seed",
-        "notes": "Material UI v5 Button component mapping."
-      }
-    },
-    {
-      "id": "material-text-field",
-      "externalSystem": "material",
-      "externalComponent": "TextField",
-      "oodsTraits": ["Labelled", "Stateful"],
-      "propMappings": [
-        {
-          "externalProp": "label",
-          "oodsProp": "label",
-          "coercion": null
-        },
-        {
-          "externalProp": "helperText",
-          "oodsProp": "description",
-          "coercion": null
-        },
-        {
-          "externalProp": "error",
-          "oodsProp": "hasError",
-          "coercion": null
-        },
-        {
-          "externalProp": "variant",
-          "oodsProp": "appearance",
-          "coercion": {
-            "type": "enum-map",
-            "values": {
-              "outlined": "outlined",
-              "filled": "filled",
-              "standard": "underline"
-            }
-          }
-        }
-      ],
-      "confidence": "manual",
-      "metadata": {
-        "createdAt": "2026-02-28T22:30:00Z",
-        "author": "seed",
-        "notes": "Material UI v5 TextField component mapping."
-      }
-    },
-    {
-      "id": "material-chip",
-      "externalSystem": "material",
-      "externalComponent": "Chip",
-      "oodsTraits": ["Taggable", "Stateful"],
-      "propMappings": [
-        {
-          "externalProp": "label",
-          "oodsProp": "text",
-          "coercion": null
-        },
-        {
-          "externalProp": "color",
-          "oodsProp": "variant",
-          "coercion": {
-            "type": "enum-map",
-            "values": {
-              "default": "neutral",
-              "primary": "primary",
-              "secondary": "secondary",
-              "error": "danger",
-              "info": "info",
-              "success": "success",
-              "warning": "warning"
-            }
-          }
-        },
-        {
-          "externalProp": "onDelete",
-          "oodsProp": "dismissible",
-          "coercion": {
-            "type": "type-cast",
-            "targetType": "boolean"
-          }
-        }
-      ],
-      "confidence": "manual",
-      "metadata": {
-        "createdAt": "2026-02-28T22:30:00Z",
-        "author": "seed",
-        "notes": "Material UI v5 Chip to Taggable trait mapping."
+        "createdAt": "2026-03-01T06:23:01.877Z"
       }
     }
   ]
