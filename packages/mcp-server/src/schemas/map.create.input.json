@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/map.create.input.json",
+  "title": "map.create input",
+  "description": "Create a component-to-trait mapping for an external design system component.",
+  "type": "object",
+  "required": ["externalSystem", "externalComponent", "oodsTraits"],
+  "additionalProperties": false,
+  "properties": {
+    "apply": {
+      "type": "boolean",
+      "description": "When true, write changes to disk."
+    },
+    "externalSystem": {
+      "type": "string",
+      "minLength": 1,
+      "description": "External design system name (e.g., 'material', 'ant-design', 'chakra')."
+    },
+    "externalComponent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Component name in the external system (e.g., 'Button', 'TextField')."
+    },
+    "oodsTraits": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "description": "OODS trait names this component maps to."
+    },
+    "propMappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["externalProp", "oodsProp"],
+        "additionalProperties": false,
+        "properties": {
+          "externalProp": { "type": "string", "minLength": 1 },
+          "oodsProp": { "type": "string", "minLength": 1 },
+          "coercion": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["type"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "type": "string", "enum": ["enum-map", "boolean-invert", "string-template", "type-cast"] },
+                  "values": { "type": "object", "additionalProperties": { "type": "string" } },
+                  "template": { "type": "string" },
+                  "targetType": { "type": "string", "enum": ["string", "number", "boolean"] }
+                }
+              }
+            ],
+            "default": null
+          }
+        }
+      },
+      "description": "Property translations from external to OODS prop names."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["auto", "manual"],
+      "default": "manual",
+      "description": "'auto' for machine-generated, 'manual' for human-curated."
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "author": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

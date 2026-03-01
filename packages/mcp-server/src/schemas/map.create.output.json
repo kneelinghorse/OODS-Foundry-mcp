@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/map.create.output.json",
+  "title": "map.create output",
+  "description": "Result of creating a component-to-trait mapping.",
+  "type": "object",
+  "required": ["status", "mapping", "etag"],
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "error"]
+    },
+    "mapping": {
+      "type": "object",
+      "description": "The created mapping record."
+    },
+    "etag": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$",
+      "description": "SHA256 ETag of the updated mappings file."
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Non-fatal warnings (e.g., unknown traits)."
+    }
+  }
+}

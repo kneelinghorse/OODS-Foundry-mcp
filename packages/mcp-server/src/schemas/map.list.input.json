@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/map.list.input.json",
+  "title": "map.list input",
+  "description": "List component-to-trait mappings, optionally filtered by external system.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "externalSystem": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filter mappings to a specific external system (e.g., 'material')."
+    }
+  }
+}
