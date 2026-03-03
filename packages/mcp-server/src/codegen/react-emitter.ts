@@ -97,7 +97,7 @@ function styleObjToJsx(style: StyleObj): string {
   const entries = Object.entries(style)
     .map(([key, value]) => `${key}: '${value}'`)
     .join(', ');
-  return `{{ ${entries} }}`;
+  return `{ ${entries} }`;
 }
 
 function isReservedProp(key: string): boolean {
