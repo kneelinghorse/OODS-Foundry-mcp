@@ -1,35 +1,10 @@
 {
   "$schema": "../../packages/mcp-server/src/schemas/component-mapping.schema.json",
-  "generatedAt": "2026-03-01T06:23:01.884Z",
-  "version": "2026-03-01",
+  "generatedAt": "2026-03-03T22:40:10.456Z",
+  "version": "2026-03-03",
   "stats": {
-    "mappingCount": 1,
-    "systemCount": 1
+    "mappingCount": 0,
+    "systemCount": 0
   },
-  "mappings": [
-    {
-      "id": "e2e-test-test-button",
-      "externalSystem": "e2e-test",
-      "externalComponent": "TestButton",
-      "oodsTraits": [
-        "Stateful"
-      ],
-      "propMappings": [
-        {
-          "externalProp": "variant",
-          "oodsProp": "appearance",
-          "coercion": {
-            "type": "enum-map",
-            "values": {
-              "primary": "primary"
-            }
-          }
-        }
-      ],
-      "confidence": "auto",
-      "metadata": {
-        "createdAt": "2026-03-01T06:23:01.877Z"
-      }
-    }
-  ]
+  "mappings": []
 }

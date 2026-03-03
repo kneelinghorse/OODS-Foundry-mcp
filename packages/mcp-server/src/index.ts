@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import Fastify from 'fastify';
 import { getAjv } from './lib/ajv.js';
-import { ERROR_CODES, err, type TypedError } from './security/errors.js';
+import { ERROR_CODES, err, formatValidationErrors, type TypedError } from './security/errors.js';
 import { isAllowed, tryAcquireSlot, releaseSlot, tryConsumeToken, timeoutMsFor } from './security/policy.js';
 import { resolveToolRegistry } from './tools/registry.js';
 
@@ -211,7 +211,8 @@ async function stdioLoop() {
           const reg = tools[tool];
           const validateIn = ajv.compile(reg.inputSchema);
           if (!validateIn(input)) {
-            const e: TypedError = err(ERROR_CODES.SCHEMA_INPUT, 'Input validation failed', { errors: validateIn.errors });
+            const formatted = formatValidationErrors(validateIn.errors as any);
+            const e: TypedError = err(ERROR_CODES.SCHEMA_INPUT, formatted.message, { errors: formatted.details });
             process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
             continue;
           }

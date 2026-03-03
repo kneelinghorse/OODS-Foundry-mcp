@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { sanitizeSchema } from './sanitize-schema.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,28 +66,12 @@ function loadInputSchema(toolName) {
     const full = path.join(SCHEMAS_DIR, candidate);
     try {
       const schema = JSON.parse(fs.readFileSync(full, 'utf8'));
-      // Strip $ref properties — they reference local files that MCP clients can't resolve.
-      // Replace with { type: "object" } to keep the parameter slot visible.
-      return stripRefs(schema);
+      return sanitizeSchema(schema);
     } catch {
       continue;
     }
   }
   return { type: 'object', additionalProperties: true };
-}
-
-function stripRefs(schema) {
-  if (schema === null || typeof schema !== 'object') return schema;
-  if (Array.isArray(schema)) return schema.map(stripRefs);
-  const out = {};
-  for (const [key, value] of Object.entries(schema)) {
-    if (key === '$ref') {
-      // Replace $ref with a generic object stub
-      return { type: 'object', description: '(complex schema — see server docs)' };
-    }
-    out[key] = stripRefs(value);
-  }
-  return out;
 }
 
 // ── MCP annotations derived from server policy ──────────────────────

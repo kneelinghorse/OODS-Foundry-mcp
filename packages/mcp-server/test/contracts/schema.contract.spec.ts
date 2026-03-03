@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { getAjv } from '../../src/lib/ajv.js';
+import { formatValidationErrors } from '../../src/security/errors.js';
 import brandApplyInputSchema from '../../src/schemas/brand.apply.input.json' assert { type: 'json' };
 import genericOutputSchema from '../../src/schemas/generic.output.json' assert { type: 'json' };
 import releaseVerifyInputSchema from '../../src/schemas/release.verify.input.json' assert { type: 'json' };
 import releaseVerifyOutputSchema from '../../src/schemas/release.verify.output.json' assert { type: 'json' };
+import replValidateInputSchema from '../../src/schemas/repl.validate.input.json' assert { type: 'json' };
 import type {
   BrandApplyInput,
   GenericOutput,
@@ -165,5 +167,86 @@ describe('schema contracts', () => {
 
     expect(validateReleaseVerifyOutput(invalidPayload)).toBe(false);
     expect(validateReleaseVerifyOutput.errors).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Agent-friendly validation error formatting
+// ---------------------------------------------------------------------------
+
+const validateReplValidateInput = ajv.compile(replValidateInputSchema);
+
+describe('formatValidationErrors', () => {
+  it('formats enum errors with allowed values', () => {
+    // mode: 'document' is invalid — only 'full' | 'patch' are allowed
+    const payload = { mode: 'document' };
+    validateReplValidateInput(payload);
+    const result = formatValidationErrors(validateReplValidateInput.errors as any);
+
+    expect(result.message).toContain('must be one of');
+    expect(result.message).toContain('full');
+    expect(result.message).toContain('patch');
+
+    const enumDetail = result.details.find((d) => d.keyword === 'enum');
+    expect(enumDetail).toBeDefined();
+    expect(enumDetail!.message).toContain('full, patch');
+  });
+
+  it('formats required field errors with field name', () => {
+    // brand.apply requires 'delta' — omit it to trigger required error
+    const payload = { strategy: 'alias' } as unknown;
+    validateBrandApplyInput(payload);
+    const result = formatValidationErrors(validateBrandApplyInput.errors as any);
+
+    expect(result.message).toContain('missing required field');
+    expect(result.message).toContain('delta');
+
+    const reqDetail = result.details.find((d) => d.keyword === 'required');
+    expect(reqDetail).toBeDefined();
+    expect(reqDetail!.field).toBe('delta');
+  });
+
+  it('formats type mismatch errors', () => {
+    // delta should be object or array, not a number
+    const payload = { delta: 42, apply: true } as unknown;
+    validateBrandApplyInput(payload);
+    const result = formatValidationErrors(validateBrandApplyInput.errors as any);
+
+    // Should mention type constraint
+    expect(result.details.length).toBeGreaterThan(0);
+    expect(result.message).toContain('Input validation failed');
+  });
+
+  it('handles null/undefined errors gracefully', () => {
+    const resultNull = formatValidationErrors(null);
+    expect(resultNull.message).toBe('Input validation failed');
+    expect(resultNull.details).toEqual([]);
+
+    const resultUndefined = formatValidationErrors(undefined);
+    expect(resultUndefined.message).toBe('Input validation failed');
+    expect(resultUndefined.details).toEqual([]);
+  });
+
+  it('formats additionalProperties errors', () => {
+    // repl.validate has additionalProperties: false
+    const payload = { mode: 'full', schema: { version: '1.0', screens: [] }, bogusField: true };
+    validateReplValidateInput(payload);
+    const result = formatValidationErrors(validateReplValidateInput.errors as any);
+
+    const apDetail = result.details.find((d) => d.keyword === 'additionalProperties');
+    expect(apDetail).toBeDefined();
+    expect(apDetail!.message).toContain('bogusField');
+    expect(apDetail!.message).toContain('not allowed');
+  });
+
+  it('produces combined summary message', () => {
+    // Multiple errors: missing mode and has extra field
+    const payload = { bogusField: true } as unknown;
+    validateReplValidateInput(payload);
+    const result = formatValidationErrors(validateReplValidateInput.errors as any);
+
+    // Should combine multiple errors with semicolons
+    expect(result.details.length).toBeGreaterThan(1);
+    expect(result.message).toContain(';');
   });
 });
