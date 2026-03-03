@@ -1,26 +1,89 @@
 # OODS MCP Connections
 
-Local developers can point external agent clients at the OODS MCP bridge to exercise the MCP toolchain. This guide covers setup, connection profiles for Claude Desktop and the OpenAI Responses/Agents API, and the `agents-smoke` harness used to validate the bridge.
+Local developers can connect agent clients to OODS MCP tools via two transports: **stdio adapter** (recommended) or **HTTP bridge**. This guide covers both approaches with connection profiles for Claude Desktop, Cursor, and the OpenAI Responses/Agents API.
 
 ## Prerequisites
 
-- Build the stdio MCP server once so the bridge can spawn its entry point:
+```bash
+# Install dependencies
+pnpm install
 
-  ```bash
-  pnpm --filter @oods/mcp-server run build
-  ```
+# Build the native MCP server (required for both transports)
+pnpm --filter @oods/mcp-server run build
+```
 
-- Start the HTTP bridge (spawns the server subprocess automatically):
+## Stdio Adapter (Recommended)
 
-  ```bash
-  pnpm --filter @oods/mcp-bridge run dev
-  ```
+The stdio adapter (`packages/mcp-adapter/`) wraps the native MCP server with a spec-compliant MCP interface that communicates via stdin/stdout. No HTTP bridge, port, or token configuration required.
 
-- The bridge logs the bound port (example: `[mcp-bridge] listening on :53726`). It defaults to `4466`, but if that port is busy it picks an ephemeral port. Set `MCP_BRIDGE_PORT=<port>` before launching to pin a specific port.
+### Claude Desktop (stdio)
 
-- Optional: export `BRIDGE_TOKEN` to enforce the `X-Bridge-Token` header. Leave it unset when pairing with Claude Desktop, which cannot forward custom headers for remote MCP servers.
+Copy the config from `configs/agents/claude-desktop.stdio-mcp.json` into your Claude Desktop settings:
 
-The bridge listens on `http://127.0.0.1:${MCP_BRIDGE_PORT:-4466}` and exposes `GET /health`, `GET /tools`, `POST /run`, and `/artifacts/*`.
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "oods-foundry": {
+      "command": "node",
+      "args": ["/absolute/path/to/OODS-Foundry-mcp/packages/mcp-adapter/index.js"],
+      "env": {
+        "MCP_TOOLSET": "all",
+        "MCP_ROLE": "designer"
+      }
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/OODS-Foundry-mcp` with your actual repo path.
+
+### Cursor (stdio)
+
+Copy the config from `configs/agents/cursor.stdio-mcp.json` into `.cursor/mcp.json` at the project root:
+
+```json
+{
+  "mcpServers": {
+    "oods-foundry": {
+      "command": "node",
+      "args": ["packages/mcp-adapter/index.js"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
+```
+
+### Adapter Environment Variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MCP_TOOLSET` | `default` | `default` = 11 auto tools; `all` = all 20 tools |
+| `MCP_EXTRA_TOOLS` | (none) | Comma-separated on-demand tools (e.g., `a11y.scan,vrt.run`) |
+| `MCP_ROLE` | `designer` | Role for policy enforcement (`designer` or `maintainer`) |
+| `OODS_NODE_PATH` | `process.execPath` | Override the Node binary for spawning the native server |
+
+### Adapter Features
+
+- 20 tools with human-readable descriptions and typed JSON Schema input parameters
+- MCP annotations (readOnlyHint, destructiveHint) derived from server policy
+- Dynamic tool registration from server registry.json — zero adapter changes for new tools
+- Structured error messages with actionable fix guidance for server spawn failures
+
+## HTTP Bridge
+
+For clients that only support HTTP transport (OpenAI Agents, custom integrations), use the HTTP bridge:
+
+```bash
+# Start the bridge (spawns the server subprocess automatically)
+pnpm --filter @oods/mcp-bridge run dev
+```
+
+The bridge defaults to port `4466`. Set `MCP_BRIDGE_PORT=<port>` to change it. Optional: export `BRIDGE_TOKEN` to enforce the `X-Bridge-Token` header.
+
+The bridge exposes `GET /health`, `GET /tools`, `POST /run`, and `/artifacts/*`.
 
 ## Claude Remote MCP
 

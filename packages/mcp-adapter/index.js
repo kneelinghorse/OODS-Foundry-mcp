@@ -2,44 +2,114 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-
-import { pathToFileURL } from 'node:url';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Runtime Node version check — warn early if below minimum
+const [nodeMajor] = process.versions.node.split('.').map(Number);
+if (nodeMajor < 20) {
+  console.warn(
+    `[oods-mcp-adapter] WARNING: Node ${process.versions.node} detected. ` +
+    `This adapter requires Node >= 20. Unexpected failures may occur.`
+  );
+}
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 const NATIVE_SERVER_DIR = path.join(PROJECT_ROOT, 'packages', 'mcp-server');
 const NATIVE_DIST = path.join(NATIVE_SERVER_DIR, 'dist');
 const SCHEMAS_DIR = path.join(NATIVE_DIST, 'schemas');
 
 const DEFAULT_ROLE = process.env.MCP_ROLE || 'designer';
+const REGISTRY_PATH = path.join(NATIVE_DIST, 'tools', 'registry.json');
+const POLICY_PATH = path.join(NATIVE_DIST, 'security', 'policy.json');
+const ADAPTER_VERSION = '0.2.0';
 
-// MCP tool names use underscores (Claude Desktop requires ^[a-zA-Z0-9_-]{1,64}$)
-// internalName uses dots for native server communication
-const TOOL_SPECS = [
-  { name: 'tokens_build', internalName: 'tokens.build', input: 'tokens.build.input.json', output: 'generic.output.json' },
-  { name: 'structuredData_fetch', internalName: 'structuredData.fetch', input: 'structuredData.fetch.input.json', output: 'structuredData.fetch.output.json' },
-  { name: 'repl_validate', internalName: 'repl.validate', input: 'repl.validate.input.json', output: 'repl.validate.output.json' },
-  { name: 'repl_render', internalName: 'repl.render', input: 'repl.render.input.json', output: 'repl.render.output.json' },
-  { name: 'brand_apply', internalName: 'brand.apply', input: 'brand.apply.input.json', output: 'brand.apply.output.json' },
-  { name: 'a11y_scan', internalName: 'a11y.scan', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'purity_audit', internalName: 'purity.audit', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'vrt_run', internalName: 'vrt.run', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'diag_snapshot', internalName: 'diag.snapshot', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'reviewKit_create', internalName: 'reviewKit.create', input: 'generic.input.json', output: 'generic.output.json' },
-  { name: 'billing_reviewKit', internalName: 'billing.reviewKit', input: 'billing.reviewKit.input.json', output: 'generic.output.json' },
-  { name: 'billing_switchFixtures', internalName: 'billing.switchFixtures', input: 'billing.switchFixtures.input.json', output: 'generic.output.json' },
-  { name: 'release_verify', internalName: 'release.verify', input: 'release.verify.input.json', output: 'release.verify.output.json' },
-  { name: 'release_tag', internalName: 'release.tag', input: 'release.tag.input.json', output: 'release.tag.output.json' },
-];
+// ── Dynamic tool registry ────────────────────────────────────────────
+// Reads registry.json from the server dist instead of hardcoding tool names.
+// MCP tool names use underscores (Claude Desktop requires ^[a-zA-Z0-9_-]{1,64}$).
+// Internal names use dots for native server communication.
 
-function loadSchema(filename) {
-  const full = path.join(SCHEMAS_DIR, filename);
-  try {
-    return JSON.parse(fs.readFileSync(full, 'utf8'));
-  } catch {
-    return { type: 'object', additionalProperties: true };
+function loadRegistry() {
+  const raw = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+  return { auto: raw.auto || [], onDemand: raw.onDemand || [] };
+}
+
+function resolveEnabledTools(registry) {
+  const toolset = (process.env.MCP_TOOLSET || 'default').toLowerCase();
+  if (toolset === 'all') {
+    return [...registry.auto, ...registry.onDemand];
   }
+  const extras = (process.env.MCP_EXTRA_TOOLS || '')
+    .split(/[,\s]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  return [...registry.auto, ...extras.filter(t => registry.onDemand.includes(t))];
+}
+
+function dotToUnderscore(name) {
+  return name.replace(/\./g, '_');
+}
+
+const DESCRIPTIONS_PATH = path.join(__dirname, 'tool-descriptions.json');
+
+function loadDescriptions() {
+  return JSON.parse(fs.readFileSync(DESCRIPTIONS_PATH, 'utf8'));
+}
+
+function loadInputSchema(toolName) {
+  // Try tool-specific schema first, fall back to generic
+  for (const candidate of [`${toolName}.input.json`, 'generic.input.json']) {
+    const full = path.join(SCHEMAS_DIR, candidate);
+    try {
+      const schema = JSON.parse(fs.readFileSync(full, 'utf8'));
+      // Strip $ref properties — they reference local files that MCP clients can't resolve.
+      // Replace with { type: "object" } to keep the parameter slot visible.
+      return stripRefs(schema);
+    } catch {
+      continue;
+    }
+  }
+  return { type: 'object', additionalProperties: true };
+}
+
+function stripRefs(schema) {
+  if (schema === null || typeof schema !== 'object') return schema;
+  if (Array.isArray(schema)) return schema.map(stripRefs);
+  const out = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === '$ref') {
+      // Replace $ref with a generic object stub
+      return { type: 'object', description: '(complex schema — see server docs)' };
+    }
+    out[key] = stripRefs(value);
+  }
+  return out;
+}
+
+// ── MCP annotations derived from server policy ──────────────────────
+// Reads policy.json to determine readOnlyHint / destructiveHint per tool.
+
+function loadPolicy() {
+  try {
+    return JSON.parse(fs.readFileSync(POLICY_PATH, 'utf8'));
+  } catch {
+    return { rules: [] };
+  }
+}
+
+function deriveAnnotations(toolName, policy) {
+  const rule = policy.rules?.find(r => r.tool === toolName);
+  if (!rule) {
+    return { openWorldHint: false };
+  }
+  if (rule.readOnly) {
+    return { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
+  }
+  // Tools with 'writes' paths can modify state
+  return { readOnlyHint: false, destructiveHint: true, openWorldHint: false };
 }
 
 class NativeOodsClient {
@@ -58,7 +128,8 @@ class NativeOodsClient {
     if (!fs.existsSync(entry)) {
       throw new Error(`Native MCP server not built at ${entry}. Run pnpm --filter @oods/mcp-server run build.`);
     }
-    this.child = spawn(process.execPath, [entry], {
+    const nodeBin = process.env.OODS_NODE_PATH || process.execPath;
+    this.child = spawn(nodeBin, [entry], {
       cwd: this.cwd,
       stdio: ['pipe', 'pipe', 'inherit'],
       env: { ...process.env },
@@ -117,49 +188,72 @@ class NativeOodsClient {
 }
 
 async function main() {
-  const sdkRoot = path.join(__dirname, 'node_modules', '@modelcontextprotocol', 'sdk', 'dist', 'esm');
-  const { McpServer } = await import(pathToFileURL(path.join(sdkRoot, 'server', 'mcp.js')).href);
-  const { StdioServerTransport } = await import(pathToFileURL(path.join(sdkRoot, 'server', 'stdio.js')).href);
-  const { z } = await import('zod');
+  const registry = loadRegistry();
+  const enabled = resolveEnabledTools(registry);
+  const descriptions = loadDescriptions();
+  const policy = loadPolicy();
+
+  // Build the tool manifest: MCP name, internal name, description, input schema, annotations
+  const toolManifest = enabled.map(internalName => ({
+    internalName,
+    mcpName: dotToUnderscore(internalName),
+    description: descriptions[internalName] || `OODS tool: ${internalName}`,
+    inputSchema: loadInputSchema(internalName),
+    annotations: deriveAnnotations(internalName, policy),
+  }));
 
   const client = new NativeOodsClient({ cwd: NATIVE_SERVER_DIR, role: DEFAULT_ROLE });
-  const server = new McpServer({ name: 'oods-foundry-adapter', version: '0.1.0' });
+  const server = new Server(
+    { name: 'oods-foundry-adapter', version: '0.1.0' },
+    { capabilities: { tools: {} } }
+  );
 
-  const inputSchema = z.object({}).catchall(z.any()).default({});
+  // Map MCP name → internal name for dispatch
+  const nameMap = new Map(toolManifest.map(t => [t.mcpName, t.internalName]));
 
-  for (const spec of TOOL_SPECS) {
-    const internalName = spec.internalName || spec.name;
-    server.tool(
-      spec.name,
-      `Proxy to OODS native tool "${internalName}"`,
-      inputSchema,
-      async (args) => {
-        try {
-          const result = await client.run(internalName, args ?? {});
-          return {
-            content: [
-              {
-                type: 'text',
-                text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-              },
-            ],
-            structuredContent: result,
-          };
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          return {
-            isError: true,
-            content: [
-              {
-                type: 'text',
-                text: `Tool ${spec.name} failed: ${message}`,
-              },
-            ],
-          };
-        }
-      }
-    );
-  }
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: toolManifest.map(t => ({
+      name: t.mcpName,
+      description: t.description,
+      inputSchema: t.inputSchema,
+      annotations: t.annotations,
+    })),
+  }));
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    const internalName = nameMap.get(name);
+    if (!internalName) {
+      return {
+        isError: true,
+        content: [{ type: 'text', text: `Unknown tool: ${name}` }],
+      };
+    }
+    try {
+      const result = await client.run(internalName, args ?? {});
+      return {
+        content: [
+          {
+            type: 'text',
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Structured error with actionable guidance for server spawn failures
+      const isSpawnError = message.includes('not built') || message.includes('server exited') || message.includes('ENOENT');
+      const guidance = isSpawnError
+        ? `\n\nTo fix: run "pnpm --filter @oods/mcp-server run build" then retry.`
+        : '';
+      return {
+        isError: true,
+        content: [{ type: 'text', text: `Tool ${name} failed: ${message}${guidance}` }],
+      };
+    }
+  });
+
+  console.error(`[oods-mcp-adapter] v${ADAPTER_VERSION} | ${enabled.length} tools (${registry.auto.length} auto, ${registry.onDemand.length} on-demand) | server: ${NATIVE_DIST}`);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

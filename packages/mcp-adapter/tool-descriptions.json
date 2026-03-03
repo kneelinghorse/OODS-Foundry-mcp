@@ -1,0 +1,22 @@
+{
+  "tokens.build": "Build design tokens for a brand and theme. Returns compiled CSS variables and token artifacts. Use apply=true to write output files.",
+  "structuredData.fetch": "Fetch structured data exports (components, tokens, or manifest). Supports ETag caching, version pinning, and version listing.",
+  "repl.validate": "Validate a UiSchema tree or patch against the Design Lab schema. Returns validation errors, warnings, and optionally a normalized tree.",
+  "repl.render": "Render a validated UiSchema into HTML/CSS preview output. Supports full document and patch modes with configurable output format.",
+  "brand.apply": "Apply brand token overlays using alias or RFC 6902 patch strategy. Requires a delta object. Use apply=true to write changes to disk.",
+  "catalog.list": "List available OODS components from the design system catalog. Filter by category, trait, or rendering context.",
+  "code.generate": "Generate framework-specific code (React, Vue, or HTML) from a validated UiSchema tree. Supports TypeScript and token-based styling.",
+  "design.compose": "Compose a complete UiSchema from a natural-language intent description. Selects layout templates and components automatically.",
+  "map.create": "Create a component-to-trait mapping between an external design system and OODS. Includes property translations and coercion rules.",
+  "map.list": "List all component-to-trait mappings. Optionally filter by external design system name.",
+  "map.resolve": "Resolve an external component to its OODS trait mapping with property translations.",
+  "diag.snapshot": "Capture a diagnostic snapshot bundle of the current design system state for debugging and reproducibility.",
+  "reviewKit.create": "Create a review kit artifact bundle for design review workflows.",
+  "billing.reviewKit": "Generate a billing review kit comparing provider fixtures (Stripe, Chargebee) for a billing object.",
+  "billing.switchFixtures": "Switch the active billing fixture provider for Storybook scenarios. Use apply=true to record the switch.",
+  "a11y.scan": "Run WCAG accessibility contrast checks against design tokens. Optionally include a UiSchema for component inventory.",
+  "purity.audit": "Audit design token purity and detect style drift or non-standard overrides.",
+  "vrt.run": "Run visual regression tests against the current component state.",
+  "release.verify": "Verify release readiness for specified packages. Checks changelogs, versions, and build artifacts.",
+  "release.tag": "Create a release tag in the repository. Requires a tag name; optionally include a message."
+}
