@@ -1,0 +1,41 @@
+{
+  "name": "OODS Foundry — Claude Desktop stdio MCP",
+  "summary": "Connect Claude Desktop to the OODS MCP adapter via stdio transport. Alternative to the HTTP bridge.",
+  "transport": {
+    "type": "stdio",
+    "command": "node",
+    "args": ["packages/mcp-adapter/index.js"]
+  },
+  "bootstrap": {
+    "install": "pnpm install",
+    "build": "pnpm --filter @oods/mcp-server run build"
+  },
+  "claudeDesktopConfig": {
+    "mcpServers": {
+      "oods-foundry": {
+        "command": "node",
+        "args": ["/absolute/path/to/OODS-Foundry-mcp/packages/mcp-adapter/index.js"],
+        "env": {
+          "MCP_TOOLSET": "all",
+          "MCP_ROLE": "designer"
+        }
+      }
+    }
+  },
+  "env": {
+    "MCP_TOOLSET": "default | all",
+    "MCP_EXTRA_TOOLS": "a11y.scan,vrt.run (comma-separated on-demand tools)",
+    "MCP_ROLE": "designer | maintainer",
+    "OODS_NODE_PATH": "/path/to/node (override Node binary)"
+  },
+  "placement": {
+    "file": "~/Library/Application Support/Claude/claude_desktop_config.json (macOS)",
+    "key": "mcpServers.oods-foundry"
+  },
+  "notes": [
+    "Claude Desktop stdio transport requires an absolute path to the adapter entry point.",
+    "The adapter spawns the native MCP server as a child process — build it first.",
+    "Stdio transport bypasses the HTTP bridge entirely — no port, no token, no CORS.",
+    "This is the recommended setup for local development with Claude Desktop."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "OODS Foundry — Cursor stdio MCP",
+  "summary": "Connect Cursor to the OODS MCP adapter via stdio transport. No HTTP bridge required.",
+  "transport": {
+    "type": "stdio",
+    "command": "node",
+    "args": ["packages/mcp-adapter/index.js"]
+  },
+  "bootstrap": {
+    "install": "pnpm install",
+    "build": "pnpm --filter @oods/mcp-server run build"
+  },
+  "cursorConfig": {
+    "mcpServers": {
+      "oods-foundry": {
+        "command": "node",
+        "args": ["packages/mcp-adapter/index.js"],
+        "cwd": "${workspaceFolder}"
+      }
+    }
+  },
+  "env": {
+    "MCP_TOOLSET": "default | all",
+    "MCP_EXTRA_TOOLS": "a11y.scan,vrt.run (comma-separated on-demand tools)",
+    "MCP_ROLE": "designer | maintainer",
+    "OODS_NODE_PATH": "/path/to/node (override Node binary)"
+  },
+  "placement": {
+    "file": ".cursor/mcp.json",
+    "key": "mcpServers.oods-foundry"
+  },
+  "notes": [
+    "Cursor reads MCP server config from .cursor/mcp.json in the project root.",
+    "The adapter spawns the native MCP server as a child process — build it first.",
+    "Default mode exposes 11 auto tools. Set MCP_TOOLSET=all for all 20 tools.",
+    "No HTTP bridge needed: Cursor communicates directly via stdin/stdout."
+  ]
+}
