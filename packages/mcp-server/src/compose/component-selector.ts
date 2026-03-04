@@ -13,7 +13,7 @@
  *   5. Category match
  *   6. Trait coverage bonus
  */
-import type { ComponentCatalogEntry } from '../tools/types.js';
+import type { ComponentCatalogSummary } from '../tools/types.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -188,7 +188,7 @@ function intersectionCount(a: string[], b: string[]): number {
 }
 
 function scoreComponent(
-  component: ComponentCatalogEntry,
+  component: ComponentCatalogSummary,
   intent: string,
   signals: IntentSignals | undefined,
   keywords: string[],
@@ -285,13 +285,13 @@ export interface SelectOptions {
  * Select the best-fit component(s) for a given slot intent.
  *
  * @param intent - Typed intent string (e.g., "action-button", "data-table")
- * @param catalog - Array of ComponentCatalogEntry from the component catalog
+ * @param catalog - Array of ComponentCatalogSummary from the component catalog
  * @param options - Selection options
  * @returns Ranked list of candidates with confidence scores
  */
 export function selectComponent(
   intent: string,
-  catalog: ComponentCatalogEntry[],
+  catalog: ComponentCatalogSummary[],
   options: SelectOptions = {},
 ): SelectionResult {
   const { topN = 5, minConfidence = 0.05 } = options;
@@ -351,8 +351,8 @@ export function selectComponent(
  * Load the component catalog from the catalog.list tool handler.
  * Convenience wrapper that returns just the entries.
  */
-export async function loadCatalog(): Promise<ComponentCatalogEntry[]> {
+export async function loadCatalog(): Promise<ComponentCatalogSummary[]> {
   const { handle } = await import('../tools/catalog.list.js');
-  const result = await handle({});
+  const result = await handle({ detail: 'summary' });
   return result.components;
 }

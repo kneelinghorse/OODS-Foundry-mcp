@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["components", "totalCount", "generatedAt", "stats"],
+  "required": ["components", "totalCount", "returnedCount", "page", "pageSize", "hasMore", "detail", "generatedAt", "stats"],
   "properties": {
     "components": {
       "type": "array",
       "description": "Array of component catalog entries",
       "items": {
         "type": "object",
-        "required": ["name", "displayName", "categories", "tags", "contexts", "regions", "traits", "propSchema", "slots"],
+        "required": ["name", "displayName", "categories", "tags", "contexts", "regions", "traits"],
         "properties": {
           "name": {
             "type": "string",
@@ -45,12 +45,12 @@
           },
           "propSchema": {
             "type": "object",
-            "description": "Component prop schema with types and defaults",
+            "description": "Component prop schema with types and defaults (detail=full only).",
             "additionalProperties": true
           },
           "slots": {
             "type": "object",
-            "description": "Slot definitions with accepted types and roles",
+            "description": "Slot definitions with accepted types and roles (detail=full only).",
             "additionalProperties": {
               "type": "object",
               "properties": {
@@ -66,7 +66,7 @@
           },
           "codeReferences": {
             "type": "array",
-            "description": "References into Storybook `.stories.tsx` files (usage patterns + minimal snippets).",
+            "description": "References into Storybook `.stories.tsx` files (usage patterns + minimal snippets, detail=full only).",
             "items": {
               "type": "object",
               "required": ["kind", "path", "snippet"],
@@ -94,7 +94,7 @@
           },
           "codeSnippet": {
             "type": "string",
-            "description": "Convenience: best single snippet picked from codeReferences."
+            "description": "Convenience: best single snippet picked from codeReferences (detail=full only)."
           }
         },
         "additionalProperties": false
@@ -103,7 +103,31 @@
     "totalCount": {
       "type": "integer",
       "minimum": 0,
-      "description": "Total number of components returned (after filtering)"
+      "description": "Total number of components that match the filters (before pagination)."
+    },
+    "returnedCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of components returned in this page."
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-based page index used for pagination."
+    },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Page size used for pagination. 0 when there are no results."
+    },
+    "hasMore": {
+      "type": "boolean",
+      "description": "Whether more components are available after this page."
+    },
+    "detail": {
+      "type": "string",
+      "enum": ["summary", "full"],
+      "description": "Detail level applied to component entries."
     },
     "generatedAt": {
       "type": "string",
@@ -122,6 +146,18 @@
           "type": "integer",
           "minimum": 0,
           "description": "Total traits available"
+        }
+      },
+      "additionalProperties": false
+    },
+    "suggestions": {
+      "type": "object",
+      "description": "Suggested filter values when a query returns zero results.",
+      "properties": {
+        "traits": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Closest matching trait names."
         }
       },
       "additionalProperties": false

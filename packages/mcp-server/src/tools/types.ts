@@ -49,6 +49,8 @@ export type ToolPreview = {
   specimens?: string[];
 };
 
+export type PreviewVerbosity = 'full' | 'compact';
+
 export type GenericOutput = {
   artifacts: string[];
   diagnosticsPath?: string;
@@ -64,6 +66,9 @@ export type BrandApplyInput = BaseInput & {
   brand?: 'A';
   delta: Record<string, unknown> | Record<string, unknown>[];
   strategy?: BrandApplyStrategy;
+  preview?: {
+    verbosity?: PreviewVerbosity;
+  };
 };
 
 export type BillingProvider = 'stripe' | 'chargebee';
@@ -138,10 +143,25 @@ export type StructuredDataFetchOutput = {
   resolvedVersion?: string | null;
 };
 
+export type CatalogListDetail = 'summary' | 'full';
+
 export type CatalogListInput = {
   category?: string;
   trait?: string;
   context?: string;
+  /**
+   * Response detail level. Defaults to summary for unfiltered calls,
+   * full when filters are provided.
+   */
+  detail?: CatalogListDetail;
+  /**
+   * 1-based page index for pagination.
+   */
+  page?: number;
+  /**
+   * Number of components per page.
+   */
+  pageSize?: number;
 };
 
 export type ComponentCodeReference = {
@@ -160,7 +180,7 @@ export type ComponentCodeReference = {
   snippet: string;
 };
 
-export type ComponentCatalogEntry = {
+export type ComponentCatalogSummary = {
   name: string;
   displayName: string;
   categories: string[];
@@ -168,6 +188,9 @@ export type ComponentCatalogEntry = {
   contexts: string[];
   regions: string[];
   traits: string[];
+};
+
+export type ComponentCatalogEntry = ComponentCatalogSummary & {
   propSchema: Record<string, unknown>;
   slots: Record<string, { accept?: string[]; role?: string }>;
   /**
@@ -181,12 +204,20 @@ export type ComponentCatalogEntry = {
 };
 
 export type CatalogListOutput = {
-  components: ComponentCatalogEntry[];
+  components: Array<ComponentCatalogSummary | ComponentCatalogEntry>;
   totalCount: number;
+  returnedCount: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  detail: CatalogListDetail;
   generatedAt: string;
   stats: {
     componentCount: number;
     traitCount: number;
+  };
+  suggestions?: {
+    traits?: string[];
   };
 };
 
@@ -195,7 +226,8 @@ export type CodegenFramework = 'react' | 'vue' | 'html';
 export type CodegenStyling = 'inline' | 'tokens';
 
 export type CodeGenerateInput = {
-  schema: import('../schemas/generated.js').UiSchema;
+  schema?: import('../schemas/generated.js').UiSchema;
+  schemaRef?: string;
   framework: CodegenFramework;
   options?: {
     typescript?: boolean;

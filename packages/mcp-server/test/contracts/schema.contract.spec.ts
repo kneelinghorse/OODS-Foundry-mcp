@@ -26,6 +26,7 @@ describe('schema contracts', () => {
       delta: { typography: { body: { fontSize: 14 } } },
       strategy: 'alias',
       apply: false,
+      preview: { verbosity: 'compact' },
     };
 
     expect(validateBrandApplyInput(payload)).toBe(true);

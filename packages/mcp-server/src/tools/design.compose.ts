@@ -29,6 +29,7 @@ import {
 } from '../compose/component-selector.js';
 import { handle as validateHandle } from './repl.validate.js';
 import type { ComponentCatalogEntry } from './types.js';
+import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -73,6 +74,9 @@ export interface DesignComposeOutput {
   status: 'ok' | 'error';
   layout: string;
   schema: UiSchema;
+  schemaRef?: string;
+  schemaRefCreatedAt?: string;
+  schemaRefExpiresAt?: string;
   selections: SlotSelectionEntry[];
   validation?: {
     status: 'ok' | 'invalid' | 'skipped';
@@ -307,10 +311,16 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   // 5. Return result
+  const schemaRefRecord = createSchemaRef(schema, 'compose');
+  const schemaRefMeta = describeSchemaRef(schemaRefRecord);
+
   return {
     status: 'ok',
     layout: layoutType,
     schema,
+    schemaRef: schemaRefMeta.ref,
+    schemaRefCreatedAt: schemaRefMeta.createdAt,
+    schemaRefExpiresAt: schemaRefMeta.expiresAt,
     selections,
     validation,
     warnings,

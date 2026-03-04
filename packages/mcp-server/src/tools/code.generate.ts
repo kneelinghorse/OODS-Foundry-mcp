@@ -5,6 +5,7 @@ import { emit as emitVue } from '../codegen/vue-emitter.js';
 import type { UiSchema } from '../schemas/generated.js';
 import type { CodeGenerateInput, CodeGenerateOutput } from './types.js';
 import type { Emitter, CodegenOptions, CodegenIssue } from '../codegen/types.js';
+import { resolveSchemaRef } from './schema-ref.js';
 
 const emitters: Record<string, Emitter> = {
   html: emitHtml,
@@ -39,8 +40,50 @@ function collectComponents(screens: UiSchema['screens']): Set<string> {
 }
 
 export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutput> {
-  const { schema, framework } = input;
+  const { framework } = input;
   const warnings: CodegenIssue[] = [];
+  let schema: UiSchema | undefined = input.schema;
+
+  if (!schema && input.schemaRef) {
+    const resolved = resolveSchemaRef(input.schemaRef);
+    if (resolved.ok) {
+      schema = resolved.schema;
+    } else {
+      return {
+        status: 'error',
+        framework,
+        code: '',
+        fileExtension: '',
+        imports: [],
+        warnings,
+        errors: [
+          {
+            code: resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND',
+            message:
+              `schemaRef '${input.schemaRef}' is ${resolved.reason}. ` +
+              'Run design.compose again to obtain a fresh schemaRef, or pass schema inline via the schema field.',
+          },
+        ],
+      };
+    }
+  }
+
+  if (!schema) {
+    return {
+      status: 'error',
+      framework,
+      code: '',
+      fileExtension: '',
+      imports: [],
+      warnings,
+      errors: [
+        {
+          code: 'MISSING_SCHEMA',
+          message: 'schema is required for code generation. Provide schema or schemaRef.',
+        },
+      ],
+    };
+  }
 
   // Validate the input schema structurally
   const schemaErrors = validateSchema(schema);

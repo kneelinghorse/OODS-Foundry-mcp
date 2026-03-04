@@ -4,11 +4,15 @@
   "title": "Code export input",
   "description": "Generate framework-specific code from a validated UiSchema.",
   "type": "object",
-  "required": ["schema", "framework"],
+  "required": ["framework"],
   "properties": {
     "schema": {
       "$ref": "./repl.ui.schema.json",
       "description": "A validated UiSchema tree to generate code from."
+    },
+    "schemaRef": {
+      "type": "string",
+      "description": "Reference to a cached UiSchema returned by design.compose."
     },
     "framework": {
       "type": "string",
@@ -34,5 +38,13 @@
       "default": {}
     }
   },
+  "allOf": [
+    {
+      "anyOf": [
+        { "required": ["schema"] },
+        { "required": ["schemaRef"] }
+      ]
+    }
+  ],
   "additionalProperties": false
 }

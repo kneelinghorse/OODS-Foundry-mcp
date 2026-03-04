@@ -95,7 +95,7 @@
     },
     "html": {
       "type": "string",
-      "description": "Standalone HTML5 document generated when apply=true and render validation passes."
+      "description": "Standalone HTML5 document generated when apply=true, output.format=document (or omitted), and render validation passes."
     },
     "fragments": {
       "type": "object",

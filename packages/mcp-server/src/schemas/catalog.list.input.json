@@ -13,6 +13,21 @@
     "context": {
       "type": "string",
       "description": "Filter components by context (e.g., 'detail', 'list')"
+    },
+    "detail": {
+      "type": "string",
+      "enum": ["summary", "full"],
+      "description": "Response detail level. Defaults to summary for unfiltered calls, full when filters are provided."
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "1-based page index for pagination."
+    },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of components per page."
     }
   },
   "additionalProperties": false

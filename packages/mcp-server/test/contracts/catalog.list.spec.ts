@@ -37,7 +37,11 @@ describe('catalog.list', () => {
   it('validates schema contracts', async () => {
     expect(validateInput({})).toBe(true);
     expect(validateInput({ category: 'core' })).toBe(true);
+    expect(validateInput({ detail: 'summary' })).toBe(true);
+    expect(validateInput({ page: 1, pageSize: 10 })).toBe(true);
     expect(validateInput({ unknown: true })).toBe(false);
+    expect(validateInput({ detail: 'expanded' })).toBe(false);
+    expect(validateInput({ page: 0 })).toBe(false);
 
     const output = await handle({});
     expect(validateOutput(output)).toBe(true);
@@ -52,13 +56,64 @@ describe('catalog.list', () => {
     expect(output.components).toBeDefined();
     expect(Array.isArray(output.components)).toBe(true);
     expect(output.totalCount).toBeGreaterThan(0);
+    expect(output.returnedCount).toBe(output.components.length);
+    expect(output.page).toBeGreaterThan(0);
+    expect(output.pageSize).toBeGreaterThanOrEqual(0);
+    expect(typeof output.hasMore).toBe('boolean');
+    expect(output.detail).toBeDefined();
     expect(output.generatedAt).toBeDefined();
     expect(output.stats).toBeDefined();
     expect(output.stats.componentCount).toBeGreaterThan(0);
   });
 
+  it('should default to summary mode with pagination for unfiltered calls', async () => {
+    const output: CatalogListOutput = await handle({});
+
+    expect(output.detail).toBe('summary');
+    expect(output.returnedCount).toBe(output.components.length);
+    expect(output.totalCount).toBeGreaterThanOrEqual(output.returnedCount);
+    if (output.pageSize > 0) {
+      expect(output.components.length).toBeLessThanOrEqual(output.pageSize);
+    }
+
+    const firstComponent = output.components[0] as any;
+    if (firstComponent) {
+      expect(firstComponent.propSchema).toBeUndefined();
+      expect(firstComponent.slots).toBeUndefined();
+      expect(firstComponent.codeReferences).toBeUndefined();
+      expect(firstComponent.codeSnippet).toBeUndefined();
+    }
+  });
+
+  it('should allow explicit full detail without default pagination', async () => {
+    const output: CatalogListOutput = await handle({ detail: 'full' });
+
+    expect(output.detail).toBe('full');
+    expect(output.hasMore).toBe(false);
+    expect(output.totalCount).toBe(output.components.length);
+  });
+
+  it('should paginate when page/pageSize are provided', async () => {
+    const firstPage: CatalogListOutput = await handle({ detail: 'summary', page: 1, pageSize: 1 });
+
+    expect(firstPage.page).toBe(1);
+    expect(firstPage.pageSize).toBe(1);
+    expect(firstPage.returnedCount).toBe(firstPage.components.length);
+    expect(firstPage.returnedCount).toBeLessThanOrEqual(1);
+
+    if (firstPage.totalCount > 1) {
+      const secondPage: CatalogListOutput = await handle({ detail: 'summary', page: 2, pageSize: 1 });
+      expect(secondPage.page).toBe(2);
+      expect(secondPage.pageSize).toBe(1);
+      expect(secondPage.returnedCount).toBeLessThanOrEqual(1);
+      if (firstPage.components[0] && secondPage.components[0]) {
+        expect(firstPage.components[0].name).not.toBe(secondPage.components[0].name);
+      }
+    }
+  });
+
   it('should include component properties', async () => {
-    const input: CatalogListInput = {};
+    const input: CatalogListInput = { detail: 'full' };
     const output: CatalogListOutput = await handle(input);
 
     expect(output.components.length).toBeGreaterThan(0);
@@ -102,6 +157,26 @@ describe('catalog.list', () => {
     }
   });
 
+  it('suggests traits when a trait filter returns zero results', async () => {
+    const allComponents = await handle({});
+    const availableTraits = new Set<string>();
+    allComponents.components.forEach((c) => {
+      c.traits.forEach((t) => availableTraits.add(t));
+    });
+
+    if (availableTraits.size > 0) {
+      const knownTrait = Array.from(availableTraits)[0];
+      let query = knownTrait.toLowerCase();
+      if (query === knownTrait) {
+        query = `${knownTrait}x`;
+      }
+      const output: CatalogListOutput = await handle({ trait: query });
+
+      expect(output.components.length).toBe(0);
+      expect(output.suggestions?.traits).toContain(knownTrait);
+    }
+  });
+
   it('should filter by context', async () => {
     const allComponents = await handle({});
 
@@ -126,10 +201,11 @@ describe('catalog.list', () => {
     const output: CatalogListOutput = await handle(input);
 
     expect(output.totalCount).toBe(output.components.length);
+    expect(output.returnedCount).toBe(output.components.length);
   });
 
   it('should include propSchema for components with traits', async () => {
-    const output: CatalogListOutput = await handle({});
+    const output: CatalogListOutput = await handle({ detail: 'full' });
 
     const componentsWithTraits = output.components.filter((c) => c.traits.length > 0);
     expect(componentsWithTraits.length).toBeGreaterThan(0);
@@ -144,7 +220,7 @@ describe('catalog.list', () => {
   });
 
   it('should have valid structure for propSchema entries', async () => {
-    const output: CatalogListOutput = await handle({});
+    const output: CatalogListOutput = await handle({ detail: 'full' });
 
     const componentWithProps = output.components.find(
       (c) => Object.keys(c.propSchema).length > 0
@@ -164,7 +240,7 @@ describe('catalog.list', () => {
   });
 
   it('should have valid structure for slots', async () => {
-    const output: CatalogListOutput = await handle({});
+    const output: CatalogListOutput = await handle({ detail: 'full' });
 
     const componentWithSlots = output.components.find(
       (c) => Object.keys(c.slots).length > 0
@@ -190,7 +266,7 @@ describe('catalog.list', () => {
   });
 
   it('should enrich entries with storybook code references when available', async () => {
-    const output: CatalogListOutput = await handle({});
+    const output: CatalogListOutput = await handle({ detail: 'full' });
     const byName = new Map(output.components.map((component) => [component.name, component]));
 
     const tagInput = byName.get('TagInput');
@@ -229,7 +305,7 @@ describe('catalog.list', () => {
 
       fs.writeFileSync(codeConnectPath, JSON.stringify(payload, null, 2));
 
-      const output: CatalogListOutput = await handle({});
+      const output: CatalogListOutput = await handle({ detail: 'full' });
       const byName = new Map(output.components.map((component) => [component.name, component]));
       const tagInput = byName.get('TagInput');
 

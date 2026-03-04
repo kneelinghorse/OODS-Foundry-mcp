@@ -6,8 +6,18 @@
   "properties": {
     "mode": { "type": "string", "enum": ["full", "patch"], "default": "full" },
     "schema": { "$ref": "./repl.ui.schema.json" },
-    "patch": { "$ref": "./repl.patch.json" },
-    "baseTree": { "$ref": "./repl.ui.schema.json" },
+    "schemaRef": {
+      "type": "string",
+      "description": "Reference to a cached UiSchema returned by design.compose."
+    },
+    "patch": {
+      "$ref": "./repl.patch.json",
+      "description": "Required when mode='patch'. Accepts JSON Patch array or node patch object(s)."
+    },
+    "baseTree": {
+      "$ref": "./repl.ui.schema.json",
+      "description": "Required when mode='patch' to provide the base UiSchema to patch."
+    },
     "options": {
       "type": "object",
       "properties": {
@@ -21,7 +31,10 @@
   },
   "required": ["mode"],
   "allOf": [
-    { "if": { "properties": { "mode": { "const": "full" } } }, "then": { "required": ["schema"] } },
+    {
+      "if": { "properties": { "mode": { "const": "full" } } },
+      "then": { "anyOf": [{ "required": ["schema"] }, { "required": ["schemaRef"] }] }
+    },
     { "if": { "properties": { "mode": { "const": "patch" } } }, "then": { "required": ["patch"] } }
   ],
   "additionalProperties": false

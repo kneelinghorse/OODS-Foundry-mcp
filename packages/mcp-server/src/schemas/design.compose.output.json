@@ -19,6 +19,18 @@
       "$ref": "./repl.ui.schema.json",
       "description": "The generated UiSchema (with slot placeholders intact for agent customization)."
     },
+    "schemaRef": {
+      "type": "string",
+      "description": "Server-managed reference to the generated schema for reuse in validate/render/code.generate."
+    },
+    "schemaRefCreatedAt": {
+      "type": "string",
+      "description": "ISO timestamp when the schemaRef was created."
+    },
+    "schemaRefExpiresAt": {
+      "type": "string",
+      "description": "ISO timestamp when the schemaRef expires."
+    },
     "selections": {
       "type": "array",
       "items": { "$ref": "#/$defs/slotSelection" },
