@@ -19,6 +19,7 @@ import {
   detailTemplate,
   listTemplate,
   resetIdCounter,
+  isSlotElement,
   type TemplateResult,
   type Slot,
 } from '../compose/templates/index.js';
@@ -174,7 +175,29 @@ function fillSlots(
   catalog: ComponentCatalogSummary[],
   overrides: Record<string, string> | undefined,
   topN: number,
+  intentContext: string,
+  tabLabels: string[] | undefined,
 ): SlotSelectionEntry[] {
+  const keywordPriorityIntents = new Set([
+    'data-display',
+    'data-list',
+    'data-table',
+    'form-input',
+    'metadata-display',
+    'metrics-display',
+    'status-indicator',
+    'tab-panel',
+  ]);
+
+  const contextForSlot = (slot: Slot): string[] => {
+    const context: string[] = [intentContext, slot.description];
+    const match = /^tab-(\d+)$/.exec(slot.name);
+    if (match && tabLabels?.[Number(match[1])]) {
+      context.push(tabLabels[Number(match[1])]);
+    }
+    return context.filter(Boolean);
+  };
+
   return slots.map(slot => {
     // Check for explicit override
     const override = overrides?.[slot.name];
@@ -192,7 +215,11 @@ function fillSlots(
     }
 
     // Use the component selector
-    const result: SelectionResult = selectComponent(slot.intent, catalog, { topN });
+    const result: SelectionResult = selectComponent(slot.intent, catalog, {
+      topN,
+      intentContext: contextForSlot(slot),
+      preferKeywordMatches: keywordPriorityIntents.has(slot.intent),
+    });
 
     return {
       slotName: slot.name,
@@ -201,6 +228,49 @@ function fillSlots(
       candidates: result.candidates,
     };
   });
+}
+
+function applyOverridesToSchema(
+  schema: UiSchema,
+  overrides: Record<string, string> | undefined,
+  catalog: ComponentCatalogSummary[],
+  warnings: ComposeIssue[],
+): void {
+  if (!overrides || Object.keys(overrides).length === 0) return;
+
+  const knownComponents = new Set(catalog.map(component => component.name));
+  const warned = new Set<string>();
+
+  for (const [slotName, overrideName] of Object.entries(overrides)) {
+    if (!knownComponents.has(overrideName) && !warned.has(`${slotName}:${overrideName}`)) {
+      warnings.push({
+        code: 'UNKNOWN_OVERRIDE_COMPONENT',
+        message: `Override component "${overrideName}" for slot "${slotName}" was not found in the catalog.`,
+        hint: 'Check the component name or refresh structured data.',
+      });
+      warned.add(`${slotName}:${overrideName}`);
+    }
+  }
+
+  const resolveSlotName = (el: UiElement): string | undefined => {
+    if (el.meta?.label) return el.meta.label;
+    if (el.meta?.intent?.startsWith('slot:')) {
+      return el.meta.intent.slice('slot:'.length);
+    }
+    return undefined;
+  };
+
+  const walk = (el: UiElement): void => {
+    if (isSlotElement(el)) {
+      const slotName = resolveSlotName(el);
+      if (slotName && overrides[slotName]) {
+        el.component = overrides[slotName];
+      }
+    }
+    el.children?.forEach(walk);
+  };
+
+  schema.screens.forEach(walk);
 }
 
 /* ------------------------------------------------------------------ */
@@ -268,7 +338,20 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   const topN = input.options?.topN ?? 3;
-  const selections = fillSlots(slots, catalog, input.preferences?.componentOverrides, topN);
+  const selections = fillSlots(
+    slots,
+    catalog,
+    input.preferences?.componentOverrides,
+    topN,
+    intentStr,
+    input.preferences?.tabLabels,
+  );
+  applyOverridesToSchema(
+    schema,
+    input.preferences?.componentOverrides,
+    catalog,
+    warnings,
+  );
 
   // 4. Auto-validate
   let validation: DesignComposeOutput['validation'];

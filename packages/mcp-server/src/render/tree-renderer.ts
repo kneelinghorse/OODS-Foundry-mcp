@@ -81,8 +81,10 @@ function resolveLayoutStyles(layout?: UiLayout): CssDeclarations {
 
   if (layout.align) {
     const alignValue = ALIGN_MAP[layout.align];
-    if (layout.type === 'stack' || layout.type === 'inline') {
+    if (layout.type === 'stack') {
       declarations['align-items'] = alignValue;
+    } else if (layout.type === 'inline') {
+      declarations['justify-content'] = alignValue;
     } else {
       declarations['justify-content'] = alignValue;
     }

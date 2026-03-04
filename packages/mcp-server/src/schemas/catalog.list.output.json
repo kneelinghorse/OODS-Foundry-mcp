@@ -146,6 +146,11 @@
           "type": "integer",
           "minimum": 0,
           "description": "Total traits available"
+        },
+        "filteredCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total components matching the active filters"
         }
       },
       "additionalProperties": false

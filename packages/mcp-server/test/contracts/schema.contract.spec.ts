@@ -34,6 +34,39 @@ describe('schema contracts', () => {
     expect(validateBrandApplyInput.errors).toBeNull();
   });
 
+  it('accepts patch strategy payloads with RFC 6902 operations', () => {
+    const payload: BrandApplyInput = {
+      strategy: 'patch',
+      delta: [{ op: 'replace', path: '/color/brand/A/text/primary/$value', value: 'oklch(0.5 0.05 86)' }],
+      apply: false,
+    };
+
+    expect(validateBrandApplyInput(payload)).toBe(true);
+    expect(validateBrandApplyInput.errors).toBeNull();
+  });
+
+  it('rejects patch payloads when delta is not an array', () => {
+    const invalidPayload: BrandApplyInput = {
+      strategy: 'patch',
+      delta: { typography: { body: { fontSize: 14 } } },
+      apply: false,
+    };
+
+    expect(validateBrandApplyInput(invalidPayload)).toBe(false);
+    expect(validateBrandApplyInput.errors).not.toBeNull();
+  });
+
+  it('rejects alias payloads when delta is an array', () => {
+    const invalidPayload: BrandApplyInput = {
+      strategy: 'alias',
+      delta: [{ op: 'replace', path: '/color/brand/A/text/primary/$value', value: 'oklch(0.5 0.05 86)' }],
+      apply: false,
+    };
+
+    expect(validateBrandApplyInput(invalidPayload)).toBe(false);
+    expect(validateBrandApplyInput.errors).not.toBeNull();
+  });
+
   it('rejects malformed brand.apply input payloads', () => {
     const invalidPayload = {
       delta: 42,

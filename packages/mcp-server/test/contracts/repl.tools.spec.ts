@@ -7,6 +7,7 @@ import renderOutputSchema from '../../src/schemas/repl.render.output.json' asser
 import { handle as validateHandle } from '../../src/tools/repl.validate.js';
 import { handle as renderHandle } from '../../src/tools/repl.render.js';
 import type { ReplValidateInput, UiSchema } from '../../src/schemas/generated.js';
+import { createSchemaRef } from '../../src/tools/schema-ref.js';
 
 const ajv = getAjv();
 const validateValidateInput = ajv.compile<ReplValidateInput>(validateInputSchema);
@@ -484,6 +485,45 @@ describe('Agentic REPL validate handler', () => {
     const entry = result.errors.find((err) => err.code === 'PATCH_ENTRY_INVALID');
     expect(entry?.path).toBe('/patch/0');
     expect(entry?.hint).toContain('nodeId');
+  });
+
+  it('uses schemaRef as implicit baseTree in patch mode', async () => {
+    const schemaRef = createSchemaRef(baseTree, 'compose').ref;
+
+    const result = await validateHandle({
+      mode: 'patch',
+      schemaRef,
+      patch: [{ op: 'replace', path: '/screens/0/component', value: 'Card' }],
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.appliedPatch).toBe(true);
+    expect(result.normalizedTree?.screens?.[0]?.component).toBe('Card');
+  });
+
+  it('reports schemaRef errors without emitting MISSING_BASE_TREE', async () => {
+    const result = await validateHandle({
+      mode: 'patch',
+      schemaRef: 'compose-missing-ref',
+      patch: [{ op: 'replace', path: '/screens/0/component', value: 'Card' }],
+    });
+
+    expect(result.status).toBe('invalid');
+    expect(result.errors.some((err) => err.code === 'SCHEMA_REF_NOT_FOUND')).toBe(true);
+    expect(result.errors.some((err) => err.code === 'MISSING_BASE_TREE')).toBe(false);
+    expect(result.appliedPatch).toBe(false);
+  });
+
+  it('sets appliedPatch=false when patch application fails', async () => {
+    const result = await validateHandle({
+      mode: 'patch',
+      baseTree,
+      patch: [{ op: 'replace', path: '/screens/9/component', value: 'Card' }],
+    });
+
+    expect(result.status).toBe('invalid');
+    expect(result.errors.some((err) => err.code === 'PATCH_PATH_MISSING')).toBe(true);
+    expect(result.appliedPatch).toBe(false);
   });
 
   it('returns structured errors for unknown components', async () => {

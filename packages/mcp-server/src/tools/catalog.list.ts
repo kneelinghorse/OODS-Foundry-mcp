@@ -517,7 +517,9 @@ function transformComponentsToSummary(componentsData: ComponentsDataset): Compon
     tags: component.tags || [],
     contexts: component.contexts || [],
     regions: component.regions || [],
-    traits: component.traitUsages?.map((usage) => usage.trait) || [],
+    traits: Array.from(
+      new Set(component.traitUsages?.map((usage) => usage.trait) || []),
+    ),
   }));
 }
 
@@ -628,6 +630,7 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
     const hasMore = shouldPaginate ? offset + returnedCount < totalCount : false;
 
     const componentCount = resolveComponentCount(componentsData);
+    const filteredCount = hasFilters ? totalCount : undefined;
 
     return {
       components,
@@ -641,6 +644,7 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       stats: {
         componentCount,
         traitCount: componentsData.stats?.traitCount || 0,
+        ...(filteredCount !== undefined ? { filteredCount } : {}),
       },
       ...(suggestions ? { suggestions } : {}),
     };

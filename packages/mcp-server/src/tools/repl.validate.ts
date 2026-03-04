@@ -55,8 +55,21 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
       errors.push({ code: 'MISSING_SCHEMA', message: 'schema is required when mode=full' });
     }
   } else {
-    workingTree = cloneTree(input.baseTree);
-    if (!workingTree) {
+    if (input.baseTree) {
+      workingTree = cloneTree(input.baseTree);
+    } else if (input.schemaRef) {
+      const resolved = resolveSchemaRef(input.schemaRef);
+      if (resolved.ok) {
+        workingTree = resolved.schema;
+      } else {
+        const code = resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND';
+        errors.push({
+          code,
+          message: `schemaRef '${input.schemaRef}' is ${resolved.reason}.`,
+          hint: 'Run design.compose again to obtain a fresh schemaRef, or pass baseTree inline via the baseTree field.',
+        });
+      }
+    } else {
       errors.push({
         code: 'MISSING_BASE_TREE',
         message: 'baseTree is required when mode=patch',
@@ -79,7 +92,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
         normalizedPatch = patchResult.normalized;
       }
       errors.push(...patchResult.issues);
-      appliedPatch = patchResult.normalized.length > 0;
+      appliedPatch = patchResult.normalized.length > 0 && patchResult.issues.length === 0;
     }
   }
 
@@ -124,8 +137,8 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
   if (normalizedPatch && normalizedPatch.length) {
     output.normalizedPatch = normalizedPatch as ReplValidateOutput['normalizedPatch'];
   }
-  if (appliedPatch) {
-    output.appliedPatch = true;
+  if (mode === 'patch') {
+    output.appliedPatch = appliedPatch;
   }
   if (meta) {
     output.meta = meta;

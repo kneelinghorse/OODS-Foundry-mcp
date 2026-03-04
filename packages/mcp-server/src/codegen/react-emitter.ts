@@ -51,8 +51,10 @@ function resolveLayoutStyles(layout?: UiLayout): StyleObj {
 
   if (layout.align) {
     const value = ALIGN_MAP[layout.align];
-    if (layout.type === 'stack' || layout.type === 'inline') {
+    if (layout.type === 'stack') {
       s.alignItems = value;
+    } else if (layout.type === 'inline') {
+      s.justifyContent = value;
     } else {
       s.justifyContent = value;
     }

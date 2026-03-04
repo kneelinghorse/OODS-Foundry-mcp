@@ -215,6 +215,7 @@ export type CatalogListOutput = {
   stats: {
     componentCount: number;
     traitCount: number;
+    filteredCount?: number;
   };
   suggestions?: {
     traits?: string[];
