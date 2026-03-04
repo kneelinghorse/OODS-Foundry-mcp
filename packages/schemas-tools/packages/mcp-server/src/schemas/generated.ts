@@ -3,1764 +3,1967 @@
 // Do not edit manually; instead update the source JSON schemas and re-run the generator.
 
 // Source: a11y.report.json
-/**
- * Structured WCAG accessibility scan report with per-rule contrast results.
- */
-export interface A11YScanReport {
-  generatedAt: string;
+export namespace A11yReportSchema {
   /**
-   * Path to the token data used for evaluation.
+   * Structured WCAG accessibility scan report with per-rule contrast results.
    */
-  tokenSource?: string;
-  summary: {
-    totalChecks: number;
-    passed: number;
-    failed: number;
-    complianceStatus: 'compliant' | 'non-compliant';
-  };
-  rules: {
-    ruleId: string;
-    target: string;
-    summary?: string;
-    passed: boolean;
-    ratio?: number;
-    threshold: number;
-    foreground?: {
-      token?: string;
-      hex?: string;
-      cssVariable?: string;
+  export interface A11YReport {
+    generatedAt: string;
+    /**
+     * Path to the token data used for evaluation.
+     */
+    tokenSource?: string;
+    summary: {
+      totalChecks: number;
+      passed: number;
+      failed: number;
+      complianceStatus: 'compliant' | 'non-compliant';
     };
-    background?: {
-      token?: string;
-      hex?: string;
-      cssVariable?: string;
-    };
-    hint?: string;
-  }[];
-  /**
-   * Component names from the scanned UiSchema, if provided.
-   */
-  components?: string[];
-}
-
-// Source: a11y.scan.input.json
-/**
- * Accessibility scan input. Runs WCAG contrast checks against design tokens.
- */
-export interface A11YScanInput {
-  /**
-   * When true, write the a11y report artifact to the artifacts directory.
-   */
-  apply?: boolean;
-  schema?: AgenticREPLUISchema;
-}
-/**
- * Optional UiSchema to include component inventory in the report.
- */
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
-  /**
-   * @minItems 1
-   */
-  screens: [UiElement, ...UiElement[]];
-}
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
-
-// Source: billing.reviewKit.input.json
-/**
- * When true, writes review kit artifacts to the billing bundle directory.
- */
-export type ApplyChanges = boolean;
-/**
- * Billing object to include in the review kit bundle.
- */
-export type Object = 'Subscription' | 'Invoice' | 'Plan' | 'Usage';
-/**
- * Provider fixtures to compare in the review kit.
- *
- * @minItems 1
- */
-export type Fixtures = ['stripe' | 'chargebee', ...('stripe' | 'chargebee')[]];
-
-export interface BillingReviewKitInput {
-  apply?: ApplyChanges;
-  object: Object;
-  fixtures?: Fixtures;
-}
-
-// Source: billing.switchFixtures.input.json
-/**
- * When true, records the fixture switch results as artifacts.
- */
-export type ApplyChanges = boolean;
-/**
- * Billing fixture provider to activate for Storybook scenarios.
- */
-export type Provider = 'stripe' | 'chargebee';
-
-export interface BillingSwitchFixturesInput {
-  apply?: ApplyChanges;
-  provider: Provider;
-}
-
-// Source: brand.apply.input.json
-export interface BrandApplyInput {
-  /**
-   * Target brand identifier.
-   */
-  brand?: 'A';
-  /**
-   * Alias changes (object) or RFC 6902 patch array when strategy=patch.
-   */
-  delta:
-    | {
-        [k: string]: any;
-      }
-    | {
-        op: string;
-        path: string;
-        [k: string]: any;
-      }[];
-  /**
-   * Alias strategy rewrites token values; patch applies RFC 6902 operations.
-   */
-  strategy?: 'alias' | 'patch';
-  /**
-   * Preview response controls (apply=false).
-   */
-  preview?: {
-    /**
-     * full includes structured before/after payloads; compact returns summary + hunks only.
-     */
-    verbosity?: 'full' | 'compact';
-    [k: string]: any;
-  };
-  apply?: boolean;
-}
-
-// Source: brand.apply.output.json
-export interface BrandApplyOutput {
-  artifacts: string[];
-  diagnosticsPath?: string;
-  transcriptPath: string;
-  bundleIndexPath: string;
-  preview?: {
-    summary?: string;
-    notes?: string[];
-    diffs?: PlanDiff[];
-    specimens?: string[];
-  };
-  artifactsDetail?: ArtifactDetail[];
-}
-export interface PlanDiff {
-  path: string;
-  status: 'added' | 'modified' | 'deleted';
-  summary?: {
-    additions?: number;
-    deletions?: number;
-  };
-  hunks: PlanDiffHunk[];
-  structured?: {
-    type: string;
-    before?: any;
-    after?: any;
-  };
-}
-export interface PlanDiffHunk {
-  header: string;
-  changes: PlanDiffChange[];
-}
-export interface PlanDiffChange {
-  type: 'context' | 'add' | 'remove';
-  value: string;
-}
-export interface ArtifactDetail {
-  path: string;
-  name: string;
-  purpose?: string;
-  sha256?: string;
-  sizeBytes?: number;
-}
-
-// Source: catalog.list.input.json
-export interface CatalogListInput {
-  /**
-   * Filter components by category (e.g., 'core', 'data')
-   */
-  category?: string;
-  /**
-   * Filter components by trait (e.g., 'Editable', 'Searchable')
-   */
-  trait?: string;
-  /**
-   * Filter components by context (e.g., 'detail', 'list')
-   */
-  context?: string;
-  /**
-   * Response detail level. Defaults to summary for unfiltered calls, full when filters are provided.
-   */
-  detail?: 'summary' | 'full';
-  /**
-   * 1-based page index for pagination.
-   */
-  page?: number;
-  /**
-   * Number of components per page.
-   */
-  pageSize?: number;
-}
-
-// Source: catalog.list.output.json
-export interface CatalogListOutput {
-  /**
-   * Array of component catalog entries
-   */
-  components: {
-    /**
-     * Component name (e.g., 'Button', 'Card')
-     */
-    name: string;
-    /**
-     * Human-readable display name
-     */
-    displayName: string;
-    /**
-     * Component categories (e.g., ['core'], ['data'])
-     */
-    categories: string[];
-    /**
-     * Component tags for search and discovery
-     */
-    tags: string[];
-    /**
-     * Rendering contexts where component can be used
-     */
-    contexts: string[];
-    /**
-     * UI regions where component can appear
-     */
-    regions: string[];
-    /**
-     * List of trait capabilities (e.g., ['Editable', 'Searchable'])
-     */
-    traits: string[];
-    /**
-     * Component prop schema with types and defaults (detail=full only).
-     */
-    propSchema?: {
-      [k: string]: any;
-    };
-    /**
-     * Slot definitions with accepted types and roles (detail=full only).
-     */
-    slots?: {
-      [k: string]: {
-        accept?: string[];
-        role?: string;
-        [k: string]: any;
+    rules: {
+      ruleId: string;
+      target: string;
+      summary?: string;
+      passed: boolean;
+      ratio?: number;
+      threshold: number;
+      foreground?: {
+        token?: string;
+        hex?: string;
+        cssVariable?: string;
       };
-    };
-    /**
-     * References into Storybook `.stories.tsx` files (usage patterns + minimal snippets, detail=full only).
-     */
-    codeReferences?: {
-      /**
-       * Reference kind.
-       */
-      kind: 'storybook' | 'code-connect';
-      /**
-       * Repo-relative POSIX path to a source file containing a usage example.
-       */
-      path: string;
-      /**
-       * Storybook title when available.
-       */
-      title?: string;
-      /**
-       * Concise usage snippet extracted from the story file.
-       */
-      snippet: string;
+      background?: {
+        token?: string;
+        hex?: string;
+        cssVariable?: string;
+      };
+      hint?: string;
     }[];
     /**
-     * Convenience: best single snippet picked from codeReferences (detail=full only).
+     * Component names from the scanned UiSchema, if provided.
      */
-    codeSnippet?: string;
-  }[];
-  /**
-   * Total number of components that match the filters (before pagination).
-   */
-  totalCount: number;
-  /**
-   * Number of components returned in this page.
-   */
-  returnedCount: number;
-  /**
-   * 1-based page index used for pagination.
-   */
-  page: number;
-  /**
-   * Page size used for pagination. 0 when there are no results.
-   */
-  pageSize: number;
-  /**
-   * Whether more components are available after this page.
-   */
-  hasMore: boolean;
-  /**
-   * Detail level applied to component entries.
-   */
-  detail: 'summary' | 'full';
-  /**
-   * ISO timestamp when catalog was generated
-   */
-  generatedAt: string;
-  stats: {
-    /**
-     * Total components in catalog
-     */
-    componentCount: number;
-    /**
-     * Total traits available
-     */
-    traitCount: number;
-  };
-  /**
-   * Suggested filter values when a query returns zero results.
-   */
-  suggestions?: {
-    /**
-     * Closest matching trait names.
-     */
-    traits?: string[];
-  };
+    components?: string[];
+  }
 }
+export type A11yReport = A11yReportSchema.A11YReport;
 
-// Source: code.generate.input.json
-/**
- * Generate framework-specific code from a validated UiSchema.
- */
-export type CodeExportInput = CodeExportInput1 & CodeExportInput2;
-export type CodeExportInput1 = {
-  [k: string]: any;
-};
+// Source: a11y.scan.input.json
+export namespace A11yScanInputSchema {
+  /**
+   * Accessibility scan input. Runs WCAG contrast checks against design tokens.
+   */
+  export interface A11YScanInput {
+    /**
+     * When true, write the a11y report artifact to the artifacts directory.
+     */
+    apply?: boolean;
+    schema?: AgenticREPLUISchema;
+  }
+  /**
+   * Optional UiSchema to include component inventory in the report.
+   */
+  export interface AgenticREPLUISchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
+    [k: string]: string;
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
+}
+export type A11yScanInput = A11yScanInputSchema.A11YScanInput;
 
-export interface CodeExportInput2 {
-  schema?: AgenticREPLUISchema;
+// Source: billing.reviewKit.input.json
+export namespace BillingReviewKitInputSchema {
   /**
-   * Reference to a cached UiSchema returned by design.compose.
+   * When true, writes review kit artifacts to the billing bundle directory.
    */
-  schemaRef?: string;
+  export type ApplyChanges = boolean;
   /**
-   * Target framework for code generation. HTML delegates to existing repl.render document mode.
+   * Billing object to include in the review kit bundle.
    */
-  framework: 'react' | 'vue' | 'html';
-  options?: {
-    /**
-     * When true, emit TypeScript prop types (React) or typed defineProps (Vue). Ignored for HTML.
-     */
-    typescript?: boolean;
-    /**
-     * Styling strategy: inline style objects or design-token CSS variables.
-     */
-    styling?: 'inline' | 'tokens';
-  };
-}
-/**
- * A validated UiSchema tree to generate code from.
- */
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
+  export type Object = 'Subscription' | 'Invoice' | 'Plan' | 'Usage';
   /**
-   * @minItems 1
-   */
-  screens: [UiElement, ...UiElement[]];
-}
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
-
-// Source: code.generate.output.json
-/**
- * Generated framework-specific code from a UiSchema.
- */
-export interface CodeExportOutput {
-  /**
-   * Whether code generation succeeded.
-   */
-  status: 'ok' | 'error';
-  /**
-   * The target framework that was used.
-   */
-  framework: 'react' | 'vue' | 'html';
-  /**
-   * The generated source code. Empty string on error.
-   */
-  code: string;
-  /**
-   * Suggested file extension including the dot (e.g., '.tsx', '.vue', '.html').
-   */
-  fileExtension: string;
-  /**
-   * Import statements or package names required by the generated code.
-   */
-  imports: string[];
-  /**
-   * Non-fatal issues encountered during generation.
-   */
-  warnings: CodegenIssue[];
-  /**
-   * Fatal issues that prevented code generation.
-   */
-  errors?: CodegenIssue[];
-  meta?: {
-    nodeCount?: number;
-    componentCount?: number;
-    unknownComponents?: string[];
-  };
-}
-export interface CodegenIssue {
-  code: string;
-  message: string;
-  nodeId?: string;
-  component?: string;
-}
-
-// Source: component-mapping.schema.json
-/**
- * Schema for external design system component-to-OODS-trait mapping records. Enables onboarding external systems (Material, Ant, Chakra, etc.) into OODS.
- */
-export interface ComponentMappingSchema {
-  $schema?: string;
-  /**
-   * ISO timestamp of last modification.
-   */
-  generatedAt: string;
-  /**
-   * Date-stamped version (e.g., '2026-02-28').
-   */
-  version: string;
-  stats: {
-    /**
-     * Total number of component mappings.
-     */
-    mappingCount: number;
-    /**
-     * Number of distinct external systems.
-     */
-    systemCount: number;
-  };
-  /**
-   * Array of component mapping records.
-   */
-  mappings: ComponentMapping[];
-}
-export interface ComponentMapping {
-  /**
-   * Unique mapping identifier (e.g., 'material-button').
-   */
-  id: string;
-  /**
-   * External design system name (e.g., 'material', 'ant-design', 'chakra').
-   */
-  externalSystem: string;
-  /**
-   * Component name in the external system (e.g., 'Button', 'TextField').
-   */
-  externalComponent: string;
-  /**
-   * OODS trait names this component maps to (e.g., ['Stateful', 'Taggable']).
+   * Provider fixtures to compare in the review kit.
    *
    * @minItems 1
    */
-  oodsTraits: [string, ...string[]];
-  /**
-   * Property translations from external to OODS prop names.
-   */
-  propMappings?: PropMapping[];
-  /**
-   * 'auto' for machine-generated mappings, 'manual' for human-curated.
-   */
-  confidence: 'auto' | 'manual';
-  metadata?: MappingMetadata;
-}
-export interface PropMapping {
-  /**
-   * Property name in the external system.
-   */
-  externalProp: string;
-  /**
-   * Corresponding OODS property name.
-   */
-  oodsProp: string;
-  /**
-   * Type coercion hint. null for direct pass-through.
-   */
-  coercion?: null | CoercionHint;
-}
-export interface CoercionHint {
-  /**
-   * Coercion strategy: enum-map (value mapping), boolean-invert (negate), string-template (format transform), type-cast (type conversion).
-   */
-  type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-  /**
-   * For enum-map: external value to OODS value mapping.
-   */
-  values?: {
-    [k: string]: string;
-  };
-  /**
-   * For string-template: template string with {value} placeholder.
-   */
-  template?: string;
-  /**
-   * For type-cast: target type to cast to.
-   */
-  targetType?: 'string' | 'number' | 'boolean';
-}
-export interface MappingMetadata {
-  /**
-   * When the mapping was first created.
-   */
-  createdAt?: string;
-  /**
-   * When the mapping was last updated.
-   */
-  updatedAt?: string;
-  /**
-   * Who created or last edited this mapping.
-   */
-  author?: string;
-  /**
-   * Free-form notes about this mapping.
-   */
-  notes?: string;
-}
+  export type Fixtures = ['stripe' | 'chargebee', ...('stripe' | 'chargebee')[]];
 
-// Source: design.compose.input.json
-/**
- * Generate a complete UiSchema from an intent description using layout templates and component selection.
- */
-export interface DesignComposeInput {
+  export interface BillingReviewKitInput {
+    apply?: ApplyChanges;
+    object: Object;
+    fixtures?: Fixtures;
+  }
+}
+export type BillingReviewKitInput = BillingReviewKitInputSchema.BillingReviewKitInput;
+
+// Source: billing.switchFixtures.input.json
+export namespace BillingSwitchFixturesInputSchema {
   /**
-   * Natural-language description of the desired UI (e.g., 'dashboard with metrics and sidebar', 'user registration form').
+   * When true, records the fixture switch results as artifacts.
    */
-  intent: string;
+  export type ApplyChanges = boolean;
   /**
-   * Layout template to use. 'auto' infers the best template from intent keywords.
+   * Billing fixture provider to activate for Storybook scenarios.
    */
-  layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
-  preferences?: {
+  export type Provider = 'stripe' | 'chargebee';
+
+  export interface BillingSwitchFixturesInput {
+    apply?: ApplyChanges;
+    provider: Provider;
+  }
+}
+export type BillingSwitchFixturesInput = BillingSwitchFixturesInputSchema.BillingSwitchFixturesInput;
+
+// Source: brand.apply.input.json
+export namespace BrandApplyInputSchema {
+  export interface BrandApplyInput {
     /**
-     * Theme token (e.g., 'light', 'dark').
+     * Target brand identifier.
      */
-    theme?: string;
+    brand?: 'A';
     /**
-     * Number of metric columns for dashboard layout.
+     * Alias changes (object) or RFC 6902 patch array when strategy=patch.
      */
-    metricColumns?: number;
+    delta:
+      | {
+          [k: string]: any;
+        }
+      | {
+          op: string;
+          path: string;
+          [k: string]: any;
+        }[];
     /**
-     * Number of field groups for form layout.
+     * Alias strategy rewrites token values; patch applies RFC 6902 operations.
      */
-    fieldGroups?: number;
+    strategy?: 'alias' | 'patch';
     /**
-     * Number of tabs for detail layout.
+     * Preview response controls (apply=false).
      */
-    tabCount?: number;
-    /**
-     * Custom tab labels for detail layout.
-     */
-    tabLabels?: string[];
-    /**
-     * Slot-name → component-name overrides (e.g., { 'items': 'Table' }).
-     */
-    componentOverrides?: {
-      [k: string]: string;
+    preview?: {
+      /**
+       * full includes structured before/after payloads; compact returns summary + hunks only.
+       */
+      verbosity?: 'full' | 'compact';
     };
-  };
-  options?: {
-    /**
-     * Auto-validate the generated schema via repl.validate.
-     */
-    validate?: boolean;
-    /**
-     * Number of component candidates to return per slot.
-     */
-    topN?: number;
-  };
+    apply?: boolean;
+  }
 }
+export type BrandApplyInput = BrandApplyInputSchema.BrandApplyInput;
 
-// Source: design.compose.output.json
-/**
- * Generated UiSchema with component selections and validation result.
- */
-export interface DesignComposeOutput {
-  /**
-   * Whether composition succeeded.
-   */
-  status: 'ok' | 'error';
-  /**
-   * The layout template that was used.
-   */
-  layout: string;
-  schema: AgenticREPLUISchema;
-  /**
-   * Server-managed reference to the generated schema for reuse in validate/render/code.generate.
-   */
-  schemaRef?: string;
-  /**
-   * ISO timestamp when the schemaRef was created.
-   */
-  schemaRefCreatedAt?: string;
-  /**
-   * ISO timestamp when the schemaRef expires.
-   */
-  schemaRefExpiresAt?: string;
-  /**
-   * Component selection results per slot.
-   */
-  selections: SlotSelection[];
-  validation?: {
-    status?: 'ok' | 'invalid' | 'skipped';
-    errors?: Issue[];
-    warnings?: Issue[];
-  };
-  /**
-   * Non-fatal issues during composition.
-   */
-  warnings: Issue[];
-  /**
-   * Fatal issues that prevented composition.
-   */
-  errors?: Issue[];
-  meta?: {
-    intentParsed?: string;
-    layoutDetected?: string;
-    slotCount?: number;
-    nodeCount?: number;
-  };
-}
-/**
- * The generated UiSchema (with slot placeholders intact for agent customization).
- */
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
-  /**
-   * @minItems 1
-   */
-  screens: [UiElement, ...UiElement[]];
-}
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
-export interface SlotSelection {
-  slotName: string;
-  intent: string;
-  selectedComponent?: string;
-  candidates: {
-    name: string;
-    confidence: number;
-    reason: string;
-  }[];
-}
-export interface Issue {
-  code: string;
-  message: string;
-  path?: string;
-  hint?: string;
-}
-
-// Source: generic.input.json
-export interface GenericInput {
-  apply?: boolean;
-}
-
-// Source: generic.output.json
-export interface GenericOutput {
-  status?: 'ok' | 'error' | 'invalid';
-  notes?: string;
-  logs?: string[];
-  artifacts: (
-    | string
-    | {
-        path: string;
-        name?: string;
-        purpose?: string;
-        sha256?: string;
-        sizeBytes?: number;
-      }
-  )[];
-  diagnosticsPath?: string;
-  transcriptPath: string;
-  bundleIndexPath: string;
-  structuredData?: {
-    [k: string]: any;
-  };
-  artifactsDetail?: {
+// Source: brand.apply.output.json
+export namespace BrandApplyOutputSchema {
+  export interface BrandApplyOutput {
+    artifacts: string[];
+    diagnosticsPath?: string;
+    transcriptPath: string;
+    bundleIndexPath: string;
+    preview?: {
+      summary?: string;
+      notes?: string[];
+      diffs?: PlanDiff[];
+      specimens?: string[];
+    };
+    artifactsDetail?: ArtifactDetail[];
+  }
+  export interface PlanDiff {
     path: string;
-    name?: string;
+    status: 'added' | 'modified' | 'deleted';
+    summary?: {
+      additions?: number;
+      deletions?: number;
+    };
+    hunks: PlanDiffHunk[];
+    structured?: {
+      type: string;
+      before?: any;
+      after?: any;
+    };
+  }
+  export interface PlanDiffHunk {
+    header: string;
+    changes: PlanDiffChange[];
+  }
+  export interface PlanDiffChange {
+    type: 'context' | 'add' | 'remove';
+    value: string;
+  }
+  export interface ArtifactDetail {
+    path: string;
+    name: string;
     purpose?: string;
     sha256?: string;
     sizeBytes?: number;
-    [k: string]: any;
-  }[];
-  preview?: {
-    summary?: string;
-    notes?: string[];
-    diffs?: {
-      path: string;
-      status: 'added' | 'modified' | 'deleted';
-      summary?: {
-        additions?: number;
-        deletions?: number;
-      };
-      hunks: {
-        header: string;
-        changes: {
-          type: 'context' | 'add' | 'remove';
-          value: any;
-        }[];
-      }[];
-      structured?: {
-        type: 'json';
-        before?: any;
-        after?: any;
-      };
-    }[];
-    specimens?: string[];
-  };
+  }
 }
+export type BrandApplyOutput = BrandApplyOutputSchema.BrandApplyOutput;
+
+// Source: catalog.list.input.json
+export namespace CatalogListInputSchema {
+  export interface CatalogListInput {
+    /**
+     * Filter components by category (e.g., 'core', 'data')
+     */
+    category?: string;
+    /**
+     * Filter components by trait (e.g., 'Editable', 'Searchable')
+     */
+    trait?: string;
+    /**
+     * Filter components by context (e.g., 'detail', 'list')
+     */
+    context?: string;
+    /**
+     * Response detail level. Defaults to summary for unfiltered calls, full when filters are provided.
+     */
+    detail?: 'summary' | 'full';
+    /**
+     * 1-based page index for pagination.
+     */
+    page?: number;
+    /**
+     * Number of components per page.
+     */
+    pageSize?: number;
+  }
+}
+export type CatalogListInput = CatalogListInputSchema.CatalogListInput;
+
+// Source: catalog.list.output.json
+export namespace CatalogListOutputSchema {
+  export interface CatalogListOutput {
+    /**
+     * Array of component catalog entries
+     */
+    components: {
+      /**
+       * Component name (e.g., 'Button', 'Card')
+       */
+      name: string;
+      /**
+       * Human-readable display name
+       */
+      displayName: string;
+      /**
+       * Component categories (e.g., ['core'], ['data'])
+       */
+      categories: string[];
+      /**
+       * Component tags for search and discovery
+       */
+      tags: string[];
+      /**
+       * Rendering contexts where component can be used
+       */
+      contexts: string[];
+      /**
+       * UI regions where component can appear
+       */
+      regions: string[];
+      /**
+       * List of trait capabilities (e.g., ['Editable', 'Searchable'])
+       */
+      traits: string[];
+      /**
+       * Component prop schema with types and defaults (detail=full only).
+       */
+      propSchema?: {
+        [k: string]: any;
+      };
+      /**
+       * Slot definitions with accepted types and roles (detail=full only).
+       */
+      slots?: {
+        [k: string]: {
+          accept?: string[];
+          role?: string;
+          [k: string]: any;
+        };
+      };
+      /**
+       * References into Storybook `.stories.tsx` files (usage patterns + minimal snippets, detail=full only).
+       */
+      codeReferences?: {
+        /**
+         * Reference kind.
+         */
+        kind: 'storybook' | 'code-connect';
+        /**
+         * Repo-relative POSIX path to a source file containing a usage example.
+         */
+        path: string;
+        /**
+         * Storybook title when available.
+         */
+        title?: string;
+        /**
+         * Concise usage snippet extracted from the story file.
+         */
+        snippet: string;
+      }[];
+      /**
+       * Convenience: best single snippet picked from codeReferences (detail=full only).
+       */
+      codeSnippet?: string;
+    }[];
+    /**
+     * Total number of components that match the filters (before pagination).
+     */
+    totalCount: number;
+    /**
+     * Number of components returned in this page.
+     */
+    returnedCount: number;
+    /**
+     * 1-based page index used for pagination.
+     */
+    page: number;
+    /**
+     * Page size used for pagination. 0 when there are no results.
+     */
+    pageSize: number;
+    /**
+     * Whether more components are available after this page.
+     */
+    hasMore: boolean;
+    /**
+     * Detail level applied to component entries.
+     */
+    detail: 'summary' | 'full';
+    /**
+     * ISO timestamp when catalog was generated
+     */
+    generatedAt: string;
+    stats: {
+      /**
+       * Total components in catalog
+       */
+      componentCount: number;
+      /**
+       * Total traits available
+       */
+      traitCount: number;
+    };
+    /**
+     * Suggested filter values when a query returns zero results.
+     */
+    suggestions?: {
+      /**
+       * Closest matching trait names.
+       */
+      traits?: string[];
+    };
+  }
+}
+export type CatalogListOutput = CatalogListOutputSchema.CatalogListOutput;
+
+// Source: code.generate.input.json
+export namespace CodeGenerateInputSchema {
+  /**
+   * Generate framework-specific code from a validated UiSchema.
+   */
+  export type CodeGenerateInput = CodeGenerateInput1 & CodeGenerateInput2;
+  export type CodeGenerateInput1 = {
+    [k: string]: any;
+  };
+
+  export interface CodeGenerateInput2 {
+    schema?: AgenticREPLUISchema;
+    /**
+     * Reference to a cached UiSchema returned by design.compose.
+     */
+    schemaRef?: string;
+    /**
+     * Target framework for code generation. HTML delegates to existing repl.render document mode.
+     */
+    framework: 'react' | 'vue' | 'html';
+    options?: {
+      /**
+       * When true, emit TypeScript prop types (React) or typed defineProps (Vue). Ignored for HTML.
+       */
+      typescript?: boolean;
+      /**
+       * Styling strategy: inline style objects or design-token CSS variables.
+       */
+      styling?: 'inline' | 'tokens';
+    };
+  }
+  /**
+   * A validated UiSchema tree to generate code from.
+   */
+  export interface AgenticREPLUISchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
+    [k: string]: string;
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
+}
+export type CodeGenerateInput = CodeGenerateInputSchema.CodeGenerateInput;
+
+// Source: code.generate.output.json
+export namespace CodeGenerateOutputSchema {
+  /**
+   * Generated framework-specific code from a UiSchema.
+   */
+  export interface CodeGenerateOutput {
+    /**
+     * Whether code generation succeeded.
+     */
+    status: 'ok' | 'error';
+    /**
+     * The target framework that was used.
+     */
+    framework: 'react' | 'vue' | 'html';
+    /**
+     * The generated source code. Empty string on error.
+     */
+    code: string;
+    /**
+     * Suggested file extension including the dot (e.g., '.tsx', '.vue', '.html').
+     */
+    fileExtension: string;
+    /**
+     * Import statements or package names required by the generated code.
+     */
+    imports: string[];
+    /**
+     * Non-fatal issues encountered during generation.
+     */
+    warnings: CodegenIssue[];
+    /**
+     * Fatal issues that prevented code generation.
+     */
+    errors?: CodegenIssue[];
+    meta?: {
+      nodeCount?: number;
+      componentCount?: number;
+      unknownComponents?: string[];
+    };
+  }
+  export interface CodegenIssue {
+    code: string;
+    message: string;
+    nodeId?: string;
+    component?: string;
+  }
+}
+export type CodeGenerateOutput = CodeGenerateOutputSchema.CodeGenerateOutput;
+
+// Source: component-mapping.schema.json
+export namespace ComponentMappingSchemaSchema {
+  /**
+   * Schema for external design system component-to-OODS-trait mapping records. Enables onboarding external systems (Material, Ant, Chakra, etc.) into OODS.
+   */
+  export interface ComponentMappingSchema {
+    $schema?: string;
+    /**
+     * ISO timestamp of last modification.
+     */
+    generatedAt: string;
+    /**
+     * Date-stamped version (e.g., '2026-02-28').
+     */
+    version: string;
+    stats: {
+      /**
+       * Total number of component mappings.
+       */
+      mappingCount: number;
+      /**
+       * Number of distinct external systems.
+       */
+      systemCount: number;
+    };
+    /**
+     * Array of component mapping records.
+     */
+    mappings: ComponentMapping[];
+  }
+  export interface ComponentMapping {
+    /**
+     * Unique mapping identifier (e.g., 'material-button').
+     */
+    id: string;
+    /**
+     * External design system name (e.g., 'material', 'ant-design', 'chakra').
+     */
+    externalSystem: string;
+    /**
+     * Component name in the external system (e.g., 'Button', 'TextField').
+     */
+    externalComponent: string;
+    /**
+     * OODS trait names this component maps to (e.g., ['Stateful', 'Taggable']).
+     *
+     * @minItems 1
+     */
+    oodsTraits: [string, ...string[]];
+    /**
+     * Property translations from external to OODS prop names.
+     */
+    propMappings?: PropMapping[];
+    /**
+     * 'auto' for machine-generated mappings, 'manual' for human-curated.
+     */
+    confidence: 'auto' | 'manual';
+    metadata?: MappingMetadata;
+  }
+  export interface PropMapping {
+    /**
+     * Property name in the external system.
+     */
+    externalProp: string;
+    /**
+     * Corresponding OODS property name.
+     */
+    oodsProp: string;
+    /**
+     * Type coercion hint. null for direct pass-through.
+     */
+    coercion?: null | CoercionHint;
+  }
+  export interface CoercionHint {
+    /**
+     * Coercion strategy: enum-map (value mapping), boolean-invert (negate), string-template (format transform), type-cast (type conversion).
+     */
+    type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
+    /**
+     * For enum-map: external value to OODS value mapping.
+     */
+    values?: {
+      [k: string]: string;
+    };
+    /**
+     * For string-template: template string with {value} placeholder.
+     */
+    template?: string;
+    /**
+     * For type-cast: target type to cast to.
+     */
+    targetType?: 'string' | 'number' | 'boolean';
+  }
+  export interface MappingMetadata {
+    /**
+     * When the mapping was first created.
+     */
+    createdAt?: string;
+    /**
+     * When the mapping was last updated.
+     */
+    updatedAt?: string;
+    /**
+     * Who created or last edited this mapping.
+     */
+    author?: string;
+    /**
+     * Free-form notes about this mapping.
+     */
+    notes?: string;
+  }
+}
+export type ComponentMappingSchema = ComponentMappingSchemaSchema.ComponentMappingSchema;
+
+// Source: design.compose.input.json
+export namespace DesignComposeInputSchema {
+  /**
+   * Generate a complete UiSchema from an intent description using layout templates and component selection.
+   */
+  export interface DesignComposeInput {
+    /**
+     * Natural-language description of the desired UI (e.g., 'dashboard with metrics and sidebar', 'user registration form').
+     */
+    intent: string;
+    /**
+     * Layout template to use. 'auto' infers the best template from intent keywords.
+     */
+    layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
+    preferences?: {
+      /**
+       * Theme token (e.g., 'light', 'dark').
+       */
+      theme?: string;
+      /**
+       * Number of metric columns for dashboard layout.
+       */
+      metricColumns?: number;
+      /**
+       * Number of field groups for form layout.
+       */
+      fieldGroups?: number;
+      /**
+       * Number of tabs for detail layout.
+       */
+      tabCount?: number;
+      /**
+       * Custom tab labels for detail layout.
+       */
+      tabLabels?: string[];
+      /**
+       * Slot-name → component-name overrides (e.g., { 'items': 'Table' }).
+       */
+      componentOverrides?: {
+        [k: string]: string;
+      };
+    };
+    options?: {
+      /**
+       * Auto-validate the generated schema via repl.validate.
+       */
+      validate?: boolean;
+      /**
+       * Number of component candidates to return per slot.
+       */
+      topN?: number;
+    };
+  }
+}
+export type DesignComposeInput = DesignComposeInputSchema.DesignComposeInput;
+
+// Source: design.compose.output.json
+export namespace DesignComposeOutputSchema {
+  /**
+   * Generated UiSchema with component selections and validation result.
+   */
+  export interface DesignComposeOutput {
+    /**
+     * Whether composition succeeded.
+     */
+    status: 'ok' | 'error';
+    /**
+     * The layout template that was used.
+     */
+    layout: string;
+    schema: AgenticREPLUISchema;
+    /**
+     * Server-managed reference to the generated schema for reuse in validate/render/code.generate.
+     */
+    schemaRef?: string;
+    /**
+     * ISO timestamp when the schemaRef was created.
+     */
+    schemaRefCreatedAt?: string;
+    /**
+     * ISO timestamp when the schemaRef expires.
+     */
+    schemaRefExpiresAt?: string;
+    /**
+     * Component selection results per slot.
+     */
+    selections: SlotSelection[];
+    validation?: {
+      status?: 'ok' | 'invalid' | 'skipped';
+      errors?: Issue[];
+      warnings?: Issue[];
+    };
+    /**
+     * Non-fatal issues during composition.
+     */
+    warnings: Issue[];
+    /**
+     * Fatal issues that prevented composition.
+     */
+    errors?: Issue[];
+    meta?: {
+      intentParsed?: string;
+      layoutDetected?: string;
+      slotCount?: number;
+      nodeCount?: number;
+    };
+  }
+  /**
+   * The generated UiSchema (with slot placeholders intact for agent customization).
+   */
+  export interface AgenticREPLUISchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
+    [k: string]: string;
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
+  export interface SlotSelection {
+    slotName: string;
+    intent: string;
+    selectedComponent?: string;
+    candidates: {
+      name: string;
+      confidence: number;
+      reason: string;
+    }[];
+  }
+  export interface Issue {
+    code: string;
+    message: string;
+    path?: string;
+    hint?: string;
+  }
+}
+export type DesignComposeOutput = DesignComposeOutputSchema.DesignComposeOutput;
+
+// Source: generic.input.json
+export namespace GenericInputSchema {
+  export interface GenericInput {
+    apply?: boolean;
+  }
+}
+export type GenericInput = GenericInputSchema.GenericInput;
+
+// Source: generic.output.json
+export namespace GenericOutputSchema {
+  export interface GenericOutput {
+    status?: 'ok' | 'error' | 'invalid';
+    notes?: string;
+    logs?: string[];
+    artifacts: (
+      | string
+      | {
+          path: string;
+          name?: string;
+          purpose?: string;
+          sha256?: string;
+          sizeBytes?: number;
+        }
+    )[];
+    diagnosticsPath?: string;
+    transcriptPath: string;
+    bundleIndexPath: string;
+    structuredData?: {
+      [k: string]: any;
+    };
+    artifactsDetail?: {
+      path: string;
+      name?: string;
+      purpose?: string;
+      sha256?: string;
+      sizeBytes?: number;
+      [k: string]: any;
+    }[];
+    preview?: {
+      summary?: string;
+      notes?: string[];
+      diffs?: {
+        path: string;
+        status: 'added' | 'modified' | 'deleted';
+        summary?: {
+          additions?: number;
+          deletions?: number;
+        };
+        hunks: {
+          header: string;
+          changes: {
+            type: 'context' | 'add' | 'remove';
+            value: any;
+          }[];
+        }[];
+        structured?: {
+          type: 'json';
+          before?: any;
+          after?: any;
+        };
+      }[];
+      specimens?: string[];
+    };
+  }
+}
+export type GenericOutput = GenericOutputSchema.GenericOutput;
 
 // Source: json-schema-draft-07.json
-export type CoreSchemaMetaSchema = CoreSchemaMetaSchema1 & CoreSchemaMetaSchema2;
-export type NonNegativeInteger = number;
-export type NonNegativeIntegerDefault0 = NonNegativeInteger;
-export type CoreSchemaMetaSchema2 =
-  | {
-      $id?: string;
-      $schema?: string;
-      $ref?: string;
-      $comment?: string;
-      title?: string;
-      description?: string;
-      default?: any;
-      readOnly?: boolean;
-      examples?: any[];
-      multipleOf?: number;
-      maximum?: number;
-      exclusiveMaximum?: number;
-      minimum?: number;
-      exclusiveMinimum?: number;
-      maxLength?: NonNegativeInteger;
-      minLength?: NonNegativeIntegerDefault0;
-      pattern?: string;
-      additionalItems?: CoreSchemaMetaSchema2;
-      items?: CoreSchemaMetaSchema2 | SchemaArray;
-      maxItems?: NonNegativeInteger;
-      minItems?: NonNegativeIntegerDefault0;
-      uniqueItems?: boolean;
-      contains?: CoreSchemaMetaSchema2;
-      maxProperties?: NonNegativeInteger;
-      minProperties?: NonNegativeIntegerDefault0;
-      required?: StringArray;
-      additionalProperties?: CoreSchemaMetaSchema2;
-      definitions?: {
-        [k: string]: CoreSchemaMetaSchema2;
-      };
-      properties?: {
-        [k: string]: CoreSchemaMetaSchema2;
-      };
-      patternProperties?: {
-        [k: string]: CoreSchemaMetaSchema2;
-      };
-      dependencies?: {
-        [k: string]: CoreSchemaMetaSchema2 | StringArray;
-      };
-      propertyNames?: CoreSchemaMetaSchema2;
-      const?: any;
-      /**
-       * @minItems 1
-       */
-      enum?: [any, ...any[]];
-      type?: SimpleTypes | [SimpleTypes, ...SimpleTypes[]];
-      format?: string;
-      contentMediaType?: string;
-      contentEncoding?: string;
-      if?: CoreSchemaMetaSchema2;
-      then?: CoreSchemaMetaSchema2;
-      else?: CoreSchemaMetaSchema2;
-      allOf?: SchemaArray;
-      anyOf?: SchemaArray;
-      oneOf?: SchemaArray;
-      not?: CoreSchemaMetaSchema2;
-      [k: string]: any;
-    }
-  | boolean;
-/**
- * @minItems 1
- */
-export type SchemaArray = [CoreSchemaMetaSchema2, ...CoreSchemaMetaSchema2[]];
-export type StringArray = string[];
-export type SimpleTypes = 'array' | 'boolean' | 'integer' | 'null' | 'number' | 'object' | 'string';
-
-export interface CoreSchemaMetaSchema1 {
-  $id?: string;
-  $schema?: string;
-  $ref?: string;
-  $comment?: string;
-  title?: string;
-  description?: string;
-  default?: any;
-  readOnly?: boolean;
-  examples?: any[];
-  multipleOf?: number;
-  maximum?: number;
-  exclusiveMaximum?: number;
-  minimum?: number;
-  exclusiveMinimum?: number;
-  maxLength?: NonNegativeInteger;
-  minLength?: NonNegativeIntegerDefault0;
-  pattern?: string;
-  additionalItems?: CoreSchemaMetaSchema2;
-  items?: CoreSchemaMetaSchema2 | SchemaArray;
-  maxItems?: NonNegativeInteger;
-  minItems?: NonNegativeIntegerDefault0;
-  uniqueItems?: boolean;
-  contains?: CoreSchemaMetaSchema2;
-  maxProperties?: NonNegativeInteger;
-  minProperties?: NonNegativeIntegerDefault0;
-  required?: StringArray;
-  additionalProperties?: CoreSchemaMetaSchema2;
-  definitions?: {
-    [k: string]: CoreSchemaMetaSchema2;
-  };
-  properties?: {
-    [k: string]: CoreSchemaMetaSchema2;
-  };
-  patternProperties?: {
-    [k: string]: CoreSchemaMetaSchema2;
-  };
-  dependencies?: {
-    [k: string]: CoreSchemaMetaSchema2 | StringArray;
-  };
-  propertyNames?: CoreSchemaMetaSchema2;
-  const?: any;
+export namespace JsonSchemaDraft07Schema {
+  export type JsonSchemaDraft07 = JsonSchemaDraft071 & JsonSchemaDraft072;
+  export type NonNegativeInteger = number;
+  export type NonNegativeIntegerDefault0 = NonNegativeInteger;
+  export type JsonSchemaDraft072 =
+    | {
+        $id?: string;
+        $schema?: string;
+        $ref?: string;
+        $comment?: string;
+        title?: string;
+        description?: string;
+        default?: any;
+        readOnly?: boolean;
+        examples?: any[];
+        multipleOf?: number;
+        maximum?: number;
+        exclusiveMaximum?: number;
+        minimum?: number;
+        exclusiveMinimum?: number;
+        maxLength?: NonNegativeInteger;
+        minLength?: NonNegativeIntegerDefault0;
+        pattern?: string;
+        additionalItems?: JsonSchemaDraft072;
+        items?: JsonSchemaDraft072 | SchemaArray;
+        maxItems?: NonNegativeInteger;
+        minItems?: NonNegativeIntegerDefault0;
+        uniqueItems?: boolean;
+        contains?: JsonSchemaDraft072;
+        maxProperties?: NonNegativeInteger;
+        minProperties?: NonNegativeIntegerDefault0;
+        required?: StringArray;
+        additionalProperties?: JsonSchemaDraft072;
+        definitions?: {
+          [k: string]: JsonSchemaDraft072;
+        };
+        properties?: {
+          [k: string]: JsonSchemaDraft072;
+        };
+        patternProperties?: {
+          [k: string]: JsonSchemaDraft072;
+        };
+        dependencies?: {
+          [k: string]: JsonSchemaDraft072 | StringArray;
+        };
+        propertyNames?: JsonSchemaDraft072;
+        const?: any;
+        /**
+         * @minItems 1
+         */
+        enum?: [any, ...any[]];
+        type?: SimpleTypes | [SimpleTypes, ...SimpleTypes[]];
+        format?: string;
+        contentMediaType?: string;
+        contentEncoding?: string;
+        if?: JsonSchemaDraft072;
+        then?: JsonSchemaDraft072;
+        else?: JsonSchemaDraft072;
+        allOf?: SchemaArray;
+        anyOf?: SchemaArray;
+        oneOf?: SchemaArray;
+        not?: JsonSchemaDraft072;
+        [k: string]: any;
+      }
+    | boolean;
   /**
    * @minItems 1
    */
-  enum?: [any, ...any[]];
-  type?: SimpleTypes | [SimpleTypes, ...SimpleTypes[]];
-  format?: string;
-  contentMediaType?: string;
-  contentEncoding?: string;
-  if?: CoreSchemaMetaSchema2;
-  then?: CoreSchemaMetaSchema2;
-  else?: CoreSchemaMetaSchema2;
-  allOf?: SchemaArray;
-  anyOf?: SchemaArray;
-  oneOf?: SchemaArray;
-  not?: CoreSchemaMetaSchema2;
-  [k: string]: any;
+  export type SchemaArray = [JsonSchemaDraft072, ...JsonSchemaDraft072[]];
+  export type StringArray = string[];
+  export type SimpleTypes = 'array' | 'boolean' | 'integer' | 'null' | 'number' | 'object' | 'string';
+
+  export interface JsonSchemaDraft071 {
+    $id?: string;
+    $schema?: string;
+    $ref?: string;
+    $comment?: string;
+    title?: string;
+    description?: string;
+    default?: any;
+    readOnly?: boolean;
+    examples?: any[];
+    multipleOf?: number;
+    maximum?: number;
+    exclusiveMaximum?: number;
+    minimum?: number;
+    exclusiveMinimum?: number;
+    maxLength?: NonNegativeInteger;
+    minLength?: NonNegativeIntegerDefault0;
+    pattern?: string;
+    additionalItems?: JsonSchemaDraft072;
+    items?: JsonSchemaDraft072 | SchemaArray;
+    maxItems?: NonNegativeInteger;
+    minItems?: NonNegativeIntegerDefault0;
+    uniqueItems?: boolean;
+    contains?: JsonSchemaDraft072;
+    maxProperties?: NonNegativeInteger;
+    minProperties?: NonNegativeIntegerDefault0;
+    required?: StringArray;
+    additionalProperties?: JsonSchemaDraft072;
+    definitions?: {
+      [k: string]: JsonSchemaDraft072;
+    };
+    properties?: {
+      [k: string]: JsonSchemaDraft072;
+    };
+    patternProperties?: {
+      [k: string]: JsonSchemaDraft072;
+    };
+    dependencies?: {
+      [k: string]: JsonSchemaDraft072 | StringArray;
+    };
+    propertyNames?: JsonSchemaDraft072;
+    const?: any;
+    /**
+     * @minItems 1
+     */
+    enum?: [any, ...any[]];
+    type?: SimpleTypes | [SimpleTypes, ...SimpleTypes[]];
+    format?: string;
+    contentMediaType?: string;
+    contentEncoding?: string;
+    if?: JsonSchemaDraft072;
+    then?: JsonSchemaDraft072;
+    else?: JsonSchemaDraft072;
+    allOf?: SchemaArray;
+    anyOf?: SchemaArray;
+    oneOf?: SchemaArray;
+    not?: JsonSchemaDraft072;
+    [k: string]: any;
+  }
 }
+export type JsonSchemaDraft07 = JsonSchemaDraft07Schema.JsonSchemaDraft07;
 
 // Source: map.create.input.json
-/**
- * Create a component-to-trait mapping for an external design system component.
- */
-export interface MapCreateInput {
+export namespace MapCreateInputSchema {
   /**
-   * When true, write changes to disk.
+   * Create a component-to-trait mapping for an external design system component.
    */
-  apply?: boolean;
+  export interface MapCreateInput {
+    /**
+     * When true, write changes to disk.
+     */
+    apply?: boolean;
+    /**
+     * External design system name (e.g., 'material', 'ant-design', 'chakra').
+     */
+    externalSystem: string;
+    /**
+     * Component name in the external system (e.g., 'Button', 'TextField').
+     */
+    externalComponent: string;
+    /**
+     * OODS trait names this component maps to.
+     *
+     * @minItems 1
+     */
+    oodsTraits: [string, ...string[]];
+    /**
+     * Property translations from external to OODS prop names.
+     */
+    propMappings?: {
+      externalProp: string;
+      oodsProp: string;
+      coercion?: null | {
+        type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
+        values?: {
+          [k: string]: string;
+        };
+        template?: string;
+        targetType?: 'string' | 'number' | 'boolean';
+      };
+    }[];
+    /**
+     * 'auto' for machine-generated, 'manual' for human-curated.
+     */
+    confidence?: 'auto' | 'manual';
+    metadata?: {
+      author?: string;
+      notes?: string;
+    };
+  }
+}
+export type MapCreateInput = MapCreateInputSchema.MapCreateInput;
+
+// Source: map.create.output.json
+export namespace MapCreateOutputSchema {
   /**
-   * External design system name (e.g., 'material', 'ant-design', 'chakra').
+   * Result of creating a component-to-trait mapping.
    */
-  externalSystem: string;
+  export interface MapCreateOutput {
+    status: 'ok' | 'error';
+    /**
+     * The created mapping record.
+     */
+    mapping: {
+      [k: string]: any;
+    };
+    /**
+     * SHA256 ETag of the updated mappings file.
+     */
+    etag: string;
+    /**
+     * Whether the mapping was persisted to disk.
+     */
+    applied?: boolean;
+    /**
+     * Non-fatal warnings (e.g., unknown traits).
+     */
+    warnings?: string[];
+    /**
+     * Agent-friendly error details following formatValidationErrors().
+     */
+    errors?: {
+      message: string;
+      details: {
+        field: string;
+        message: string;
+        keyword: string;
+      }[];
+    };
+  }
+}
+export type MapCreateOutput = MapCreateOutputSchema.MapCreateOutput;
+
+// Source: map.list.input.json
+export namespace MapListInputSchema {
   /**
-   * Component name in the external system (e.g., 'Button', 'TextField').
+   * List component-to-trait mappings, optionally filtered by external system.
    */
-  externalComponent: string;
+  export interface MapListInput {
+    /**
+     * Filter mappings to a specific external system (e.g., 'material').
+     */
+    externalSystem?: string;
+  }
+}
+export type MapListInput = MapListInputSchema.MapListInput;
+
+// Source: map.list.output.json
+export namespace MapListOutputSchema {
   /**
-   * OODS trait names this component maps to.
+   * List of component-to-trait mappings.
+   */
+  export interface MapListOutput {
+    /**
+     * Matching mapping records.
+     */
+    mappings: {
+      [k: string]: any;
+    }[];
+    /**
+     * Number of mappings returned.
+     */
+    totalCount: number;
+    stats: {
+      mappingCount: number;
+      systemCount: number;
+    };
+    /**
+     * Current ETag of the mappings file.
+     */
+    etag?: string;
+  }
+}
+export type MapListOutput = MapListOutputSchema.MapListOutput;
+
+// Source: map.resolve.input.json
+export namespace MapResolveInputSchema {
+  /**
+   * Resolve an external component to its OODS trait mapping with prop translations.
+   */
+  export interface MapResolveInput {
+    /**
+     * External design system name (e.g., 'material').
+     */
+    externalSystem: string;
+    /**
+     * Component name in the external system (e.g., 'Button').
+     */
+    externalComponent: string;
+  }
+}
+export type MapResolveInput = MapResolveInputSchema.MapResolveInput;
+
+// Source: map.resolve.output.json
+export namespace MapResolveOutputSchema {
+  /**
+   * Resolved OODS trait mapping for an external component.
+   */
+  export interface MapResolveOutput {
+    status: 'ok' | 'not_found';
+    /**
+     * The resolved mapping record (present when status=ok).
+     */
+    mapping?: {
+      [k: string]: any;
+    };
+    /**
+     * Flattened prop translations with coercion details.
+     */
+    propTranslations?: {
+      externalProp: string;
+      oodsProp: string;
+      coercionType?: string | null;
+      coercionDetail?: {
+        [k: string]: any;
+      } | null;
+      [k: string]: any;
+    }[];
+    /**
+     * Explanation when status=not_found.
+     */
+    message?: string;
+  }
+}
+export type MapResolveOutput = MapResolveOutputSchema.MapResolveOutput;
+
+// Source: release.tag.input.json
+export namespace ReleaseTagInputSchema {
+  export interface ReleaseTagInput {
+    apply?: boolean;
+    tag: string;
+    message?: string | null;
+  }
+}
+export type ReleaseTagInput = ReleaseTagInputSchema.ReleaseTagInput;
+
+// Source: release.tag.output.json
+export namespace ReleaseTagOutputSchema {
+  export interface ReleaseTagOutput {
+    artifacts: string[];
+    transcriptPath: string;
+    bundleIndexPath: string;
+    tag: string;
+    created: boolean;
+    warnings?: string[];
+  }
+}
+export type ReleaseTagOutput = ReleaseTagOutputSchema.ReleaseTagOutput;
+
+// Source: release.verify.input.json
+export namespace ReleaseVerifyInputSchema {
+  export interface ReleaseVerifyInput {
+    apply?: boolean;
+    /**
+     * @minItems 1
+     */
+    packages?: [
+      '@oods/tokens' | '@oods/tw-variants' | '@oods/a11y-tools',
+      ...('@oods/tokens' | '@oods/tw-variants' | '@oods/a11y-tools')[]
+    ];
+    fromTag?: string;
+  }
+}
+export type ReleaseVerifyInput = ReleaseVerifyInputSchema.ReleaseVerifyInput;
+
+// Source: release.verify.output.json
+export namespace ReleaseVerifyOutputSchema {
+  export interface ReleaseVerifyOutput {
+    artifacts: string[];
+    diagnosticsPath?: string;
+    transcriptPath: string;
+    bundleIndexPath: string;
+    results: {
+      name: string;
+      version: string;
+      identical: boolean;
+      sha256: string;
+      sizeBytes: number;
+      warnings?: string[];
+      files?: string[];
+    }[];
+    changelogPath: string;
+    summary: string;
+    warnings?: string[];
+  }
+}
+export type ReleaseVerifyOutput = ReleaseVerifyOutputSchema.ReleaseVerifyOutput;
+
+// Source: repl.patch.json
+export namespace ReplPatchSchema {
+  /**
+   * Patch input can be either a JSON Patch array (RFC 6902 subset), a single node patch object, or an array of node patch objects.
+   */
+  export type ReplPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
+  /**
+   * Array of JSON Patch operations.
    *
    * @minItems 1
    */
-  oodsTraits: [string, ...string[]];
-  /**
-   * Property translations from external to OODS prop names.
-   */
-  propMappings?: {
-    externalProp: string;
-    oodsProp: string;
-    coercion?: null | {
-      type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-      values?: {
-        [k: string]: string;
-      };
-      template?: string;
-      targetType?: 'string' | 'number' | 'boolean';
-    };
-  }[];
-  /**
-   * 'auto' for machine-generated, 'manual' for human-curated.
-   */
-  confidence?: 'auto' | 'manual';
-  metadata?: {
-    author?: string;
-    notes?: string;
-  };
-}
+  export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
 
-// Source: map.create.output.json
-/**
- * Result of creating a component-to-trait mapping.
- */
-export interface MapCreateOutput {
-  status: 'ok' | 'error';
   /**
-   * The created mapping record.
+   * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
    */
-  mapping: {
-    [k: string]: any;
-  };
+  export interface JsonPatchOp {
+    op: 'add' | 'remove' | 'replace';
+    path: string;
+    value?: any;
+  }
   /**
-   * SHA256 ETag of the updated mappings file.
+   * Node patch referencing a nodeId plus a relative path within that node.
    */
-  etag: string;
-  /**
-   * Non-fatal warnings (e.g., unknown traits).
-   */
-  warnings?: string[];
+  export interface NodePatch {
+    nodeId: string;
+    path: string;
+    value?: any;
+    op?: 'add' | 'remove' | 'replace';
+  }
 }
-
-// Source: map.list.input.json
-/**
- * List component-to-trait mappings, optionally filtered by external system.
- */
-export interface MapListInput {
-  /**
-   * Filter mappings to a specific external system (e.g., 'material').
-   */
-  externalSystem?: string;
-}
-
-// Source: map.list.output.json
-/**
- * List of component-to-trait mappings.
- */
-export interface MapListOutput {
-  /**
-   * Matching mapping records.
-   */
-  mappings: {
-    [k: string]: any;
-  }[];
-  /**
-   * Number of mappings returned.
-   */
-  totalCount: number;
-  stats: {
-    mappingCount: number;
-    systemCount: number;
-  };
-  /**
-   * Current ETag of the mappings file.
-   */
-  etag?: string;
-}
-
-// Source: map.resolve.input.json
-/**
- * Resolve an external component to its OODS trait mapping with prop translations.
- */
-export interface MapResolveInput {
-  /**
-   * External design system name (e.g., 'material').
-   */
-  externalSystem: string;
-  /**
-   * Component name in the external system (e.g., 'Button').
-   */
-  externalComponent: string;
-}
-
-// Source: map.resolve.output.json
-/**
- * Resolved OODS trait mapping for an external component.
- */
-export interface MapResolveOutput {
-  status: 'ok' | 'not_found';
-  /**
-   * The resolved mapping record (present when status=ok).
-   */
-  mapping?: {
-    [k: string]: any;
-  };
-  /**
-   * Flattened prop translations with coercion details.
-   */
-  propTranslations?: {
-    externalProp: string;
-    oodsProp: string;
-    coercionType?: string | null;
-    coercionDetail?: {
-      [k: string]: any;
-    } | null;
-    [k: string]: any;
-  }[];
-  /**
-   * Explanation when status=not_found.
-   */
-  message?: string;
-}
-
-// Source: release.tag.input.json
-export interface ReleaseTagInput {
-  apply?: boolean;
-  tag: string;
-  message?: string | null;
-}
-
-// Source: release.tag.output.json
-export interface ReleaseTagOutput {
-  artifacts: string[];
-  transcriptPath: string;
-  bundleIndexPath: string;
-  tag: string;
-  created: boolean;
-  warnings?: string[];
-}
-
-// Source: release.verify.input.json
-export interface ReleaseVerifyInput {
-  apply?: boolean;
-  /**
-   * @minItems 1
-   */
-  packages?: [
-    '@oods/tokens' | '@oods/tw-variants' | '@oods/a11y-tools',
-    ...('@oods/tokens' | '@oods/tw-variants' | '@oods/a11y-tools')[]
-  ];
-  fromTag?: string;
-}
-
-// Source: release.verify.output.json
-export interface ReleaseVerifyOutput {
-  artifacts: string[];
-  diagnosticsPath?: string;
-  transcriptPath: string;
-  bundleIndexPath: string;
-  results: {
-    name: string;
-    version: string;
-    identical: boolean;
-    sha256: string;
-    sizeBytes: number;
-    warnings?: string[];
-    files?: string[];
-  }[];
-  changelogPath: string;
-  summary: string;
-  warnings?: string[];
-}
-
-// Source: repl.patch.json
-export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
-/**
- * @minItems 1
- */
-export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
-
-export interface JsonPatchOp {
-  op: 'add' | 'remove' | 'replace';
-  path: string;
-  value?: any;
-}
-export interface NodePatch {
-  nodeId: string;
-  path: string;
-  value?: any;
-  op?: 'add' | 'remove' | 'replace';
-}
+export type ReplPatch = ReplPatchSchema.ReplPatch;
 
 // Source: repl.render.input.json
-export type AgenticREPLRenderInput = AgenticREPLRenderInput1 & AgenticREPLRenderInput2;
-export type AgenticREPLRenderInput1 = {
-  [k: string]: any;
-};
-export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
-/**
- * @minItems 1
- */
-export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
-
-export interface AgenticREPLRenderInput2 {
-  mode: 'full' | 'patch';
-  schema?: AgenticREPLUISchema;
-  /**
-   * Reference to a cached UiSchema returned by design.compose.
-   */
-  schemaRef?: string;
-  patch?: AgenticREPLPatch;
-  baseTree?: AgenticREPLUISchema;
-  /**
-   * Optional research bundle from Stage1 discovery to influence rendering.
-   */
-  researchContext?: {
+export namespace ReplRenderInputSchema {
+  export type ReplRenderInput = ReplRenderInput1 & ReplRenderInput2;
+  export type ReplRenderInput1 = {
     [k: string]: any;
   };
-  options?: {
-    includeTree?: boolean;
-  };
   /**
-   * Optional render output controls. Omitting this object preserves full-document behavior.
+   * Patch input can be either a JSON Patch array (RFC 6902 subset), a single node patch object, or an array of node patch objects.
    */
-  output?: {
-    format?: 'document' | 'fragments';
-    strict?: boolean;
-    includeCss?: boolean;
-    /**
-     * Reserved for v2 fragment-depth controls; currently ignored.
-     */
-    depth?: number;
-  };
-  apply?: boolean;
-}
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
+  export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
   /**
+   * Array of JSON Patch operations.
+   *
    * @minItems 1
    */
-  screens: [UiElement, ...UiElement[]];
-}
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
-export interface JsonPatchOp {
-  op: 'add' | 'remove' | 'replace';
-  path: string;
-  value?: any;
-}
-export interface NodePatch {
-  nodeId: string;
-  path: string;
-  value?: any;
-  op?: 'add' | 'remove' | 'replace';
-}
+  export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
 
-// Source: repl.render.output.json
-export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
-/**
- * @minItems 1
- */
-export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
-
-export interface AgenticREPLRenderOutput {
-  status: 'ok' | 'error';
-  mode: 'full' | 'patch';
-  dslVersion: string;
-  registryVersion?: string | null;
-  errors: Issue[];
-  warnings: Issue[];
-  renderedTree?: AgenticREPLUISchema;
-  normalizedPatch?: AgenticREPLPatch;
-  appliedPatch?: boolean;
-  preview?: {
-    screens?: string[];
-    routes?: string[];
-    activeScreen?: string | null;
-    summary?: string;
-    notes?: string[];
+  export interface ReplRenderInput2 {
+    mode: 'full' | 'patch';
+    schema?: AgenticREPLUISchema;
     /**
-     * Passed-through research context for the preview renderer
+     * Reference to a cached UiSchema returned by design.compose.
+     */
+    schemaRef?: string;
+    patch?: AgenticREPLPatch;
+    baseTree?: AgenticREPLUISchema;
+    /**
+     * Optional research bundle from Stage1 discovery to influence rendering.
      */
     researchContext?: {
       [k: string]: any;
     };
-  };
-  /**
-   * Standalone HTML5 document generated when apply=true, output.format=document (or omitted), and render validation passes.
-   */
-  html?: string;
-  /**
-   * Fragment payload keyed by canonical node id when output.format=fragments.
-   */
-  fragments?: {
-    [k: string]: {
-      nodeId: string;
-      component: string;
-      html: string;
-      cssRefs: string[];
+    options?: {
+      includeTree?: boolean;
     };
-  };
-  /**
-   * Resolved CSS map keyed by cssRef identifier.
-   */
-  css?: {
+    /**
+     * Optional render output controls. Omitting this object preserves full-document behavior.
+     */
+    output?: {
+      format?: 'document' | 'fragments';
+      strict?: boolean;
+      includeCss?: boolean;
+      /**
+       * Reserved for v2 fragment-depth controls; currently ignored.
+       */
+      depth?: number;
+    };
+    apply?: boolean;
+  }
+  export interface AgenticREPLUISchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
     [k: string]: string;
-  };
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
   /**
-   * Echoes normalized output controls used by the renderer.
+   * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
    */
-  output?: {
-    format: 'document' | 'fragments';
-    strict: boolean;
-  };
-  meta?: {
-    screenCount?: number;
-    nodeCount?: number;
-    duplicateIds?: string[];
-    missingComponents?: string[];
-  };
-}
-export interface Issue {
-  code: string;
-  message: string;
-  path?: string;
-  hint?: string;
-  severity?: 'error' | 'warning';
-  component?: string;
-  nodeId?: string;
-}
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
+  export interface JsonPatchOp {
+    op: 'add' | 'remove' | 'replace';
+    path: string;
+    value?: any;
+  }
   /**
+   * Node patch referencing a nodeId plus a relative path within that node.
+   */
+  export interface NodePatch {
+    nodeId: string;
+    path: string;
+    value?: any;
+    op?: 'add' | 'remove' | 'replace';
+  }
+}
+export type ReplRenderInput = ReplRenderInputSchema.ReplRenderInput;
+
+// Source: repl.render.output.json
+export namespace ReplRenderOutputSchema {
+  /**
+   * Patch input can be either a JSON Patch array (RFC 6902 subset), a single node patch object, or an array of node patch objects.
+   */
+  export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
+  /**
+   * Array of JSON Patch operations.
+   *
    * @minItems 1
    */
-  screens: [UiElement, ...UiElement[]];
+  export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
+
+  export interface ReplRenderOutput {
+    status: 'ok' | 'error';
+    mode: 'full' | 'patch';
+    dslVersion: string;
+    registryVersion?: string | null;
+    errors: Issue[];
+    warnings: Issue[];
+    renderedTree?: AgenticREPLUISchema;
+    normalizedPatch?: AgenticREPLPatch;
+    appliedPatch?: boolean;
+    preview?: {
+      screens?: string[];
+      routes?: string[];
+      activeScreen?: string | null;
+      summary?: string;
+      notes?: string[];
+      /**
+       * Passed-through research context for the preview renderer
+       */
+      researchContext?: {
+        [k: string]: any;
+      };
+    };
+    /**
+     * Standalone HTML5 document generated when apply=true, output.format=document (or omitted), and render validation passes.
+     */
+    html?: string;
+    /**
+     * Fragment payload keyed by canonical node id when output.format=fragments.
+     */
+    fragments?: {
+      [k: string]: {
+        nodeId: string;
+        component: string;
+        html: string;
+        cssRefs: string[];
+      };
+    };
+    /**
+     * Resolved CSS map keyed by cssRef identifier.
+     */
+    css?: {
+      [k: string]: string;
+    };
+    /**
+     * Echoes normalized output controls used by the renderer.
+     */
+    output?: {
+      format: 'document' | 'fragments';
+      strict: boolean;
+    };
+    meta?: {
+      screenCount?: number;
+      nodeCount?: number;
+      duplicateIds?: string[];
+      missingComponents?: string[];
+    };
+  }
+  export interface Issue {
+    code: string;
+    message: string;
+    path?: string;
+    hint?: string;
+    severity?: 'error' | 'warning';
+    component?: string;
+    nodeId?: string;
+  }
+  export interface AgenticREPLUISchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
+    [k: string]: string;
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
+  /**
+   * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
+   */
+  export interface JsonPatchOp {
+    op: 'add' | 'remove' | 'replace';
+    path: string;
+    value?: any;
+  }
+  /**
+   * Node patch referencing a nodeId plus a relative path within that node.
+   */
+  export interface NodePatch {
+    nodeId: string;
+    path: string;
+    value?: any;
+    op?: 'add' | 'remove' | 'replace';
+  }
 }
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
-export interface JsonPatchOp {
-  op: 'add' | 'remove' | 'replace';
-  path: string;
-  value?: any;
-}
-export interface NodePatch {
-  nodeId: string;
-  path: string;
-  value?: any;
-  op?: 'add' | 'remove' | 'replace';
-}
+export type ReplRenderOutput = ReplRenderOutputSchema.ReplRenderOutput;
 
 // Source: repl.ui.schema.json
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
-  /**
-   * @minItems 1
-   */
-  screens: [UiElement, ...UiElement[]];
+export namespace UiSchemaSchema {
+  export interface UiSchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
+    [k: string]: string;
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
 }
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
+export type UiSchema = UiSchemaSchema.UiSchema;
 
 // Source: repl.validate.input.json
-export type AgenticREPLValidateInput = AgenticREPLValidateInput1 & AgenticREPLValidateInput2;
-export type AgenticREPLValidateInput1 = {
-  [k: string]: any;
-};
-export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
-/**
- * @minItems 1
- */
-export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
-
-export interface AgenticREPLValidateInput2 {
-  mode: 'full' | 'patch';
-  schema?: AgenticREPLUISchema;
-  /**
-   * Reference to a cached UiSchema returned by design.compose.
-   */
-  schemaRef?: string;
-  patch?: AgenticREPLPatch;
-  baseTree?: AgenticREPLUISchema;
-  options?: {
-    includeNormalized?: boolean;
-    checkComponents?: boolean;
-    /**
-     * When true, run WCAG contrast checks against design tokens and surface failures as A11Y_CONTRAST warnings.
-     */
-    checkA11y?: boolean;
+export namespace ReplValidateInputSchema {
+  export type ReplValidateInput = ReplValidateInput1 & ReplValidateInput2;
+  export type ReplValidateInput1 = {
+    [k: string]: any;
   };
-}
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
   /**
+   * Required when mode='patch'. Accepts JSON Patch array or node patch object(s).
+   */
+  export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
+  /**
+   * Array of JSON Patch operations.
+   *
    * @minItems 1
    */
-  screens: [UiElement, ...UiElement[]];
+  export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
+
+  export interface ReplValidateInput2 {
+    mode: 'full' | 'patch';
+    schema?: AgenticREPLUISchema;
+    /**
+     * Reference to a cached UiSchema returned by design.compose.
+     */
+    schemaRef?: string;
+    patch?: AgenticREPLPatch;
+    baseTree?: AgenticREPLUISchema1;
+    options?: {
+      includeNormalized?: boolean;
+      checkComponents?: boolean;
+      /**
+       * When true, run WCAG contrast checks against design tokens and surface failures as A11Y_CONTRAST warnings.
+       */
+      checkA11y?: boolean;
+    };
+  }
+  export interface AgenticREPLUISchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
+    [k: string]: string;
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
+  /**
+   * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
+   */
+  export interface JsonPatchOp {
+    op: 'add' | 'remove' | 'replace';
+    path: string;
+    value?: any;
+  }
+  /**
+   * Node patch referencing a nodeId plus a relative path within that node.
+   */
+  export interface NodePatch {
+    nodeId: string;
+    path: string;
+    value?: any;
+    op?: 'add' | 'remove' | 'replace';
+  }
+  /**
+   * Required when mode='patch' to provide the base UiSchema to patch.
+   */
+  export interface AgenticREPLUISchema1 {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
 }
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
-export interface JsonPatchOp {
-  op: 'add' | 'remove' | 'replace';
-  path: string;
-  value?: any;
-}
-export interface NodePatch {
-  nodeId: string;
-  path: string;
-  value?: any;
-  op?: 'add' | 'remove' | 'replace';
-}
+export type ReplValidateInput = ReplValidateInputSchema.ReplValidateInput;
 
 // Source: repl.validate.output.json
-export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
-/**
- * @minItems 1
- */
-export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
-
-export interface AgenticREPLValidateOutput {
-  status: 'ok' | 'invalid';
-  mode: 'full' | 'patch';
-  dslVersion: string;
-  registryVersion?: string | null;
-  errors: Issue[];
-  warnings: Issue[];
-  normalizedTree?: AgenticREPLUISchema;
-  normalizedPatch?: AgenticREPLPatch;
-  appliedPatch?: boolean;
-  meta?: {
-    screenCount?: number;
-    nodeCount?: number;
-    duplicateIds?: string[];
-    missingComponents?: string[];
-  };
-}
-export interface Issue {
-  code: string;
-  message: string;
-  path?: string;
-  hint?: string;
-  severity?: 'error' | 'warning';
-  component?: string;
-  nodeId?: string;
-}
-export interface AgenticREPLUISchema {
-  $schema?: string;
-  version: string;
-  dsVersion?: string;
-  theme?: string;
+export namespace ReplValidateOutputSchema {
   /**
+   * Patch input can be either a JSON Patch array (RFC 6902 subset), a single node patch object, or an array of node patch objects.
+   */
+  export type AgenticREPLPatch = JsonPatchArray | NodePatch | [NodePatch, ...NodePatch[]];
+  /**
+   * Array of JSON Patch operations.
+   *
    * @minItems 1
    */
-  screens: [UiElement, ...UiElement[]];
+  export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
+
+  export interface ReplValidateOutput {
+    status: 'ok' | 'invalid';
+    mode: 'full' | 'patch';
+    dslVersion: string;
+    registryVersion?: string | null;
+    errors: Issue[];
+    warnings: Issue[];
+    normalizedTree?: AgenticREPLUISchema;
+    normalizedPatch?: AgenticREPLPatch;
+    appliedPatch?: boolean;
+    meta?: {
+      screenCount?: number;
+      nodeCount?: number;
+      duplicateIds?: string[];
+      missingComponents?: string[];
+    };
+  }
+  export interface Issue {
+    code: string;
+    message: string;
+    path?: string;
+    hint?: string;
+    severity?: 'error' | 'warning';
+    component?: string;
+    nodeId?: string;
+  }
+  export interface AgenticREPLUISchema {
+    $schema?: string;
+    version: string;
+    dsVersion?: string;
+    theme?: string;
+    /**
+     * @minItems 1
+     */
+    screens: [UiElement, ...UiElement[]];
+  }
+  export interface UiElement {
+    id: string;
+    component: string;
+    route?: string;
+    layout?: Layout;
+    style?: Style;
+    props?: Props;
+    bindings?: Bindings;
+    children?: UiElement[];
+    meta?: Meta;
+  }
+  export interface Layout {
+    type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
+    align?: 'start' | 'center' | 'end' | 'space-between';
+    gapToken?: string;
+  }
+  export interface Style {
+    spacingToken?: string;
+    radiusToken?: string;
+    shadowToken?: string;
+    colorToken?: string;
+    typographyToken?: string;
+    [k: string]: any;
+  }
+  export interface Props {
+    [k: string]: any;
+  }
+  export interface Bindings {
+    [k: string]: string;
+  }
+  export interface Meta {
+    label?: string;
+    intent?: string;
+    notes?: string;
+  }
+  /**
+   * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
+   */
+  export interface JsonPatchOp {
+    op: 'add' | 'remove' | 'replace';
+    path: string;
+    value?: any;
+  }
+  /**
+   * Node patch referencing a nodeId plus a relative path within that node.
+   */
+  export interface NodePatch {
+    nodeId: string;
+    path: string;
+    value?: any;
+    op?: 'add' | 'remove' | 'replace';
+  }
 }
-export interface UiElement {
-  id: string;
-  component: string;
-  route?: string;
-  layout?: Layout;
-  style?: Style;
-  props?: Props;
-  bindings?: Bindings;
-  children?: UiElement[];
-  meta?: Meta;
-}
-export interface Layout {
-  type?: 'stack' | 'grid' | 'inline' | 'section' | 'sidebar';
-  align?: 'start' | 'center' | 'end' | 'space-between';
-  gapToken?: string;
-}
-export interface Style {
-  spacingToken?: string;
-  radiusToken?: string;
-  shadowToken?: string;
-  colorToken?: string;
-  typographyToken?: string;
-  [k: string]: any;
-}
-export interface Props {
-  [k: string]: any;
-}
-export interface Bindings {
-  [k: string]: string;
-}
-export interface Meta {
-  label?: string;
-  intent?: string;
-  notes?: string;
-}
-export interface JsonPatchOp {
-  op: 'add' | 'remove' | 'replace';
-  path: string;
-  value?: any;
-}
-export interface NodePatch {
-  nodeId: string;
-  path: string;
-  value?: any;
-  op?: 'add' | 'remove' | 'replace';
-}
+export type ReplValidateOutput = ReplValidateOutputSchema.ReplValidateOutput;
 
 // Source: structuredData.fetch.input.json
-export interface StructuredDataFetchInput {
-  /**
-   * Structured dataset to return.
-   */
-  dataset: 'components' | 'tokens' | 'manifest';
-  /**
-   * Return matched=true without payload when the ETag matches.
-   */
-  ifNoneMatch?: string;
-  /**
-   * When false, omit payload even if no ETag match occurs.
-   */
-  includePayload?: boolean;
-  /**
-   * Request a specific date-stamped version (e.g., '2026-02-24'). Omit for latest.
-   */
-  version?: string;
-  /**
-   * When true, return available version dates instead of payload.
-   */
-  listVersions?: boolean;
+export namespace StructuredDataFetchInputSchema {
+  export interface StructuredDataFetchInput {
+    /**
+     * Structured dataset to return.
+     */
+    dataset: 'components' | 'tokens' | 'manifest';
+    /**
+     * Return matched=true without payload when the ETag matches.
+     */
+    ifNoneMatch?: string;
+    /**
+     * When false, omit payload even if no ETag match occurs.
+     */
+    includePayload?: boolean;
+    /**
+     * Request a specific date-stamped version (e.g., '2026-02-24'). Omit for latest.
+     */
+    version?: string;
+    /**
+     * When true, return available version dates instead of payload.
+     */
+    listVersions?: boolean;
+  }
 }
+export type StructuredDataFetchInput = StructuredDataFetchInputSchema.StructuredDataFetchInput;
 
 // Source: structuredData.fetch.output.json
-export interface StructuredDataFetchOutput {
-  /**
-   * Dataset that was requested.
-   */
-  dataset: 'components' | 'tokens' | 'manifest';
-  /**
-   * Version tag (usually the YYYY-MM-DD stamp from the manifest).
-   */
-  version?: string | null;
-  /**
-   * Timestamp recorded in the payload.
-   */
-  generatedAt?: string | null;
-  /**
-   * Stable hash of the payload (generatedAt excluded).
-   */
-  etag: string;
-  /**
-   * True when ifNoneMatch matched the current ETag and payload was skipped.
-   */
-  matched: boolean;
-  /**
-   * True when the payload field is returned.
-   */
-  payloadIncluded: boolean;
-  /**
-   * Resolved path to the dataset on disk.
-   */
-  path: string;
-  /**
-   * Manifest path when available.
-   */
-  manifestPath?: string | null;
-  /**
-   * File size of the dataset.
-   */
-  sizeBytes: number;
-  /**
-   * True when the payload was validated against a schema.
-   */
-  schemaValidated: boolean;
-  /**
-   * Optional validation error messages.
-   */
-  validationErrors?: string[];
-  /**
-   * Non-fatal warnings encountered during resolution.
-   */
-  warnings?: string[];
-  /**
-   * Lightweight summary for the payload.
-   */
-  meta?: {
-    componentCount?: number;
-    traitCount?: number;
-    objectCount?: number;
-    domainCount?: number;
-    patternCount?: number;
-    traitOverlayCount?: number;
-    tokenCounts?: {
-      referenceTokens?: number;
-      themeTokens?: number;
-      systemTokens?: number;
-      componentTokens?: number;
-      viewTokens?: number;
-      mapCount?: number;
+export namespace StructuredDataFetchOutputSchema {
+  export interface StructuredDataFetchOutput {
+    /**
+     * Dataset that was requested.
+     */
+    dataset: 'components' | 'tokens' | 'manifest';
+    /**
+     * Version tag (usually the YYYY-MM-DD stamp from the manifest).
+     */
+    version?: string | null;
+    /**
+     * Timestamp recorded in the payload.
+     */
+    generatedAt?: string | null;
+    /**
+     * Stable hash of the payload (generatedAt excluded).
+     */
+    etag: string;
+    /**
+     * True when ifNoneMatch matched the current ETag and payload was skipped.
+     */
+    matched: boolean;
+    /**
+     * True when the payload field is returned.
+     */
+    payloadIncluded: boolean;
+    /**
+     * Resolved path to the dataset on disk.
+     */
+    path: string;
+    /**
+     * Manifest path when available.
+     */
+    manifestPath?: string | null;
+    /**
+     * File size of the dataset.
+     */
+    sizeBytes: number;
+    /**
+     * True when the payload was validated against a schema.
+     */
+    schemaValidated: boolean;
+    /**
+     * Optional validation error messages.
+     */
+    validationErrors?: string[];
+    /**
+     * Non-fatal warnings encountered during resolution.
+     */
+    warnings?: string[];
+    /**
+     * Lightweight summary for the payload.
+     */
+    meta?: {
+      componentCount?: number;
+      traitCount?: number;
+      objectCount?: number;
+      domainCount?: number;
+      patternCount?: number;
       traitOverlayCount?: number;
+      tokenCounts?: {
+        referenceTokens?: number;
+        themeTokens?: number;
+        systemTokens?: number;
+        componentTokens?: number;
+        viewTokens?: number;
+        mapCount?: number;
+        traitOverlayCount?: number;
+      };
+      [k: string]: any;
     };
-    [k: string]: any;
-  };
-  /**
-   * Payload contents when payloadIncluded=true.
-   */
-  payload?: {
-    [k: string]: any;
-  };
-  /**
-   * Available version dates when listVersions=true.
-   */
-  availableVersions?: string[];
-  /**
-   * The version that was requested (null if latest).
-   */
-  requestedVersion?: string | null;
-  /**
-   * The version that was actually resolved (may differ from requested if nearest match used).
-   */
-  resolvedVersion?: string | null;
+    /**
+     * Payload contents when payloadIncluded=true.
+     */
+    payload?: {
+      [k: string]: any;
+    };
+    /**
+     * Available version dates when listVersions=true.
+     */
+    availableVersions?: string[];
+    /**
+     * The version that was requested (null if latest).
+     */
+    requestedVersion?: string | null;
+    /**
+     * The version that was actually resolved (may differ from requested if nearest match used).
+     */
+    resolvedVersion?: string | null;
+  }
 }
+export type StructuredDataFetchOutput = StructuredDataFetchOutputSchema.StructuredDataFetchOutput;
 
 // Source: tokens.build.input.json
-export interface TokensBuildInput {
-  brand?: 'A';
-  theme?: 'light' | 'dark' | 'hc';
-  apply?: boolean;
+export namespace TokensBuildInputSchema {
+  export interface TokensBuildInput {
+    brand?: 'A';
+    theme?: 'light' | 'dark' | 'hc';
+    apply?: boolean;
+  }
 }
+export type TokensBuildInput = TokensBuildInputSchema.TokensBuildInput;
+
+// Canonical aliases for shared REPL/UI schema shapes.
+export type UiElement = UiSchemaSchema.UiElement;
+export type UiLayout = UiSchemaSchema.Layout;
+export type UiStyle = UiSchemaSchema.Style;
+export type UiProps = UiSchemaSchema.Props;
+export type UiBindings = UiSchemaSchema.Bindings;
+export type UiMeta = UiSchemaSchema.Meta;
+
+export type ReplJsonPatchOperation = ReplPatchSchema.JsonPatchOp;
+export type ReplNodePatch = ReplPatchSchema.NodePatch;
+
+export type ReplIssue = ReplRenderOutputSchema.Issue;
+export type ReplRenderPreview = NonNullable<ReplRenderOutput['preview']>;
+export type ReplValidationMeta = NonNullable<ReplRenderOutput['meta']>;
+export type ReplRenderFormat = NonNullable<NonNullable<ReplRenderOutput['output']>['format']>;

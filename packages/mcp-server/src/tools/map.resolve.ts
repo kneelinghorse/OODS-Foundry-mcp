@@ -18,7 +18,9 @@ export async function handle(input: MapResolveInput): Promise<MapResolveOutput> 
   if (!mapping) {
     return {
       status: 'not_found',
-      message: `No mapping found for ${input.externalSystem}/${input.externalComponent}.`,
+      message:
+        `No mapping found for ${input.externalSystem}/${input.externalComponent}. ` +
+        'Use map.list to see available systems, or map.create with apply=true to add one.',
     };
   }
 

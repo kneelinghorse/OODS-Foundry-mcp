@@ -18,6 +18,7 @@ import type {
   DiagnosticsVrtSummary,
 } from '@oods/artifacts';
 import type { BaseInput, GenericOutput, ArtifactDetail } from './types.js';
+import { readComponentsDataset, resolveComponentCount, type ComponentsDatasetLike } from './catalog.shared.js';
 
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(CURRENT_DIR, '../../../..');
@@ -228,6 +229,17 @@ async function countComponents(): Promise<number> {
   return files.length;
 }
 
+async function countCatalogComponents(): Promise<{ count: number; source: 'structured-data' | 'explorer' }> {
+  // Use structured-data manifest (same source as catalog.list) to avoid drift from explorer TSX scans.
+  try {
+    const componentsData = readComponentsDataset<ComponentsDatasetLike>();
+    return { count: resolveComponentCount(componentsData), source: 'structured-data' };
+  } catch {
+    // Fall back to the explorer component scan only when manifest data is unavailable.
+    return { count: await countComponents(), source: 'explorer' };
+  }
+}
+
 function buildPreview({
   inventory,
   vrt,
@@ -255,18 +267,23 @@ export async function handle(_input: BaseInput = {}): Promise<GenericOutput> {
   const { runDir, runId } = createRunDirectory(policy.artifactsBase, 'diag.snapshot');
   const startedAt = new Date();
 
-  const [storyFiles, componentCount, brand, packages, tokens] = await Promise.all([
+  const [storyFiles, componentInventory, brand, packages, tokens] = await Promise.all([
     collectStoryFiles(),
-    countComponents(),
+    countCatalogComponents(),
     collectBrandSummary(),
     collectPackageSummary(),
     collectTokensSummary(),
   ]);
-  const inventory = await collectInventorySummary(storyFiles, componentCount);
+  const inventory = await collectInventorySummary(storyFiles, componentInventory.count);
   const vrt = await collectVrtSummary(storyFiles);
   const packageNote = packages.length
     ? packages.map((pkg: DiagnosticsPackageSummary) => pkg.name).join(', ')
     : 'none';
+
+  const inventoryNote =
+    componentInventory.source === 'structured-data'
+      ? 'Component inventory sourced from structured-data manifest (matches catalog.list totals).'
+      : 'Component inventory fell back to explorer component scan; catalog.list manifest unavailable.';
 
   const diagnostics: DiagnosticsWriteInput = {
     sprint: '12',
@@ -276,6 +293,7 @@ export async function handle(_input: BaseInput = {}): Promise<GenericOutput> {
     notes: [
       `Story inventory scanned at ${new Date().toISOString()}`,
       `Packages analyzed: ${packageNote}`,
+      inventoryNote,
     ],
     brandA: brand,
     vrt,

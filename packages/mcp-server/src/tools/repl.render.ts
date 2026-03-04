@@ -142,7 +142,7 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
     output.renderedTree = workingTree;
   }
   if (normalizedPatch) {
-    output.normalizedPatch = normalizedPatch;
+    output.normalizedPatch = normalizedPatch as ReplRenderOutput['normalizedPatch'];
   }
   if (appliedPatch) {
     output.appliedPatch = true;

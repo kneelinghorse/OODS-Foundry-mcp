@@ -28,7 +28,7 @@ import {
   type SelectionResult,
 } from '../compose/component-selector.js';
 import { handle as validateHandle } from './repl.validate.js';
-import type { ComponentCatalogEntry } from './types.js';
+import type { ComponentCatalogSummary } from './types.js';
 import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 
 /* ------------------------------------------------------------------ */
@@ -171,7 +171,7 @@ function selectTemplate(
 
 function fillSlots(
   slots: Slot[],
-  catalog: ComponentCatalogEntry[],
+  catalog: ComponentCatalogSummary[],
   overrides: Record<string, string> | undefined,
   topN: number,
 ): SlotSelectionEntry[] {
@@ -250,7 +250,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   const { schema, slots } = selectTemplate(layoutType, input.preferences);
 
   // 3. Load catalog and fill slots
-  let catalog: ComponentCatalogEntry[];
+  let catalog: ComponentCatalogSummary[];
   try {
     catalog = await loadCatalog();
   } catch (e) {

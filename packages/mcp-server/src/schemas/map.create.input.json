@@ -9,6 +9,7 @@
   "properties": {
     "apply": {
       "type": "boolean",
+      "default": false,
       "description": "When true, write changes to disk."
     },
     "externalSystem": {

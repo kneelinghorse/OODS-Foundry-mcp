@@ -220,7 +220,13 @@ function formatValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function toPlanDiff(theme: Theme, brand: string, changes: ChangeRecord[], previous: TokenDocument, next: TokenDocument): PlanDiff {
+function toPlanDiff(
+  theme: Theme,
+  brand: string,
+  changes: ChangeRecord[],
+  before: TokenDocument,
+  after: TokenDocument,
+): PlanDiff {
   const additions = changes.filter((change) => change.before === undefined).length;
   const deletions = changes.filter((change) => change.after === undefined).length;
   const pathLabel = `packages/tokens/src/tokens/brands/${brand}/${theme}.json`;
@@ -245,8 +251,8 @@ function toPlanDiff(theme: Theme, brand: string, changes: ChangeRecord[], previo
     hunks,
     structured: {
       type: 'json',
-      before: previous,
-      after: next,
+      before,
+      after,
     },
   };
 }
@@ -268,6 +274,34 @@ function stableSort(value: unknown): unknown {
 
 function stringifyStable(value: unknown): string {
   return JSON.stringify(stableSort(value), null, 2);
+}
+
+function setDeltaValue(target: TokenDocument, pointer: string, value: unknown): void {
+  const segments = pointer.split('/').filter(Boolean);
+  if (!segments.length) return;
+  let cursor: TokenDocument = target;
+  for (let i = 0; i < segments.length - 1; i += 1) {
+    const key = segments[i];
+    if (!isPlainObject(cursor[key])) {
+      cursor[key] = {};
+    }
+    cursor = cursor[key] as TokenDocument;
+  }
+  cursor[segments[segments.length - 1]] = value;
+}
+
+function buildStructuredDelta(changes: ChangeRecord[]): { before: TokenDocument; after: TokenDocument } {
+  const before: TokenDocument = {};
+  const after: TokenDocument = {};
+  for (const change of changes) {
+    if (change.before !== undefined) {
+      setDeltaValue(before, change.pointer, change.before);
+    }
+    if (change.after !== undefined) {
+      setDeltaValue(after, change.pointer, change.after);
+    }
+  }
+  return { before, after };
 }
 
 function pointerToCssVariable(brand: string, pointer: string): string | null {
@@ -338,8 +372,6 @@ async function runTokensBuildSimulation(): Promise<number> {
 function buildPreview(
   brand: string,
   changes: ChangeRecord[],
-  originals: ThemeMap,
-  updated: ThemeMap,
   verbosity: PreviewVerbosity,
 ): ToolPreview {
   if (changes.length === 0) {
@@ -353,7 +385,8 @@ function buildPreview(
   const diffs = THEMES.map((theme) => {
     const themeChanges = changes.filter((change) => change.theme === theme);
     if (!themeChanges.length) return null;
-    return toPlanDiff(theme, brand, themeChanges, originals[theme], updated[theme]);
+    const structured = buildStructuredDelta(themeChanges);
+    return toPlanDiff(theme, brand, themeChanges, structured.before, structured.after);
   }).filter(Boolean) as PlanDiff[];
 
   const specimens = changes.slice(0, 12).map((change) =>
@@ -453,7 +486,7 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
   }
 
   const previewVerbosity: PreviewVerbosity = input.preview?.verbosity ?? 'full';
-  const preview = buildPreview(brand, changeRecords, originals, updated, previewVerbosity);
+  const preview = buildPreview(brand, changeRecords, previewVerbosity);
 
   const policy = loadPolicy();
   const baseDir = todayDir(policy.artifactsBase);

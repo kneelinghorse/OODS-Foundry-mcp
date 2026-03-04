@@ -20,10 +20,36 @@
       "pattern": "^[A-Fa-f0-9]{64}$",
       "description": "SHA256 ETag of the updated mappings file."
     },
+    "applied": {
+      "type": "boolean",
+      "description": "Whether the mapping was persisted to disk."
+    },
     "warnings": {
       "type": "array",
       "items": { "type": "string" },
       "description": "Non-fatal warnings (e.g., unknown traits)."
+    },
+    "errors": {
+      "type": "object",
+      "required": ["message", "details"],
+      "additionalProperties": false,
+      "properties": {
+        "message": { "type": "string" },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field", "message", "keyword"],
+            "additionalProperties": false,
+            "properties": {
+              "field": { "type": "string" },
+              "message": { "type": "string" },
+              "keyword": { "type": "string" }
+            }
+          }
+        }
+      },
+      "description": "Agent-friendly error details following formatValidationErrors()."
     }
   }
 }

@@ -518,18 +518,25 @@ Example output:
 {
   "status": "ok",
   "mapping": {
-    "id": "material__Button",
+    "id": "material-button",
     "externalSystem": "material",
     "externalComponent": "Button",
     "oodsTraits": ["Clickable", "Themeable"],
     "propMappings": ["..."],
     "confidence": "manual",
-    "createdAt": "2026-02-28T00:00:00Z"
+    "metadata": {
+      "createdAt": "2026-02-28T00:00:00Z"
+    }
   },
   "etag": "a1b2c3...",
+  "applied": true,
   "warnings": []
 }
 ```
+
+Notes:
+- When `apply` is `false` (or omitted), the mapping is not persisted and `applied` is `false`. The response includes a dry-run warning.
+- When `status` is `"error"`, an `errors` object is returned with `message` + `details` (field-level entries matching `formatValidationErrors()`).
 
 Input fields:
 | Field | Type | Required | Description |

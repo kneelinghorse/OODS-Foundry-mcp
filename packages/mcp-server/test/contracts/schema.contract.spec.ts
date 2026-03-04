@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getAjv } from '../../src/lib/ajv.js';
 import { formatValidationErrors } from '../../src/security/errors.js';
+import { formatSchemaInputError } from '../../src/security/schema-errors.js';
 import brandApplyInputSchema from '../../src/schemas/brand.apply.input.json' assert { type: 'json' };
 import genericOutputSchema from '../../src/schemas/generic.output.json' assert { type: 'json' };
 import releaseVerifyInputSchema from '../../src/schemas/release.verify.input.json' assert { type: 'json' };
@@ -228,6 +229,17 @@ describe('formatValidationErrors', () => {
     expect(resultUndefined.details).toEqual([]);
   });
 
+  it('supports custom output prefixes', () => {
+    const payload = { delta: 42, apply: true } as unknown;
+    validateBrandApplyInput(payload);
+    const result = formatValidationErrors(validateBrandApplyInput.errors as any, {
+      prefix: 'Output validation failed',
+    });
+
+    expect(result.message).toContain('Output validation failed');
+    expect(result.details.length).toBeGreaterThan(0);
+  });
+
   it('formats additionalProperties errors', () => {
     // repl.validate has additionalProperties: false
     const payload = { mode: 'full', schema: { version: '1.0', screens: [] }, bogusField: true };
@@ -249,5 +261,37 @@ describe('formatValidationErrors', () => {
     // Should combine multiple errors with semicolons
     expect(result.details.length).toBeGreaterThan(1);
     expect(result.message).toContain(';');
+  });
+});
+
+describe('formatSchemaInputError', () => {
+  it('adds patch hints for repl.validate patch errors', () => {
+    const errors = [
+      {
+        keyword: 'required',
+        instancePath: '',
+        params: { missingProperty: 'patch' },
+        message: "must have required property 'patch'",
+      },
+    ];
+
+    const result = formatSchemaInputError('repl.validate', errors as any);
+    expect(result.hint).toContain('Valid patch examples');
+    expect(result.expected?.patch).toContain('JSON Patch');
+  });
+
+  it('does not add patch hints for other tools', () => {
+    const errors = [
+      {
+        keyword: 'type',
+        instancePath: '/patch',
+        params: { type: 'array' },
+        message: 'must be array',
+      },
+    ];
+
+    const result = formatSchemaInputError('catalog.list', errors as any);
+    expect(result.hint).toBeUndefined();
+    expect(result.expected).toBeUndefined();
   });
 });

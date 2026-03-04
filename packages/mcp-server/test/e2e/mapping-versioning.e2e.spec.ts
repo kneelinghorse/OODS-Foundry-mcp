@@ -116,11 +116,11 @@ describe('mapping + versioning bridge E2E', () => {
     }
   });
 
-  it('map.create → map.list → map.resolve round-trip via bridge', async () => {
-    // Create a mapping
-    const created = await runBridgeTool(bridge!.port, 'map_create', {
-      externalSystem: 'e2e-test',
-      externalComponent: 'TestButton',
+  it('map.create → map.list → map.resolve round-trip via bridge (multi-system)', async () => {
+    const createdMaterial = await runBridgeTool(bridge!.port, 'map_create', {
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
       oodsTraits: ['Stateful'],
       propMappings: [
         { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum-map', values: { primary: 'primary' } } },
@@ -128,29 +128,62 @@ describe('mapping + versioning bridge E2E', () => {
       confidence: 'auto',
     });
 
-    expect(created.status).toBe('ok');
-    expect(created.mapping.id).toBe('e2e-test-test-button');
-    expect(created.etag).toMatch(/^[a-f0-9]{64}$/);
-
-    // List mappings
-    const listed = await runBridgeTool(bridge!.port, 'map_list', {
-      externalSystem: 'e2e-test',
+    const createdChakra = await runBridgeTool(bridge!.port, 'map_create', {
+      apply: true,
+      externalSystem: 'chakra',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'size', oodsProp: 'size', coercion: { type: 'type-cast', targetType: 'string' } },
+      ],
+      confidence: 'manual',
     });
 
-    expect(listed.totalCount).toBeGreaterThanOrEqual(1);
-    expect(listed.mappings.some((m: any) => m.id === 'e2e-test-test-button')).toBe(true);
+    expect(createdMaterial.status).toBe('ok');
+    expect(createdMaterial.mapping.id).toBe('material-button');
+    expect(createdMaterial.etag).toMatch(/^[a-f0-9]{64}$/);
+    expect(createdMaterial.applied).toBe(true);
 
-    // Resolve mapping
-    const resolved = await runBridgeTool(bridge!.port, 'map_resolve', {
-      externalSystem: 'e2e-test',
-      externalComponent: 'TestButton',
+    expect(createdChakra.status).toBe('ok');
+    expect(createdChakra.mapping.id).toBe('chakra-button');
+    expect(createdChakra.etag).toMatch(/^[a-f0-9]{64}$/);
+    expect(createdChakra.applied).toBe(true);
+
+    const materialListed = await runBridgeTool(bridge!.port, 'map_list', {
+      externalSystem: 'material',
     });
 
-    expect(resolved.status).toBe('ok');
-    expect(resolved.mapping.oodsTraits).toEqual(['Stateful']);
-    expect(resolved.propTranslations).toBeInstanceOf(Array);
-    expect(resolved.propTranslations.length).toBe(1);
-    expect(resolved.propTranslations[0].coercionType).toBe('enum-map');
+    expect(materialListed.totalCount).toBeGreaterThanOrEqual(1);
+    expect(materialListed.mappings.some((m: any) => m.id === 'material-button')).toBe(true);
+
+    const chakraListed = await runBridgeTool(bridge!.port, 'map_list', {
+      externalSystem: 'chakra',
+    });
+
+    expect(chakraListed.totalCount).toBeGreaterThanOrEqual(1);
+    expect(chakraListed.mappings.some((m: any) => m.id === 'chakra-button')).toBe(true);
+
+    const resolvedMaterial = await runBridgeTool(bridge!.port, 'map_resolve', {
+      externalSystem: 'material',
+      externalComponent: 'Button',
+    });
+
+    expect(resolvedMaterial.status).toBe('ok');
+    expect(resolvedMaterial.mapping.oodsTraits).toEqual(['Stateful']);
+    expect(resolvedMaterial.propTranslations).toBeInstanceOf(Array);
+    expect(resolvedMaterial.propTranslations.length).toBe(1);
+    expect(resolvedMaterial.propTranslations[0].coercionType).toBe('enum-map');
+
+    const resolvedChakra = await runBridgeTool(bridge!.port, 'map_resolve', {
+      externalSystem: 'chakra',
+      externalComponent: 'Button',
+    });
+
+    expect(resolvedChakra.status).toBe('ok');
+    expect(resolvedChakra.mapping.oodsTraits).toEqual(['Stateful']);
+    expect(resolvedChakra.propTranslations).toBeInstanceOf(Array);
+    expect(resolvedChakra.propTranslations.length).toBe(1);
+    expect(resolvedChakra.propTranslations[0].coercionType).toBe('type-cast');
   });
 
   it('structuredData.fetch listVersions via bridge', async () => {
