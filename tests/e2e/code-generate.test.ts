@@ -53,8 +53,17 @@ describe('code.generate E2E — registration', () => {
     expect(fs.existsSync(outputPath)).toBe(true);
 
     const inputSchema = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-    expect(inputSchema.required).toContain('schema');
     expect(inputSchema.required).toContain('framework');
+    expect(inputSchema.required).not.toContain('schema');
+    expect(inputSchema.required).not.toContain('schemaRef');
+    expect(inputSchema.properties).toHaveProperty('schema');
+    expect(inputSchema.properties).toHaveProperty('schemaRef');
+    const anyOf = inputSchema.allOf?.[0]?.anyOf;
+    expect(Array.isArray(anyOf)).toBe(true);
+    const requiredSets = (anyOf ?? [])
+      .map((entry: { required?: string[] }) => entry?.required)
+      .filter((req: string[] | undefined): req is string[] => Array.isArray(req));
+    expect(requiredSets).toEqual(expect.arrayContaining([['schema'], ['schemaRef']]));
   });
 });
 
