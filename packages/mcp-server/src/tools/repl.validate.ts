@@ -1,6 +1,7 @@
 import {
   applyPatch,
   loadComponentRegistry,
+  patchExampleHint,
   summarizeMeta,
   validateComponents,
   validateSchema,
@@ -14,6 +15,7 @@ import type {
   ReplValidationMeta,
   UiSchema,
 } from '../schemas/generated.js';
+import { resolveSchemaRef } from './schema-ref.js';
 
 function asWarnings(issues: ReplIssue[]): ReplIssue[] {
   return issues.map((entry) => ({ ...entry, severity: entry.severity ?? 'warning' }));
@@ -35,14 +37,40 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
   let meta: ReplValidationMeta | undefined;
 
   if (mode === 'full') {
-    workingTree = cloneTree(input.schema);
-    if (!workingTree) {
+    if (input.schema) {
+      workingTree = cloneTree(input.schema);
+    } else if (input.schemaRef) {
+      const resolved = resolveSchemaRef(input.schemaRef);
+      if (resolved.ok) {
+        workingTree = resolved.schema;
+      } else {
+        const code = resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND';
+        errors.push({
+          code,
+          message: `schemaRef '${input.schemaRef}' is ${resolved.reason}.`,
+          hint: 'Run design.compose again to obtain a fresh schemaRef, or pass schema inline via the schema field.',
+        });
+      }
+    } else {
       errors.push({ code: 'MISSING_SCHEMA', message: 'schema is required when mode=full' });
     }
   } else {
     workingTree = cloneTree(input.baseTree);
     if (!workingTree) {
-      errors.push({ code: 'MISSING_BASE_TREE', message: 'baseTree is required when mode=patch' });
+      errors.push({
+        code: 'MISSING_BASE_TREE',
+        message: 'baseTree is required when mode=patch',
+        path: '/baseTree',
+        hint: patchExampleHint(),
+      });
+    }
+    if (!input.patch) {
+      errors.push({
+        code: 'MISSING_PATCH',
+        message: 'patch is required when mode=patch',
+        path: '/patch',
+        hint: patchExampleHint(),
+      });
     }
     if (workingTree && input.patch) {
       const patchResult = applyPatch(workingTree, input.patch);
@@ -51,7 +79,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
         normalizedPatch = patchResult.normalized;
       }
       errors.push(...patchResult.issues);
-      appliedPatch = true;
+      appliedPatch = patchResult.normalized.length > 0;
     }
   }
 

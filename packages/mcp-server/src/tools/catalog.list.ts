@@ -3,9 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withinAllowed } from '../lib/security.js';
 import type {
+  CatalogListDetail,
   CatalogListInput,
   CatalogListOutput,
   ComponentCatalogEntry,
+  ComponentCatalogSummary,
   ComponentCodeReference,
 } from './types.js';
 
@@ -15,6 +17,7 @@ const ARTIFACT_DIR = path.join(REPO_ROOT, 'artifacts', 'structured-data');
 const MANIFEST_PATH = path.join(ARTIFACT_DIR, 'manifest.json');
 const CODE_CONNECT_PATH = path.join(ARTIFACT_DIR, 'code-connect.json');
 const STORIES_DIR = path.join(REPO_ROOT, 'stories');
+const DEFAULT_PAGE_SIZE = 25;
 
 type ManifestArtifact = {
   name?: string;
@@ -82,6 +85,62 @@ type ComponentsDataset = {
 
 function readJson(filePath: string): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function normalizeTrait(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function levenshtein(a: string, b: string): number {
+  const aLen = a.length;
+  const bLen = b.length;
+  if (aLen === 0) return bLen;
+  if (bLen === 0) return aLen;
+  const prev = new Array<number>(bLen + 1);
+  const curr = new Array<number>(bLen + 1);
+  for (let j = 0; j <= bLen; j += 1) prev[j] = j;
+  for (let i = 1; i <= aLen; i += 1) {
+    curr[0] = i;
+    const aChar = a[i - 1];
+    for (let j = 1; j <= bLen; j += 1) {
+      const cost = aChar === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(
+        prev[j] + 1,
+        curr[j - 1] + 1,
+        prev[j - 1] + cost
+      );
+    }
+    for (let j = 0; j <= bLen; j += 1) prev[j] = curr[j];
+  }
+  return prev[bLen];
+}
+
+function suggestTraits(query: string, candidates: string[], limit = 5): string[] {
+  const normalizedQuery = normalizeTrait(query);
+  if (!normalizedQuery) return [];
+  const unique = Array.from(new Set(candidates.filter((t) => typeof t === 'string' && t.trim().length > 0)));
+  const scored = unique.map((trait) => {
+    const normalized = normalizeTrait(trait);
+    let score = 0;
+    if (normalized === normalizedQuery) {
+      score = 0;
+    } else if (normalized.includes(normalizedQuery) || normalizedQuery.includes(normalized)) {
+      score = 1;
+    } else {
+      score = 2 + levenshtein(normalizedQuery, normalized);
+    }
+    return { trait, normalized, score };
+  });
+
+  const threshold = Math.max(2, Math.ceil(normalizedQuery.length * 0.4));
+  const filtered = scored.filter((entry) =>
+    entry.score <= threshold || entry.normalized.includes(normalizedQuery)
+  );
+
+  return filtered
+    .sort((a, b) => a.score - b.score || a.trait.localeCompare(b.trait))
+    .slice(0, limit)
+    .map((entry) => entry.trait);
 }
 
 function sanitizeManifestFile(value: string): string {
@@ -500,24 +559,34 @@ function extractSlotDefinitions(traitUsages: TraitUsage[]): Record<string, { acc
   return slots;
 }
 
-function transformComponentsToCatalog(componentsData: ComponentsDataset): ComponentCatalogEntry[] {
+function transformComponentsToSummary(componentsData: ComponentsDataset): ComponentCatalogSummary[] {
   if (!componentsData.components) {
     return [];
   }
 
-  return componentsData.components.map((component) => {
-    const traits = component.traitUsages?.map((usage) => usage.trait) || [];
-    const propSchema = extractPropSchema(component.traitUsages || []);
-    const slots = extractSlotDefinitions(component.traitUsages || []);
+  return componentsData.components.map((component) => ({
+    name: component.id,
+    displayName: component.displayName,
+    categories: component.categories || [],
+    tags: component.tags || [],
+    contexts: component.contexts || [],
+    regions: component.regions || [],
+    traits: component.traitUsages?.map((usage) => usage.trait) || [],
+  }));
+}
+
+function enrichComponentsToDetail(
+  components: ComponentCatalogSummary[],
+  componentIndex: Map<string, ComponentData>,
+): ComponentCatalogEntry[] {
+  return components.map((component) => {
+    const source = componentIndex.get(component.name);
+    const traitUsages = source?.traitUsages || [];
+    const propSchema = extractPropSchema(traitUsages);
+    const slots = extractSlotDefinitions(traitUsages);
 
     return {
-      name: component.id,
-      displayName: component.displayName,
-      categories: component.categories || [],
-      tags: component.tags || [],
-      contexts: component.contexts || [],
-      regions: component.regions || [],
-      traits,
+      ...component,
       propSchema,
       slots,
     };
@@ -528,8 +597,10 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
   try {
     const componentsFilePath = getLatestComponentsFile();
     const componentsData = readJson(componentsFilePath) as ComponentsDataset;
-
-    const catalog = transformComponentsToCatalog(componentsData);
+    const catalog = transformComponentsToSummary(componentsData);
+    const componentIndex = new Map(
+      (componentsData.components ?? []).map((component) => [component.id, component]),
+    );
 
     // Apply filters if provided
     let filteredCatalog = catalog;
@@ -546,33 +617,85 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       filteredCatalog = filteredCatalog.filter((c) => c.contexts.includes(input.context!));
     }
 
-    const storyIndex = getStoryIndex(catalog.map((c) => c.name));
-    const codeConnectIndex = loadCodeConnectIndex();
-    const enrichedCatalog = filteredCatalog.map((component) => {
-      const codeReferences = [
-        ...(codeConnectIndex.get(component.name) ?? []),
-        ...(storyIndex.get(component.name) ?? []),
-      ];
-
-      if (codeReferences.length === 0) {
-        return component;
+    let suggestions: CatalogListOutput['suggestions'] | undefined;
+    if (input.trait && filteredCatalog.length === 0) {
+      const allTraits = new Set<string>();
+      for (const component of catalog) {
+        for (const trait of component.traits) {
+          allTraits.add(trait);
+        }
       }
+      const traitSuggestions = suggestTraits(input.trait, Array.from(allTraits));
+      if (traitSuggestions.length > 0) {
+        suggestions = { traits: traitSuggestions };
+      }
+    }
 
-      return {
-        ...component,
-        codeReferences,
-        codeSnippet: pickBestSnippet(codeReferences),
-      };
-    });
+    const hasFilters = Boolean(input.category || input.trait || input.context);
+    const detail: CatalogListDetail = input.detail ?? (hasFilters ? 'full' : 'summary');
+    const paginationRequested = input.page !== undefined || input.pageSize !== undefined;
+    const applyDefaultPagination = !input.detail && !hasFilters;
+    const shouldPaginate = paginationRequested || applyDefaultPagination;
+
+    const totalCount = filteredCatalog.length;
+    const page = Math.max(1, input.page ?? 1);
+    let pageSize: number;
+
+    if (totalCount === 0) {
+      pageSize = 0;
+    } else if (shouldPaginate) {
+      pageSize = Math.max(1, input.pageSize ?? DEFAULT_PAGE_SIZE);
+    } else {
+      pageSize = totalCount;
+    }
+
+    const offset = shouldPaginate ? (page - 1) * pageSize : 0;
+    const pagedCatalog = shouldPaginate
+      ? filteredCatalog.slice(offset, offset + pageSize)
+      : filteredCatalog;
+
+    let components: Array<ComponentCatalogSummary | ComponentCatalogEntry> = pagedCatalog;
+
+    if (detail === 'full') {
+      const detailed = enrichComponentsToDetail(pagedCatalog, componentIndex);
+      const storyIndex = getStoryIndex(detailed.map((c) => c.name));
+      const codeConnectIndex = loadCodeConnectIndex();
+
+      components = detailed.map((component) => {
+        const codeReferences = [
+          ...(codeConnectIndex.get(component.name) ?? []),
+          ...(storyIndex.get(component.name) ?? []),
+        ];
+
+        if (codeReferences.length === 0) {
+          return component;
+        }
+
+        return {
+          ...component,
+          codeReferences,
+          codeSnippet: pickBestSnippet(codeReferences),
+        };
+      });
+    }
+
+    const returnedCount = components.length;
+    const hasMore = shouldPaginate ? offset + returnedCount < totalCount : false;
 
     return {
-      components: enrichedCatalog,
-      totalCount: enrichedCatalog.length,
+      components,
+      totalCount,
+      returnedCount,
+      page,
+      pageSize,
+      hasMore,
+      detail,
       generatedAt: componentsData.generatedAt || new Date().toISOString(),
       stats: {
         componentCount: componentsData.stats?.componentCount || catalog.length,
         traitCount: componentsData.stats?.traitCount || 0,
       },
+      ...(suggestions ? { suggestions } : {}),
     };
   } catch (error) {
     throw new Error(`Failed to list component catalog: ${(error as Error).message}`);

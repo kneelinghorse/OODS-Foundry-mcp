@@ -418,6 +418,27 @@ describe('Agentic REPL schemas', () => {
     expect(validateRenderInput(payload)).toBe(true);
     expect(validateRenderInput.errors).toBeNull();
   });
+
+  it('rejects render input payloads missing schema or schemaRef in full mode', () => {
+    const payload = { mode: 'full' };
+    expect(validateRenderInput(payload)).toBe(false);
+  });
+
+  it('rejects render input payloads missing baseTree in patch mode', () => {
+    const payload = {
+      mode: 'patch',
+      patch: [{ nodeId: 'archive-summary', path: 'component', value: 'ArchiveEvent' }],
+    };
+    expect(validateRenderInput(payload)).toBe(false);
+  });
+
+  it('rejects render input payloads missing patch in patch mode', () => {
+    const payload = {
+      mode: 'patch',
+      baseTree,
+    };
+    expect(validateRenderInput(payload)).toBe(false);
+  });
 });
 
 describe('Agentic REPL validate handler', () => {
@@ -428,6 +449,41 @@ describe('Agentic REPL validate handler', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.meta?.screenCount).toBe(1);
     expect(validateValidateOutput(result)).toBe(true);
+  });
+
+  it('reports missing patch with path + example hint', async () => {
+    const result = await validateHandle({ mode: 'patch', baseTree });
+
+    expect(result.status).toBe('invalid');
+    const missing = result.errors.find((err) => err.code === 'MISSING_PATCH');
+    expect(missing?.path).toBe('/patch');
+    expect(missing?.hint).toContain('Valid patch examples');
+  });
+
+  it('flags JSON Patch objects that are not wrapped in an array', async () => {
+    const result = await validateHandle({
+      mode: 'patch',
+      baseTree,
+      patch: { op: 'replace', path: '/screens/0/component', value: 'Card' } as any,
+    });
+
+    expect(result.status).toBe('invalid');
+    const format = result.errors.find((err) => err.code === 'PATCH_JSON_ARRAY_REQUIRED');
+    expect(format?.path).toBe('/patch');
+    expect(format?.hint).toContain('JSON Patch array');
+  });
+
+  it('returns path-level errors for malformed patch entries', async () => {
+    const result = await validateHandle({
+      mode: 'patch',
+      baseTree,
+      patch: [{ op: 'replace' }] as any,
+    });
+
+    expect(result.status).toBe('invalid');
+    const entry = result.errors.find((err) => err.code === 'PATCH_ENTRY_INVALID');
+    expect(entry?.path).toBe('/patch/0');
+    expect(entry?.hint).toContain('nodeId');
   });
 
   it('returns structured errors for unknown components', async () => {

@@ -53,12 +53,22 @@ Example output:
 {
   "artifacts": [],
   "transcriptPath": "artifacts/current-state/2026-02-24/tokens.build/transcript.json",
-  "bundleIndexPath": "artifacts/current-state/2026-02-24/tokens.build/bundle.json"
+  "bundleIndexPath": "artifacts/current-state/2026-02-24/tokens.build/bundle.json",
+  "preview": {
+    "summary": "Preview only: would build 4 token artifacts for brand A (dark theme).",
+    "notes": [
+      "artifact: tokens.dark.json",
+      "artifact: tokens.css",
+      "artifact: tokens.ts",
+      "artifact: tokens.tailwind.json"
+    ]
+  }
 }
 ```
 
 Notes:
 - `apply=true` writes token artifacts under the run directory; `apply=false` is preview-only.
+- Preview responses include a summary of expected artifacts when `apply=false`.
 
 ---
 
@@ -128,6 +138,34 @@ Example input (mode=`full`):
 }
 ```
 
+Example input (schemaRef shorthand):
+```json
+{
+  "mode": "full",
+  "schemaRef": "compose-abc123"
+}
+```
+
+Example input (mode=`patch`, node patch):
+```json
+{
+  "mode": "patch",
+  "baseTree": { "version": "2026.02", "screens": [ { "id": "screen_home", "component": "Stack", "children": [] } ] },
+  "patch": { "nodeId": "screen_home", "path": "component", "value": "Card" }
+}
+```
+
+Example input (mode=`patch`, JSON Patch array):
+```json
+{
+  "mode": "patch",
+  "baseTree": { "version": "2026.02", "screens": [ { "id": "screen_home", "component": "Stack", "children": [] } ] },
+  "patch": [
+    { "op": "replace", "path": "/screens/0/component", "value": "Card" }
+  ]
+}
+```
+
 With accessibility checks:
 ```json
 {
@@ -152,6 +190,8 @@ Example output:
 
 Notes:
 - `checkA11y: true` runs 18 WCAG contrast rules after structural validation passes. Failures appear as `A11Y_CONTRAST` warnings with contrast ratio, WCAG level, and fix hints.
+- `schemaRef` can be passed instead of `schema` when using a cached schema from `design.compose`.
+- In `patch` mode, `baseTree` is required. Patch payloads accept JSON Patch arrays or node patch objects/arrays. Malformed patch requests return path-level errors with a valid patch example in `hint`.
 
 ---
 
@@ -160,7 +200,8 @@ Notes:
 - **Input schema**: `packages/mcp-server/src/schemas/repl.render.input.json`
 - **Output schema**: `packages/mcp-server/src/schemas/repl.render.output.json`
 - **Policy**: designer, maintainer | writes `${BASE}/${DATE}/**` | timeout 30s | rate 60/min | concurrency 4
-- **Purpose**: Render UiSchema trees to HTML. Supports document mode (self-contained page) and fragment mode (per-component HTML).
+- **Purpose**: Render UiSchema trees to HTML. Supports document mode (self-contained page) and fragment mode (per-component HTML + CSS map).
+- **Preview note**: HTML/fragments payloads are returned only when `apply: true`; otherwise responses are metadata-only previews.
 
 Example input (mode=`patch`, node-targeted patch):
 ```json
@@ -174,12 +215,22 @@ Example input (mode=`patch`, node-targeted patch):
 }
 ```
 
+Example input (schemaRef shorthand):
+```json
+{
+  "mode": "full",
+  "schemaRef": "compose-abc123",
+  "apply": true
+}
+```
+
 Fragment mode:
 ```json
 {
   "mode": "full",
-  "output": { "format": "fragment" },
-  "schema": { "..." : "..." }
+  "apply": true,
+  "output": { "format": "fragments" },
+  "schema": { "...": "..." }
 }
 ```
 
@@ -204,8 +255,11 @@ Example output:
 
 Notes:
 - Document mode wraps output in a self-contained HTML page with inlined token CSS.
-- Fragment mode returns per-component HTML fragments with `cssRefs` for CSS extraction.
+- HTML and fragment payloads are returned only when `apply: true`; otherwise responses are metadata-only previews.
+- Fragment mode returns per-component HTML fragments with `cssRefs` for CSS extraction (requires `apply: true`).
 - Unknown components in non-strict fragment mode produce per-node errors without blocking sibling rendering.
+- `schemaRef` can be passed instead of `schema` when using a cached schema from `design.compose`.
+- Patch mode requires both `baseTree` and `patch`.
 
 ---
 
@@ -222,6 +276,7 @@ Example input (alias strategy preview):
   "brand": "A",
   "strategy": "alias",
   "apply": false,
+  "preview": { "verbosity": "compact" },
   "delta": { "typography": { "body": { "fontSize": 14 } } }
 }
 ```
@@ -238,6 +293,7 @@ Example output (preview-only):
 
 Notes:
 - `apply=true` writes snapshots/diagnostics into the run directory; `apply=false` is non-destructive.
+- `preview.verbosity="compact"` omits full before/after payloads and specimens, returning summary + hunks only. Default is `full`.
 
 ---
 
@@ -250,12 +306,18 @@ Notes:
 
 Example input:
 ```json
-{ "category": "core" }
+{}
 ```
 
-Example output (truncated):
+Example output (truncated, default summary + pagination):
 ```json
 {
+  "detail": "summary",
+  "page": 1,
+  "pageSize": 25,
+  "returnedCount": 25,
+  "totalCount": 73,
+  "hasMore": true,
   "components": [
     {
       "name": "Button",
@@ -264,15 +326,22 @@ Example output (truncated):
       "tags": [],
       "contexts": ["form"],
       "regions": [],
-      "traits": ["Clickable"],
-      "propSchema": {},
-      "slots": {}
+      "traits": ["Clickable"]
     }
   ],
-  "totalCount": 1,
   "generatedAt": "2026-02-24T05:09:44Z",
   "stats": { "componentCount": 73, "traitCount": 35 }
 }
+```
+
+Notes:
+- Unfiltered calls default to `detail: "summary"` with pagination (`pageSize: 25`). Use `page`/`pageSize` to navigate.
+- To opt into full detail (props, slots, code references), set `detail: "full"` explicitly. Filtered calls default to full detail for backward compatibility.
+- When `trait` yields zero results, responses include `suggestions.traits` with nearest valid trait names (case-insensitive + typo tolerance).
+
+Example input (explicit full detail):
+```json
+{ "detail": "full", "category": "core" }
 ```
 
 ---
@@ -305,6 +374,15 @@ Example input:
 }
 ```
 
+Example input (schemaRef shorthand):
+```json
+{
+  "schemaRef": "compose-abc123",
+  "framework": "react",
+  "options": { "typescript": true, "styling": "tokens" }
+}
+```
+
 Example output:
 ```json
 {
@@ -321,7 +399,8 @@ Example output:
 Input fields:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `schema` | UiSchema | Yes | A validated UiSchema tree |
+| `schema` | UiSchema | Yes (unless `schemaRef` provided) | A validated UiSchema tree |
+| `schemaRef` | string | No | Cached schema reference from `design.compose` |
 | `framework` | `"react"` \| `"vue"` \| `"html"` | Yes | Target framework |
 | `options.typescript` | boolean | No (default `true`) | Emit TypeScript types (React/Vue). Ignored for HTML. |
 | `options.styling` | `"inline"` \| `"tokens"` | No (default `"tokens"`) | Styling strategy: inline style objects or design-token CSS variables |
@@ -362,6 +441,9 @@ Example output:
   "status": "ok",
   "layout": "dashboard",
   "schema": { "version": "2026.02", "screens": ["..."] },
+  "schemaRef": "compose-abc123",
+  "schemaRefCreatedAt": "2026-03-04T02:00:00Z",
+  "schemaRefExpiresAt": "2026-03-04T02:30:00Z",
   "selections": [
     {
       "slotName": "metrics",
@@ -399,6 +481,9 @@ Output fields:
 | `status` | `"ok"` \| `"error"` | Composition result |
 | `layout` | string | Layout template used |
 | `schema` | UiSchema | Generated schema |
+| `schemaRef` | string | Cached schema reference for reuse in validate/render/code.generate |
+| `schemaRefCreatedAt` | string | ISO timestamp when schemaRef was created |
+| `schemaRefExpiresAt` | string | ISO timestamp when schemaRef expires |
 | `selections` | slotSelection[] | Component selection results per slot |
 | `validation` | object | Auto-validation result (`ok` / `invalid` / `skipped`) |
 | `warnings` | issue[] | Non-fatal issues |

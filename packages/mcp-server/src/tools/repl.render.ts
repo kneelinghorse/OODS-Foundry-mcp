@@ -18,6 +18,7 @@ import type {
   ReplValidationMeta,
   UiSchema,
 } from '../schemas/generated.js';
+import { resolveSchemaRef } from './schema-ref.js';
 
 function asWarnings(issues: ReplIssue[]): ReplIssue[] {
   return issues.map((entry) => ({ ...entry, severity: entry.severity ?? 'warning' }));
@@ -64,8 +65,21 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   let meta: ReplValidationMeta | undefined;
 
   if (mode === 'full') {
-    workingTree = cloneTree(input.schema);
-    if (!workingTree) {
+    if (input.schema) {
+      workingTree = cloneTree(input.schema);
+    } else if (input.schemaRef) {
+      const resolved = resolveSchemaRef(input.schemaRef);
+      if (resolved.ok) {
+        workingTree = resolved.schema;
+      } else {
+        const code = resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND';
+        errors.push({
+          code,
+          message: `schemaRef '${input.schemaRef}' is ${resolved.reason}.`,
+          hint: 'Run design.compose again to obtain a fresh schemaRef, or pass schema inline via the schema field.',
+        });
+      }
+    } else {
       errors.push({ code: 'MISSING_SCHEMA', message: 'schema is required when mode=full' });
     }
   } else {

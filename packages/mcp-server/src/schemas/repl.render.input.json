@@ -15,6 +15,10 @@
     "schema": {
       "$ref": "./repl.ui.schema.json"
     },
+    "schemaRef": {
+      "type": "string",
+      "description": "Reference to a cached UiSchema returned by design.compose."
+    },
     "patch": {
       "$ref": "./repl.patch.json"
     },
@@ -32,10 +36,6 @@
         "includeTree": {
           "type": "boolean",
           "default": true
-        },
-        "previewOnly": {
-          "type": "boolean",
-          "default": false
         }
       },
       "additionalProperties": false,
@@ -85,8 +85,9 @@
         }
       },
       "then": {
-        "required": [
-          "schema"
+        "anyOf": [
+          { "required": ["schema"] },
+          { "required": ["schemaRef"] }
         ]
       }
     },
@@ -100,7 +101,8 @@
       },
       "then": {
         "required": [
-          "patch"
+          "patch",
+          "baseTree"
         ]
       }
     }

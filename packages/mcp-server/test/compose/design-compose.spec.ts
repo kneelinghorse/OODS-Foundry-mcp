@@ -38,6 +38,9 @@ describe('design.compose — core contracts', () => {
     expect(result.status).toBeDefined();
     expect(result.layout).toBeDefined();
     expect(result.schema).toBeDefined();
+    expect(result.schemaRef).toBeTruthy();
+    expect(result.schemaRefCreatedAt).toBeTruthy();
+    expect(result.schemaRefExpiresAt).toBeTruthy();
     expect(result.selections).toBeInstanceOf(Array);
     expect(result.warnings).toBeInstanceOf(Array);
   });

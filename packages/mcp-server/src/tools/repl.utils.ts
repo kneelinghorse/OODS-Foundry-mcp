@@ -44,6 +44,14 @@ type RegistryInfo = {
   warnings: ReplIssue[];
 };
 
+const PATCH_EXAMPLE = [
+  'Valid patch examples:',
+  'JSON Patch array:',
+  '  [{"op":"replace","path":"/screens/0/children/0/props/label","value":"Save"}]',
+  'Node patch object:',
+  '  {"nodeId":"basic-button","path":"props.label","value":"Save"}',
+].join('\n');
+
 let registryCache: RegistryInfo | null = null;
 
 function issue(code: string, message: string, pathValue?: string, hint?: string): ReplIssue {
@@ -51,6 +59,10 @@ function issue(code: string, message: string, pathValue?: string, hint?: string)
   if (pathValue) payload.path = pathValue;
   if (hint) payload.hint = hint;
   return payload;
+}
+
+export function patchExampleHint(): string {
+  return PATCH_EXAMPLE;
 }
 
 function readJson(filePath: string): any {
@@ -96,6 +108,20 @@ function escapePointerSegment(segment: string): string {
 
 function decodePointerSegment(segment: string): string {
   return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isJsonPatchOp(entry: unknown): entry is ReplJsonPatchOperation {
+  if (!isPlainObject(entry)) return false;
+  return typeof entry.op === 'string' && typeof entry.path === 'string';
+}
+
+function isNodePatch(entry: unknown): entry is ReplNodePatch {
+  if (!isPlainObject(entry)) return false;
+  return typeof entry.nodeId === 'string' && typeof entry.path === 'string';
 }
 
 function pointerSegments(pointer: string, issues: ReplIssue[]): string[] | null {
@@ -144,9 +170,9 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
   const clone: UiSchema = structuredClone(target);
   const issues: ReplIssue[] = [];
 
-  for (const op of operations) {
+  for (const [index, op] of operations.entries()) {
     if (!op || typeof op.path !== 'string' || typeof op.op !== 'string') {
-      issues.push(issue('PATCH_INVALID', 'Patch operation is malformed'));
+      issues.push(issue('PATCH_INVALID', 'Patch operation is malformed', `/patch/${index}`, patchExampleHint()));
       continue;
     }
     try {
@@ -200,8 +226,28 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
   return { tree: clone, issues };
 }
 
-function normalizeNodePatch(baseTree: UiSchema, patch: ReplNodePatch): { operations: ReplJsonPatchOperation[]; issues: ReplIssue[] } {
+function normalizeNodePatch(
+  baseTree: UiSchema,
+  patch: ReplNodePatch,
+  pointerBase: string,
+): { operations: ReplJsonPatchOperation[]; issues: ReplIssue[] } {
   const issues: ReplIssue[] = [];
+  if (!patch || typeof patch !== 'object') {
+    issues.push(issue('PATCH_ENTRY_INVALID', 'Node patch must be an object', pointerBase, patchExampleHint()));
+    return { operations: [], issues };
+  }
+  if (!patch.nodeId || typeof patch.nodeId !== 'string') {
+    issues.push(
+      issue('PATCH_NODE_ID_MISSING', 'nodeId is required for node patches', `${pointerBase}/nodeId`, patchExampleHint())
+    );
+    return { operations: [], issues };
+  }
+  if (!patch.path || typeof patch.path !== 'string') {
+    issues.push(
+      issue('PATCH_PATH_MISSING', 'path is required for node patches', `${pointerBase}/path`, patchExampleHint())
+    );
+    return { operations: [], issues };
+  }
   const { index } = collectNodeIndex(baseTree);
   const ref = index.get(patch.nodeId);
   if (!ref) {
@@ -234,35 +280,108 @@ function normalizeNodePatch(baseTree: UiSchema, patch: ReplNodePatch): { operati
 
 export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch): { operations: ReplJsonPatchOperation[]; issues: ReplIssue[] } {
   const issues: ReplIssue[] = [];
-  if (!patch) return { operations: [], issues };
+  if (!patch) {
+    issues.push(issue('PATCH_MISSING', 'patch is required when mode=patch', '/patch', patchExampleHint()));
+    return { operations: [], issues };
+  }
 
   if (Array.isArray(patch)) {
     if (patch.length === 0) {
-      issues.push(issue('PATCH_EMPTY', 'Patch payload is empty'));
+      issues.push(issue('PATCH_EMPTY', 'Patch payload is empty', '/patch', patchExampleHint()));
       return { operations: [], issues };
     }
-    const isJsonPatch = patch.every((entry) => (entry as any)?.nodeId === undefined);
-    if (isJsonPatch) {
-      return { operations: patch as ReplJsonPatchOperation[], issues };
-    }
-    if (!baseTree) {
-      issues.push(issue('MISSING_BASE_TREE', 'baseTree is required when applying node-targeted patches'));
+
+    let hasJsonPatch = false;
+    let hasNodePatch = false;
+    const jsonOps: ReplJsonPatchOperation[] = [];
+    const nodeOps: ReplJsonPatchOperation[] = [];
+
+    patch.forEach((entry, index) => {
+      const pointerBase = `/patch/${index}`;
+      if (!isPlainObject(entry)) {
+        issues.push(issue('PATCH_ENTRY_INVALID', 'Patch entry must be an object', pointerBase, patchExampleHint()));
+        return;
+      }
+      if (isJsonPatchOp(entry) && (entry as any).nodeId === undefined) {
+        hasJsonPatch = true;
+        jsonOps.push(entry);
+        return;
+      }
+      if (isNodePatch(entry)) {
+        hasNodePatch = true;
+        if (!baseTree) {
+          issues.push(issue('MISSING_BASE_TREE', 'baseTree is required when applying node-targeted patches', '/baseTree', patchExampleHint()));
+          return;
+        }
+        const normalized = normalizeNodePatch(baseTree, entry, pointerBase);
+        issues.push(...normalized.issues);
+        nodeOps.push(...normalized.operations);
+        return;
+      }
+      issues.push(
+        issue(
+          'PATCH_ENTRY_INVALID',
+          'Patch entry must include op/path (JSON Patch) or nodeId/path (node patch)',
+          pointerBase,
+          patchExampleHint()
+        )
+      );
+    });
+
+    if (hasJsonPatch && hasNodePatch) {
+      issues.push(
+        issue(
+          'PATCH_MIXED_FORMATS',
+          'Patch array mixes JSON Patch ops and node patches. Use one format per request.',
+          '/patch',
+          patchExampleHint()
+        )
+      );
       return { operations: [], issues };
     }
-    const ops: ReplJsonPatchOperation[] = [];
-    for (const entry of patch as ReplNodePatch[]) {
-      const normalized = normalizeNodePatch(baseTree, entry);
-      issues.push(...normalized.issues);
-      ops.push(...normalized.operations);
+
+    if (hasJsonPatch) {
+      return { operations: jsonOps, issues };
     }
-    return { operations: ops, issues };
+    if (hasNodePatch) {
+      return { operations: nodeOps, issues };
+    }
+    return { operations: [], issues };
+  }
+
+  if (!isPlainObject(patch)) {
+    issues.push(issue('PATCH_INVALID_TYPE', 'patch must be an array or object', '/patch', patchExampleHint()));
+    return { operations: [], issues };
+  }
+
+  if (isJsonPatchOp(patch) && (patch as any).nodeId === undefined) {
+    issues.push(
+      issue(
+        'PATCH_JSON_ARRAY_REQUIRED',
+        'JSON Patch operations must be provided as an array',
+        '/patch',
+        patchExampleHint()
+      )
+    );
+    return { operations: [], issues };
   }
 
   if (!baseTree) {
-    issues.push(issue('MISSING_BASE_TREE', 'baseTree is required when applying node-targeted patches'));
+    issues.push(issue('MISSING_BASE_TREE', 'baseTree is required when applying node-targeted patches', '/baseTree', patchExampleHint()));
     return { operations: [], issues };
   }
-  const normalized = normalizeNodePatch(baseTree, patch as ReplNodePatch);
+  if (!isNodePatch(patch)) {
+    issues.push(
+      issue(
+        'PATCH_INVALID',
+        'Patch must be a JSON Patch array or a node patch object',
+        '/patch',
+        patchExampleHint()
+      )
+    );
+    return { operations: [], issues };
+  }
+  const normalized = normalizeNodePatch(baseTree, patch, '/patch');
   return { operations: normalized.operations, issues: [...issues, ...normalized.issues] };
 }
 

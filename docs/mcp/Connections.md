@@ -158,3 +158,11 @@ Flags:
 - `--apply` – send `apply:true` plus `X-Bridge-Approval` (requires the header value in `BRIDGE_APPROVAL`).
 
 Use the harness after any connector or policy change to confirm the bridge still returns artifacts under `artifacts/current-state/<date>/`.
+
+For UX flow smoke (compose → generate and schemaRef workflows), run:
+
+```bash
+pnpm --filter @oods/agents-smoke exec tsx src/ux-flow-smoke.ts
+```
+
+This writes a short report to `cmos/reports/s57-m08-smoke.md` with adapter + bridge results.

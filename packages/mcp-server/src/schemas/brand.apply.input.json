@@ -31,6 +31,19 @@
       "default": "alias",
       "description": "Alias strategy rewrites token values; patch applies RFC 6902 operations."
     },
+    "preview": {
+      "type": "object",
+      "description": "Preview response controls (apply=false).",
+      "properties": {
+        "verbosity": {
+          "type": "string",
+          "enum": ["full", "compact"],
+          "default": "full",
+          "description": "full includes structured before/after payloads; compact returns summary + hunks only."
+        }
+      },
+      "additionalProperties": false
+    },
     "apply": {
       "type": "boolean",
       "default": false

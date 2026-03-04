@@ -12,6 +12,7 @@ import type {
   GenericOutput,
   PlanDiff,
   PlanDiffChange,
+  PreviewVerbosity,
   ToolPreview,
 } from './types.js';
 
@@ -334,13 +335,19 @@ async function runTokensBuildSimulation(): Promise<number> {
   return Date.now() - start;
 }
 
-function buildPreview(brand: string, changes: ChangeRecord[], originals: ThemeMap, updated: ThemeMap): ToolPreview {
+function buildPreview(
+  brand: string,
+  changes: ChangeRecord[],
+  originals: ThemeMap,
+  updated: ThemeMap,
+  verbosity: PreviewVerbosity,
+): ToolPreview {
   if (changes.length === 0) {
     return {
       summary: `No updates for brand ${brand}.`,
       notes: ['Input produced no token changes.'],
       diffs: [],
-      specimens: [],
+      ...(verbosity === 'full' ? { specimens: [] } : {}),
     };
   }
   const diffs = THEMES.map((theme) => {
@@ -367,11 +374,16 @@ function buildPreview(brand: string, changes: ChangeRecord[], originals: ThemeMa
       notesByTheme.push(`${theme}: ${themeCount} updated token${themeCount === 1 ? '' : 's'}`);
     }
   }
+  const compactDiffs =
+    verbosity === 'compact'
+      ? diffs.map(({ structured, ...rest }) => rest)
+      : diffs;
+
   return {
     summary: `Updated ${changes.length} token value${changes.length === 1 ? '' : 's'} for brand ${brand}.`,
     notes: notesByTheme,
-    diffs,
-    specimens,
+    diffs: compactDiffs,
+    ...(verbosity === 'full' ? { specimens } : {}),
   };
 }
 
@@ -440,7 +452,8 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
     changeRecords.push(...partialChanges);
   }
 
-  const preview = buildPreview(brand, changeRecords, originals, updated);
+  const previewVerbosity: PreviewVerbosity = input.preview?.verbosity ?? 'full';
+  const preview = buildPreview(brand, changeRecords, originals, updated, previewVerbosity);
 
   const policy = loadPolicy();
   const baseDir = todayDir(policy.artifactsBase);
