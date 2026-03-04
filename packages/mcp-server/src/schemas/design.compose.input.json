@@ -2,14 +2,27 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://designlab.local/schemas/design.compose.input.json",
   "title": "Design compose input",
-  "description": "Generate a complete UiSchema from an intent description using layout templates and component selection.",
+  "description": "Generate a complete UiSchema from an intent description and/or object definition using layout templates and component selection. Provide at least one of 'intent' or 'object'.",
   "type": "object",
-  "required": ["intent"],
+  "anyOf": [
+    { "required": ["intent"] },
+    { "required": ["object"] }
+  ],
   "properties": {
     "intent": {
       "type": "string",
       "minLength": 1,
       "description": "Natural-language description of the desired UI (e.g., 'dashboard with metrics and sidebar', 'user registration form')."
+    },
+    "object": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Object name from the OODS registry (e.g., 'Subscription', 'User'). When provided, composition uses trait-driven component placement via view_extensions."
+    },
+    "context": {
+      "type": "string",
+      "enum": ["detail", "list", "form", "timeline", "card", "inline"],
+      "description": "View context for object-aware composition. Determines which view_extensions are applied. When object is provided without layout, context infers the layout (detail→detail, list→list, form→form)."
     },
     "layout": {
       "type": "string",

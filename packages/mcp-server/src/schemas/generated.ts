@@ -70,6 +70,12 @@ export namespace A11yScanInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -154,7 +160,12 @@ export type BillingSwitchFixturesInput = BillingSwitchFixturesInputSchema.Billin
 
 // Source: brand.apply.input.json
 export namespace BrandApplyInputSchema {
-  export interface BrandApplyInput {
+  export type BrandApplyInput = BrandApplyInput1 & BrandApplyInput2;
+  export type BrandApplyInput1 = {
+    [k: string]: any;
+  };
+
+  export interface BrandApplyInput2 {
     /**
      * Target brand identifier.
      */
@@ -167,9 +178,9 @@ export namespace BrandApplyInputSchema {
           [k: string]: any;
         }
       | {
-          op: string;
+          op: 'add' | 'remove' | 'replace';
           path: string;
-          [k: string]: any;
+          value?: any;
         }[];
     /**
      * Alias strategy rewrites token values; patch applies RFC 6902 operations.
@@ -442,6 +453,12 @@ export namespace CodeGenerateInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -647,13 +664,26 @@ export type ComponentMappingSchema = ComponentMappingSchemaSchema.ComponentMappi
 // Source: design.compose.input.json
 export namespace DesignComposeInputSchema {
   /**
-   * Generate a complete UiSchema from an intent description using layout templates and component selection.
+   * Generate a complete UiSchema from an intent description and/or object definition using layout templates and component selection. Provide at least one of 'intent' or 'object'.
    */
-  export interface DesignComposeInput {
+  export type DesignComposeInput = DesignComposeInput1 & DesignComposeInput2;
+  export type DesignComposeInput1 = {
+    [k: string]: any;
+  };
+
+  export interface DesignComposeInput2 {
     /**
      * Natural-language description of the desired UI (e.g., 'dashboard with metrics and sidebar', 'user registration form').
      */
-    intent: string;
+    intent?: string;
+    /**
+     * Object name from the OODS registry (e.g., 'Subscription', 'User'). When provided, composition uses trait-driven component placement via view_extensions.
+     */
+    object?: string;
+    /**
+     * View context for object-aware composition. Determines which view_extensions are applied. When object is provided without layout, context infers the layout (detail→detail, list→list, form→form).
+     */
+    context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
     /**
      * Layout template to use. 'auto' infers the best template from intent keywords.
      */
@@ -744,11 +774,47 @@ export namespace DesignComposeOutputSchema {
      * Fatal issues that prevented composition.
      */
     errors?: Issue[];
+    objectUsed?: {
+      /**
+       * Object name from the registry.
+       */
+      name: string;
+      /**
+       * Object version.
+       */
+      version: string;
+      /**
+       * Trait names composed into this object.
+       */
+      traits: string[];
+      /**
+       * Total fields from merged trait schemas.
+       */
+      fieldsComposed: number;
+      /**
+       * Count of view_extensions applied per context.
+       */
+      viewExtensionsApplied: {
+        [k: string]: number;
+      };
+    };
     meta?: {
       intentParsed?: string;
       layoutDetected?: string;
       slotCount?: number;
       nodeCount?: number;
+      /**
+       * Object name auto-detected from intent string.
+       */
+      objectAutoDetected?: string;
+      /**
+       * Context auto-detected from intent string.
+       */
+      contextAutoDetected?: string;
+      /**
+       * True when intent was synthetically generated from object + context.
+       */
+      intentSynthetic?: boolean;
     };
   }
   /**
@@ -763,6 +829,12 @@ export namespace DesignComposeOutputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1208,6 +1280,119 @@ export namespace MapResolveOutputSchema {
 }
 export type MapResolveOutput = MapResolveOutputSchema.MapResolveOutput;
 
+// Source: object.list.input.json
+export namespace ObjectListInputSchema {
+  export interface ObjectListInput {
+    /**
+     * Filter to objects in a specific domain (e.g. 'core.identity', 'saas.billing')
+     */
+    domain?: string;
+    /**
+     * Filter by metadata maturity level
+     */
+    maturity?: 'draft' | 'alpha' | 'beta' | 'stable';
+    /**
+     * Filter to objects composing a given trait (e.g. 'Priceable', 'lifecycle/Stateful')
+     */
+    trait?: string;
+  }
+}
+export type ObjectListInput = ObjectListInputSchema.ObjectListInput;
+
+// Source: object.list.output.json
+export namespace ObjectListOutputSchema {
+  export interface ObjectListOutput {
+    objects: {
+      name: string;
+      domain: string;
+      version: string;
+      maturity: string | null;
+      description: string;
+      traits: string[];
+      fieldCount: number;
+      tags: string[];
+    }[];
+    totalCount: number;
+    filters: {
+      domain: string | null;
+      maturity: string | null;
+      trait: string | null;
+    };
+  }
+}
+export type ObjectListOutput = ObjectListOutputSchema.ObjectListOutput;
+
+// Source: object.show.input.json
+export namespace ObjectShowInputSchema {
+  export interface ObjectShowInput {
+    /**
+     * Object name to look up (e.g. 'User', 'Product', 'Invoice')
+     */
+    name: string;
+    /**
+     * Optional: filter view_extensions to a single context (e.g. 'detail', 'list', 'form', 'timeline', 'card', 'inline')
+     */
+    context?: string;
+  }
+}
+export type ObjectShowInput = ObjectShowInputSchema.ObjectShowInput;
+
+// Source: object.show.output.json
+export namespace ObjectShowOutputSchema {
+  export interface ObjectShowOutput {
+    name: string;
+    version: string;
+    domain: string;
+    description: string;
+    tags: string[];
+    traits: {
+      name: string;
+      alias: string | null;
+      parameters: {
+        [k: string]: any;
+      } | null;
+    }[];
+    schema: {
+      [k: string]: {
+        type: string;
+        required: boolean;
+        description: string;
+        default?: any;
+        defaultFromParameter?: string;
+        validation?: {
+          [k: string]: any;
+        };
+        [k: string]: any;
+      };
+    };
+    semantics: {
+      [k: string]: {
+        semantic_type: string;
+        token_mapping: string;
+        ui_hints?: {
+          [k: string]: string | boolean | number;
+        };
+      };
+    };
+    viewExtensions: {
+      [k: string]: {
+        component: string;
+        position?: string;
+        priority?: number;
+        props?: {
+          [k: string]: any;
+        };
+      }[];
+    };
+    tokens: {
+      [k: string]: any;
+    };
+    warnings: string[];
+    filePath: string;
+  }
+}
+export type ObjectShowOutput = ObjectShowOutputSchema.ObjectShowOutput;
+
 // Source: release.tag.input.json
 export namespace ReleaseTagInputSchema {
   export interface ReleaseTagInput {
@@ -1361,6 +1546,12 @@ export namespace ReplRenderInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1506,6 +1697,12 @@ export namespace ReplRenderOutputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1573,6 +1770,12 @@ export namespace UiSchemaSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1656,6 +1859,12 @@ export namespace ReplValidateInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1721,6 +1930,12 @@ export namespace ReplValidateInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
 }
 export type ReplValidateInput = ReplValidateInputSchema.ReplValidateInput;
@@ -1773,6 +1988,12 @@ export namespace ReplValidateOutputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1975,143 +2196,3 @@ export type ReplIssue = ReplRenderOutputSchema.Issue;
 export type ReplRenderPreview = NonNullable<ReplRenderOutput['preview']>;
 export type ReplValidationMeta = NonNullable<ReplRenderOutput['meta']>;
 export type ReplRenderFormat = NonNullable<NonNullable<ReplRenderOutput['output']>['format']>;
-
-// Source: object.list.input.json
-export namespace ObjectListInputSchema {
-  /**
-   * List domain objects with optional filtering.
-   */
-  export interface ObjectListInput {
-    /**
-     * Filter to objects in a specific domain (e.g. 'core.identity', 'saas.billing').
-     */
-    domain?: string;
-    /**
-     * Filter by metadata maturity level.
-     */
-    maturity?: 'draft' | 'alpha' | 'beta' | 'stable';
-    /**
-     * Filter to objects composing a given trait (e.g. 'Priceable', 'lifecycle/Stateful').
-     */
-    trait?: string;
-  }
-}
-export type ObjectListInput = ObjectListInputSchema.ObjectListInput;
-
-// Source: object.list.output.json
-export namespace ObjectListOutputSchema {
-  export interface ObjectListEntry {
-    name: string;
-    domain: string;
-    version: string;
-    maturity: string | null;
-    description: string;
-    traits: string[];
-    fieldCount: number;
-    tags: string[];
-  }
-
-  /**
-   * List of domain objects matching the provided filters.
-   */
-  export interface ObjectListOutput {
-    objects: ObjectListEntry[];
-    totalCount: number;
-    filters: {
-      domain: string | null;
-      maturity: string | null;
-      trait: string | null;
-    };
-  }
-}
-export type ObjectListOutput = ObjectListOutputSchema.ObjectListOutput;
-export type ObjectListEntry = ObjectListOutputSchema.ObjectListEntry;
-
-// Source: object.show.input.json
-export namespace ObjectShowInputSchema {
-  /**
-   * Show full object definition with composed view_extensions.
-   */
-  export interface ObjectShowInput {
-    /**
-     * Object name to look up (e.g. 'User', 'Product', 'Invoice').
-     */
-    name: string;
-    /**
-     * Optional: filter view_extensions to a single context.
-     */
-    context?: string;
-  }
-}
-export type ObjectShowInput = ObjectShowInputSchema.ObjectShowInput;
-
-// Source: object.show.output.json
-export namespace ObjectShowOutputSchema {
-  export interface ObjectShowTraitEntry {
-    name: string;
-    alias: string | null;
-    parameters: Record<string, unknown> | null;
-  }
-
-  export interface FieldValidation {
-    enum?: string[];
-    enumFromParameter?: string;
-    minLength?: number;
-    maxLength?: number;
-    maxLengthFromParameter?: string;
-    minimum?: number;
-    maximum?: number;
-    minItems?: number;
-    maxItems?: number;
-    uniqueItems?: boolean;
-    pattern?: string;
-    format?: string;
-    items?: Record<string, unknown>;
-    [key: string]: unknown;
-  }
-
-  export interface FieldDefinition {
-    type: string;
-    required: boolean;
-    description: string;
-    default?: unknown;
-    defaultFromParameter?: string;
-    validation?: FieldValidation;
-  }
-
-  export interface SemanticMapping {
-    semantic_type: string;
-    token_mapping: string;
-    ui_hints?: Record<string, string | boolean | number>;
-  }
-
-  export interface ViewExtension {
-    component: string;
-    position?: string;
-    priority?: number;
-    props?: Record<string, unknown>;
-  }
-
-  /**
-   * Full object definition with composed traits, schema, semantics, and view_extensions.
-   */
-  export interface ObjectShowOutput {
-    name: string;
-    version: string;
-    domain: string;
-    description: string;
-    tags: string[];
-    traits: ObjectShowTraitEntry[];
-    schema: Record<string, FieldDefinition>;
-    semantics: Record<string, SemanticMapping>;
-    viewExtensions: Record<string, ViewExtension[]>;
-    tokens: Record<string, unknown>;
-    warnings: string[];
-    filePath: string;
-  }
-}
-export type ObjectShowOutput = ObjectShowOutputSchema.ObjectShowOutput;
-export type ObjectShowTraitEntry = ObjectShowOutputSchema.ObjectShowTraitEntry;
-export type ObjectShowFieldDefinition = ObjectShowOutputSchema.FieldDefinition;
-export type ObjectShowSemanticMapping = ObjectShowOutputSchema.SemanticMapping;
-export type ObjectShowViewExtension = ObjectShowOutputSchema.ViewExtension;

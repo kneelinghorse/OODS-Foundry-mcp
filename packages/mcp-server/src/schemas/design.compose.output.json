@@ -64,13 +64,36 @@
       "items": { "$ref": "#/$defs/issue" },
       "description": "Fatal issues that prevented composition."
     },
+    "objectUsed": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Object name from the registry." },
+        "version": { "type": "string", "description": "Object version." },
+        "traits": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Trait names composed into this object."
+        },
+        "fieldsComposed": { "type": "number", "description": "Total fields from merged trait schemas." },
+        "viewExtensionsApplied": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Count of view_extensions applied per context."
+        }
+      },
+      "required": ["name", "version", "traits", "fieldsComposed", "viewExtensionsApplied"],
+      "additionalProperties": false
+    },
     "meta": {
       "type": "object",
       "properties": {
         "intentParsed": { "type": "string" },
         "layoutDetected": { "type": "string" },
         "slotCount": { "type": "number" },
-        "nodeCount": { "type": "number" }
+        "nodeCount": { "type": "number" },
+        "objectAutoDetected": { "type": "string", "description": "Object name auto-detected from intent string." },
+        "contextAutoDetected": { "type": "string", "description": "Context auto-detected from intent string." },
+        "intentSynthetic": { "type": "boolean", "description": "True when intent was synthetically generated from object + context." }
       },
       "additionalProperties": false
     }
