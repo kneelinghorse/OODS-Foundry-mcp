@@ -11,7 +11,7 @@
  *   4. structuredData.fetch — versioned data includes updated trait metadata
  */
 import { describe, it, expect } from 'vitest';
-import { handle as fetchData } from '../../src/tools/structuredData.fetch.js';
+import { handle as fetchData, listAvailableVersions } from '../../src/tools/structuredData.fetch.js';
 import { handle as listCatalog } from '../../src/tools/catalog.list.js';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -125,12 +125,32 @@ describe('New traits discoverable in structured data', () => {
 // ─── 4. Versioned structured data ──────────────────────────────────────────
 
 describe('Versioned structured data returns updated trait metadata', () => {
-  it('returns today versioned artifact with enriched trait surface', async () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const result = await fetchData({ dataset: 'components', version: today });
+  it('returns nearest-available versioned artifact with enriched trait surface', async () => {
+    const available = listAvailableVersions('components');
+    expect(available.length).toBeGreaterThan(0);
+
+    const requested = new Date().toISOString().slice(0, 10);
+    const sorted = [...available].sort();
+    let expected = sorted[0];
+    for (let i = sorted.length - 1; i >= 0; i -= 1) {
+      if (sorted[i] <= requested) {
+        expected = sorted[i];
+        break;
+      }
+    }
+
+    const result = await fetchData({ dataset: 'components', version: requested });
 
     expect(result.payloadIncluded).toBe(true);
-    expect(result.resolvedVersion).toBe(today);
+    expect(result.requestedVersion).toBe(requested);
+    expect(result.resolvedVersion).toBe(expected);
+    expect(result.version).toBe(expected);
+    if (expected !== requested) {
+      expect(result.warnings).toBeDefined();
+      expect(result.warnings!.some((w) => w.includes('not found'))).toBe(true);
+    } else {
+      expect(result.warnings).toBeUndefined();
+    }
 
     const traits = (result.payload as Record<string, unknown>).traits as TraitMeta[];
     const traitNames = traits.map((t) => t.name);
@@ -140,11 +160,16 @@ describe('Versioned structured data returns updated trait metadata', () => {
     expect(traitNames).toContain('Taggable');
   });
 
-  it('reports version in manifest with today date', async () => {
+  it('reports version in manifest matching latest available artifact', async () => {
+    const versions = listAvailableVersions('components');
+    expect(versions.length).toBeGreaterThan(0);
+    const latest = versions[versions.length - 1];
+
     const result = await fetchData({ dataset: 'manifest' });
     expect(result.payloadIncluded).toBe(true);
     const manifest = result.payload as Record<string, unknown>;
-    expect(manifest.version).toBeDefined();
+    expect(manifest.version).toBe(latest);
+    expect(result.version).toBe(latest);
   });
 
   it('includes etag that differs from pre-sync baseline', async () => {

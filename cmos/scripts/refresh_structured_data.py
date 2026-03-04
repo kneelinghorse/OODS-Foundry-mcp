@@ -80,6 +80,12 @@ BASIC_COMPONENT_DEFINITIONS: Tuple[Dict[str, Any], ...] = (
         "regions": ["card", "main"],
     },
     {
+        "id": "Grid",
+        "tags": ["layout", "primitive", "structure"],
+        "contexts": ["card", "detail", "form", "list", "timeline"],
+        "regions": ["card", "contextPanel", "detail", "form", "list", "main", "timeline"],
+    },
+    {
         "id": "Stack",
         "tags": ["layout", "primitive", "structure"],
         "contexts": ["card", "detail", "form", "list", "timeline"],
