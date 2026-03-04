@@ -122,7 +122,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
     output.normalizedTree = workingTree;
   }
   if (normalizedPatch && normalizedPatch.length) {
-    output.normalizedPatch = normalizedPatch;
+    output.normalizedPatch = normalizedPatch as ReplValidateOutput['normalizedPatch'];
   }
   if (appliedPatch) {
     output.appliedPatch = true;

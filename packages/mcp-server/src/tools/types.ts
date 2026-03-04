@@ -260,6 +260,7 @@ export type CodeGenerateOutput = {
 // -- Mapping tools --
 
 export type MapCreateInput = {
+  apply?: boolean;
   externalSystem: string;
   externalComponent: string;
   oodsTraits: string[];
@@ -280,11 +281,24 @@ export type MapCreateInput = {
   };
 };
 
+export type MapCreateErrorDetail = {
+  field: string;
+  message: string;
+  keyword: string;
+};
+
+export type MapCreateError = {
+  message: string;
+  details: MapCreateErrorDetail[];
+};
+
 export type MapCreateOutput = {
   status: 'ok' | 'error';
   mapping: Record<string, unknown>;
   etag: string;
+  applied?: boolean;
   warnings?: string[];
+  errors?: MapCreateError;
 };
 
 export type MapListInput = {

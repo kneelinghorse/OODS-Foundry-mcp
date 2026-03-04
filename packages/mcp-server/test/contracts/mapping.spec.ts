@@ -141,6 +141,7 @@ describe('map.create → map.list → map.resolve round-trip', () => {
   it('creates a mapping and retrieves it via list and resolve', async () => {
     // Create
     const createResult = await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
@@ -155,6 +156,7 @@ describe('map.create → map.list → map.resolve round-trip', () => {
     expect(createResult.mapping).toBeDefined();
     expect((createResult.mapping as any).id).toBe('material-button');
     expect(createResult.etag).toMatch(/^[a-f0-9]{64}$/);
+    expect(createResult.applied).toBe(true);
 
     // List
     const listResult = await listHandle({});
@@ -187,6 +189,7 @@ describe('map.create trait validation', () => {
 
   it('warns on unknown trait references', async () => {
     const result = await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Slider',
       oodsTraits: ['NonExistentTrait'],
@@ -199,6 +202,7 @@ describe('map.create trait validation', () => {
 
   it('does not warn on known traits', async () => {
     const result = await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Chip',
       oodsTraits: ['Taggable', 'Stateful'],
@@ -218,28 +222,36 @@ describe('map.create duplicate detection', () => {
 
   it('rejects duplicate mapping for same system + component', async () => {
     await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
     });
 
-    await expect(
-      createHandle({
-        externalSystem: 'material',
-        externalComponent: 'Button',
-        oodsTraits: ['Stateful'],
-      }),
-    ).rejects.toThrow(/duplicate/i);
+    const duplicate = await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    expect(validateCreateOutput(duplicate)).toBe(true);
+    expect(duplicate.status).toBe('error');
+    expect(duplicate.applied).toBe(false);
+    expect(duplicate.errors).toBeDefined();
+    expect(duplicate.errors!.details.some((d) => d.field === 'externalSystem')).toBe(true);
   });
 
   it('allows same component name from different systems', async () => {
     await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
     });
 
     const result = await createHandle({
+      apply: true,
       externalSystem: 'ant-design',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
@@ -250,6 +262,28 @@ describe('map.create duplicate detection', () => {
   });
 });
 
+describe('map.create apply flag', () => {
+  beforeEach(() => {
+    resetMappingsFile();
+  });
+
+  it('does not persist mappings when apply is false', async () => {
+    const result = await createHandle({
+      apply: false,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    expect(validateCreateOutput(result)).toBe(true);
+    expect(result.applied).toBe(false);
+    expect(result.warnings?.some((w: string) => w.includes('Dry run'))).toBe(true);
+
+    const listResult = await listHandle({});
+    expect(listResult.totalCount).toBe(0);
+  });
+});
+
 describe('multi-system mappings', () => {
   beforeEach(() => {
     resetMappingsFile();
@@ -257,16 +291,19 @@ describe('multi-system mappings', () => {
 
   it('creates mappings from multiple systems and filters by system', async () => {
     await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
     });
     await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'TextField',
       oodsTraits: ['Labelled', 'Stateful'],
     });
     await createHandle({
+      apply: true,
       externalSystem: 'chakra',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
@@ -292,6 +329,7 @@ describe('multi-system mappings', () => {
 
   it('filters are case-insensitive', async () => {
     await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
@@ -327,6 +365,7 @@ describe('map.resolve case-insensitive lookup', () => {
 
   it('resolves regardless of case', async () => {
     await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
@@ -348,6 +387,7 @@ describe('map.create all coercion types', () => {
 
   it('supports all four coercion strategies in prop mappings', async () => {
     const result = await createHandle({
+      apply: true,
       externalSystem: 'test-system',
       externalComponent: 'TestComponent',
       oodsTraits: ['Stateful'],
@@ -384,6 +424,7 @@ describe('map.create auto-generated metadata', () => {
   it('sets createdAt timestamp automatically', async () => {
     const before = new Date().toISOString();
     const result = await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
@@ -398,6 +439,7 @@ describe('map.create auto-generated metadata', () => {
 
   it('preserves user-provided author and notes', async () => {
     const result = await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
@@ -417,6 +459,7 @@ describe('map.create defaults', () => {
 
   it('defaults confidence to manual when omitted', async () => {
     const result = await createHandle({
+      apply: true,
       externalSystem: 'material',
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],

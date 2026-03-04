@@ -10,6 +10,7 @@ import type {
   ComponentCodeReference,
 } from './types.js';
 import { readComponentsDataset, resolveComponentCount } from './catalog.shared.js';
+import { withinAllowed } from '../lib/security.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');

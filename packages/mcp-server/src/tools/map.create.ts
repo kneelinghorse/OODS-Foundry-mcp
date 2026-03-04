@@ -13,10 +13,12 @@ import {
   type MappingMetadata,
 } from './map.shared.js';
 import type { MapCreateInput, MapCreateOutput } from './types.js';
+import { formatValidationErrors } from '../security/errors.js';
 
 export async function handle(input: MapCreateInput): Promise<MapCreateOutput> {
   const doc = loadMappings();
   const warnings: string[] = [];
+  const applied = input.apply === true;
 
   // Generate ID
   const id = generateMappingId(input.externalSystem, input.externalComponent);
@@ -28,9 +30,31 @@ export async function handle(input: MapCreateInput): Promise<MapCreateOutput> {
       m.externalComponent.toLowerCase() === input.externalComponent.toLowerCase(),
   );
   if (existing) {
-    throw new Error(
-      `Duplicate mapping: ${input.externalSystem}/${input.externalComponent} already exists as '${existing.id}'.`,
+    const formatted = formatValidationErrors(
+      [
+        {
+          keyword: 'duplicate',
+          instancePath: '/externalSystem',
+          params: {},
+          message: `mapping for '${input.externalSystem}/${input.externalComponent}' already exists (id: '${existing.id}').`,
+        },
+        {
+          keyword: 'duplicate',
+          instancePath: '/externalComponent',
+          params: {},
+          message: `mapping for '${input.externalSystem}/${input.externalComponent}' already exists (id: '${existing.id}').`,
+        },
+      ],
+      { prefix: 'Mapping validation failed' },
     );
+
+    return {
+      status: 'error',
+      mapping: existing,
+      etag: computeMappingsEtag(doc),
+      applied: false,
+      errors: formatted,
+    };
   }
 
   // Validate referenced traits exist
@@ -67,8 +91,14 @@ export async function handle(input: MapCreateInput): Promise<MapCreateOutput> {
     metadata,
   };
 
-  doc.mappings.push(mapping);
-  saveMappings(doc);
+  if (!applied) {
+    warnings.push(
+      'Dry run: mapping not persisted. Set apply=true to write to artifacts/structured-data/component-mappings.json.',
+    );
+  } else {
+    doc.mappings.push(mapping);
+    saveMappings(doc);
+  }
 
   const etag = computeMappingsEtag(doc);
 
@@ -76,6 +106,7 @@ export async function handle(input: MapCreateInput): Promise<MapCreateOutput> {
     status: 'ok',
     mapping,
     etag,
+    applied,
     ...(warnings.length > 0 ? { warnings } : {}),
   };
 }
