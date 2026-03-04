@@ -92,7 +92,11 @@
             "properties": {
               "name": { "type": "string" },
               "confidence": { "type": "number" },
-              "reason": { "type": "string" }
+              "reason": { "type": "string" },
+              "keywordTagMatches": { "type": "number" },
+              "keywordTraitMatches": { "type": "number" },
+              "contextTagMatches": { "type": "number" },
+              "contextTraitMatches": { "type": "number" }
             },
             "additionalProperties": false
           }
