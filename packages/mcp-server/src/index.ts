@@ -121,6 +121,16 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/map.resolve.input.json',
     outputSchema: './schemas/map.resolve.output.json',
   },
+  'object.list': {
+    modulePath: './tools/object.list.js',
+    inputSchema: './schemas/object.list.input.json',
+    outputSchema: './schemas/object.list.output.json',
+  },
+  'object.show': {
+    modulePath: './tools/object.show.js',
+    inputSchema: './schemas/object.show.input.json',
+    outputSchema: './schemas/object.show.output.json',
+  },
 };
 
 const schemaCache = new Map<string, object>();

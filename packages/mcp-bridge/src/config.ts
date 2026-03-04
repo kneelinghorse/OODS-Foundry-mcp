@@ -118,6 +118,8 @@ const FALLBACK_POLICY: AgentPolicyDoc = {
     { name: 'map.create', modes: ['dry-run', 'apply'], approval: 'optional', allow: ['designer'] },
     { name: 'map.list', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
     { name: 'map.resolve', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
+    { name: 'object.list', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
+    { name: 'object.show', modes: ['dry-run'], approval: 'optional', allow: ['designer'] },
   ],
 };
 

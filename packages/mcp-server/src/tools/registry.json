@@ -10,7 +10,9 @@
     "design.compose",
     "map.create",
     "map.list",
-    "map.resolve"
+    "map.resolve",
+    "object.list",
+    "object.show"
   ],
   "onDemand": [
     "diag.snapshot",
