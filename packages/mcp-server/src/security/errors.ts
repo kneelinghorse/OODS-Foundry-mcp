@@ -43,9 +43,11 @@ export type FormattedValidationResult = {
  */
 export function formatValidationErrors(
   errors: Array<{ keyword: string; instancePath: string; params: Record<string, unknown>; message?: string }> | null | undefined,
+  options?: { prefix?: string },
 ): FormattedValidationResult {
+  const prefix = options?.prefix ?? 'Input validation failed';
   if (!errors || errors.length === 0) {
-    return { message: 'Input validation failed', details: [] };
+    return { message: prefix, details: [] };
   }
 
   const details: ValidationErrorDetail[] = errors.map((e) => {
@@ -94,5 +96,5 @@ export function formatValidationErrors(
   });
 
   const summary = details.map((d) => d.message).join('; ');
-  return { message: `Input validation failed: ${summary}`, details };
+  return { message: `${prefix}: ${summary}`, details };
 }

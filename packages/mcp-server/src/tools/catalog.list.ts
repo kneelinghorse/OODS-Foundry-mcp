@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { withinAllowed } from '../lib/security.js';
 import type {
   CatalogListDetail,
   CatalogListInput,
@@ -10,28 +9,14 @@ import type {
   ComponentCatalogSummary,
   ComponentCodeReference,
 } from './types.js';
+import { readComponentsDataset, resolveComponentCount } from './catalog.shared.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const ARTIFACT_DIR = path.join(REPO_ROOT, 'artifacts', 'structured-data');
-const MANIFEST_PATH = path.join(ARTIFACT_DIR, 'manifest.json');
 const CODE_CONNECT_PATH = path.join(ARTIFACT_DIR, 'code-connect.json');
 const STORIES_DIR = path.join(REPO_ROOT, 'stories');
 const DEFAULT_PAGE_SIZE = 25;
-
-type ManifestArtifact = {
-  name?: string;
-  path?: string;
-  file?: string;
-  etag?: string;
-  sizeBytes?: number;
-};
-
-type ManifestDoc = {
-  generatedAt?: string;
-  version?: string;
-  artifacts?: ManifestArtifact[];
-};
 
 type CodeConnectRef = {
   path?: string;
@@ -82,10 +67,6 @@ type ComponentsDataset = {
   patterns?: unknown[];
   sampleQueries?: unknown[];
 };
-
-function readJson(filePath: string): Record<string, unknown> {
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-}
 
 function normalizeTrait(value: string): string {
   return value.trim().toLowerCase();
@@ -141,42 +122,6 @@ function suggestTraits(query: string, candidates: string[], limit = 5): string[]
     .sort((a, b) => a.score - b.score || a.trait.localeCompare(b.trait))
     .slice(0, limit)
     .map((entry) => entry.trait);
-}
-
-function sanitizeManifestFile(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    throw new Error('Manifest file entry is empty');
-  }
-  if (path.isAbsolute(trimmed) || trimmed.includes('..') || trimmed.includes('/') || trimmed.includes('\\')) {
-    throw new Error(`Manifest file entry is not a safe filename: ${trimmed}`);
-  }
-  return trimmed;
-}
-
-function getLatestComponentsFile(): string {
-  try {
-    const manifest = readJson(MANIFEST_PATH) as ManifestDoc;
-    const componentsArtifact = manifest.artifacts?.find((a) => a.name === 'components');
-
-    if (!componentsArtifact?.file) {
-      throw new Error('Components artifact not found in manifest');
-    }
-
-    const filename = sanitizeManifestFile(componentsArtifact.file);
-    const fullPath = path.join(ARTIFACT_DIR, filename);
-    if (!withinAllowed(ARTIFACT_DIR, fullPath)) {
-      throw new Error(`Components artifact file resolves outside artifact dir: ${filename}`);
-    }
-
-    if (!fs.existsSync(fullPath)) {
-      throw new Error(`Components artifact file not found: ${filename}`);
-    }
-
-    return fullPath;
-  } catch (error) {
-    throw new Error(`Failed to locate components file: ${(error as Error).message}`);
-  }
 }
 
 type StoryIndex = Map<string, ComponentCodeReference[]>;
@@ -595,8 +540,7 @@ function enrichComponentsToDetail(
 
 export async function handle(input: CatalogListInput): Promise<CatalogListOutput> {
   try {
-    const componentsFilePath = getLatestComponentsFile();
-    const componentsData = readJson(componentsFilePath) as ComponentsDataset;
+    const componentsData = readComponentsDataset<ComponentsDataset>();
     const catalog = transformComponentsToSummary(componentsData);
     const componentIndex = new Map(
       (componentsData.components ?? []).map((component) => [component.id, component]),
@@ -682,6 +626,8 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
     const returnedCount = components.length;
     const hasMore = shouldPaginate ? offset + returnedCount < totalCount : false;
 
+    const componentCount = resolveComponentCount(componentsData);
+
     return {
       components,
       totalCount,
@@ -692,7 +638,7 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       detail,
       generatedAt: componentsData.generatedAt || new Date().toISOString(),
       stats: {
-        componentCount: componentsData.stats?.componentCount || catalog.length,
+        componentCount,
         traitCount: componentsData.stats?.traitCount || 0,
       },
       ...(suggestions ? { suggestions } : {}),

@@ -72,6 +72,20 @@ Copy the config from `configs/agents/cursor.stdio-mcp.json` into `.cursor/mcp.js
 - Dynamic tool registration from server registry.json — zero adapter changes for new tools
 - Structured error messages with actionable fix guidance for server spawn failures
 
+### Fresh-Install Smoke Check
+
+The fresh-install smoke check installs the adapter into a clean temp directory (outside the workspace) and confirms `tools/list` returns all 20 tools. This catches phantom dependencies and hardcoded path regressions.
+
+Run it locally:
+
+```bash
+pnpm install
+pnpm --filter @oods/mcp-server run build
+pnpm adapter:fresh-install
+```
+
+Set `KEEP_FRESH_INSTALL=1` to preserve the temp directory for debugging.
+
 ## HTTP Bridge
 
 For clients that only support HTTP transport (OpenAI Agents, custom integrations), use the HTTP bridge:

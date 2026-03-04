@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import Fastify from 'fastify';
 import { getAjv } from './lib/ajv.js';
 import { ERROR_CODES, err, formatValidationErrors, type TypedError } from './security/errors.js';
+import { formatSchemaInputError } from './security/schema-errors.js';
 import { isAllowed, tryAcquireSlot, releaseSlot, tryConsumeToken, timeoutMsFor } from './security/policy.js';
 import { resolveToolRegistry } from './tools/registry.js';
 
@@ -211,8 +212,11 @@ async function stdioLoop() {
           const reg = tools[tool];
           const validateIn = ajv.compile(reg.inputSchema);
           if (!validateIn(input)) {
-            const formatted = formatValidationErrors(validateIn.errors as any);
-            const e: TypedError = err(ERROR_CODES.SCHEMA_INPUT, formatted.message, { errors: formatted.details });
+            const formatted = formatSchemaInputError(tool, validateIn.errors as any);
+            const details: Record<string, unknown> = { errors: formatted.details };
+            if (formatted.hint) details.hint = formatted.hint;
+            if (formatted.expected) details.expected = formatted.expected;
+            const e: TypedError = err(ERROR_CODES.SCHEMA_INPUT, formatted.message, details);
             process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
             continue;
           }
@@ -223,7 +227,8 @@ async function stdioLoop() {
           ]);
           const validateOut = ajv.compile(reg.outputSchema);
           if (!validateOut(result)) {
-            const e: TypedError = err(ERROR_CODES.SCHEMA_OUTPUT, 'Output validation failed', { errors: validateOut.errors });
+            const formatted = formatValidationErrors(validateOut.errors as any, { prefix: 'Output validation failed' });
+            const e: TypedError = err(ERROR_CODES.SCHEMA_OUTPUT, formatted.message, { errors: formatted.details });
             process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
             continue;
           }

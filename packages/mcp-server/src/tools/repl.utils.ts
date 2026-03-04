@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { getAjv } from '../lib/ajv.js';
 import { withinAllowed } from '../lib/security.js';
 import { isUnsafeKey } from '../lib/safety.js';
+import { patchExampleHint } from './repl.patch-hint.js';
+
+export { patchExampleHint };
 import type {
   ReplIssue,
   ReplJsonPatchOperation,
@@ -44,14 +47,6 @@ type RegistryInfo = {
   warnings: ReplIssue[];
 };
 
-const PATCH_EXAMPLE = [
-  'Valid patch examples:',
-  'JSON Patch array:',
-  '  [{"op":"replace","path":"/screens/0/children/0/props/label","value":"Save"}]',
-  'Node patch object:',
-  '  {"nodeId":"basic-button","path":"props.label","value":"Save"}',
-].join('\n');
-
 let registryCache: RegistryInfo | null = null;
 
 function issue(code: string, message: string, pathValue?: string, hint?: string): ReplIssue {
@@ -59,10 +54,6 @@ function issue(code: string, message: string, pathValue?: string, hint?: string)
   if (pathValue) payload.path = pathValue;
   if (hint) payload.hint = hint;
   return payload;
-}
-
-export function patchExampleHint(): string {
-  return PATCH_EXAMPLE;
 }
 
 function readJson(filePath: string): any {

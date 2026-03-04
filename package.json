@@ -120,6 +120,7 @@
     "sb:verify": "node scripts/sb-verify.mjs",
     "local:pr-check": "node scripts/local-pr-check.mjs",
     "agent:overlays": "node scripts/agent-overlay-recipe.mjs",
+    "adapter:fresh-install": "node scripts/mcp-adapter-fresh-install.mjs",
     "current-state:sprint06": "node ../scripts/diagnostics/sprint06-current-state.mjs",
     "current-state:sprint07": "node ../scripts/diagnostics/sprint07-current-state.mjs",
     "current-state:sprint08": "node ../scripts/diagnostics/sprint08-current-state.mjs",

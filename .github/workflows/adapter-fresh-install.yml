@@ -1,0 +1,50 @@
+name: Adapter Fresh Install
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'packages/mcp-adapter/**'
+      - 'packages/mcp-server/**'
+      - 'scripts/mcp-adapter-fresh-install.mjs'
+      - 'docs/mcp/Connections.md'
+      - '.github/workflows/adapter-fresh-install.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  fresh-install:
+    name: fresh-install
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build MCP server dist
+        run: pnpm --filter @oods/mcp-server run build
+
+      - name: Adapter fresh-install smoke
+        run: pnpm adapter:fresh-install
