@@ -49,6 +49,16 @@
               "$value": "oklch(0.6929 0.0198 269.00)",
               "$description": "Neutral 500 tertiary text/icon tone."
             },
+            "600": {
+              "$type": "color",
+              "$value": "oklch(0.5595 0.0225 270.01)",
+              "$description": "Neutral 600; high-contrast muted text tone.",
+              "$extensions": {
+                "ods": {
+                  "fallback": "#6F7482"
+                }
+              }
+            },
             "700": {
               "$type": "color",
               "$value": "oklch(0.5109 0.0264 269.16)",
@@ -317,7 +327,7 @@
           },
           "muted": {
             "$type": "color",
-            "$value": "{ref.color.neutral.500}",
+            "$value": "{ref.color.neutral.600}",
             "$description": "Muted caption text."
           },
           "inverse": {

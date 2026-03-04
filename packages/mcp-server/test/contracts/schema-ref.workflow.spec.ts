@@ -23,6 +23,46 @@ describe('schemaRef workflow', () => {
     expect(codegen.code.length).toBeGreaterThan(0);
   });
 
+  it('componentOverrides materialize in schemaRef for render/codegen', async () => {
+    const compose = await composeHandle({
+      intent: 'list',
+      layout: 'list',
+      preferences: { componentOverrides: { items: 'Table' } },
+    });
+    expect(compose.status).toBe('ok');
+    expect(compose.schemaRef).toBeTruthy();
+
+    const schemaRef = compose.schemaRef!;
+    const render = await renderHandle({ mode: 'full', schemaRef, apply: true });
+    expect(render.status).toBe('ok');
+    expect(render.html).toContain('data-oods-component="Table"');
+
+    const codegen = await codegenHandle({ schemaRef, framework: 'react' });
+    expect(codegen.status).toBe('ok');
+    expect(codegen.code).toContain('data-oods-component="Table"');
+  });
+
+  it('supports patch validation with schemaRef and renders the patched tree', async () => {
+    const compose = await composeHandle({ intent: 'user registration form' });
+    expect(compose.status).toBe('ok');
+    expect(compose.schemaRef).toBeTruthy();
+
+    const schemaRef = compose.schemaRef!;
+    const validation = await validateHandle({
+      mode: 'patch',
+      schemaRef,
+      patch: [{ op: 'replace', path: '/screens/0/component', value: 'Card' }],
+    });
+
+    expect(validation.status).toBe('ok');
+    expect(validation.appliedPatch).toBe(true);
+    expect(validation.normalizedTree?.screens?.[0]?.component).toBe('Card');
+
+    const render = await renderHandle({ mode: 'full', schema: validation.normalizedTree!, apply: true });
+    expect(render.status).toBe('ok');
+    expect(render.html).toContain('<!DOCTYPE html>');
+  });
+
   it('missing schemaRef returns actionable errors', async () => {
     const missingRef = 'compose-missing-ref';
 

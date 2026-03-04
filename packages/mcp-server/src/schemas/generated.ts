@@ -381,6 +381,10 @@ export namespace CatalogListOutputSchema {
        * Total traits available
        */
       traitCount: number;
+      /**
+       * Total components matching the active filters
+       */
+      filteredCount?: number;
     };
     /**
      * Suggested filter values when a query returns zero results.

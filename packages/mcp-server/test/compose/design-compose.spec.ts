@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { handle } from '../../src/tools/design.compose.js';
 import type { DesignComposeOutput } from '../../src/tools/design.compose.js';
+import type { UiElement } from '../../src/schemas/generated.js';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -20,6 +21,20 @@ import type { DesignComposeOutput } from '../../src/tools/design.compose.js';
 
 function slotNames(output: DesignComposeOutput): string[] {
   return output.selections.map(s => s.slotName);
+}
+
+function findSlotElement(output: DesignComposeOutput, slotName: string): UiElement | undefined {
+  const intent = `slot:${slotName}`;
+  let match: UiElement | undefined;
+  const walk = (el: UiElement) => {
+    if (el.meta?.intent === intent) {
+      match = el;
+      return;
+    }
+    el.children?.forEach(walk);
+  };
+  output.schema.screens.forEach(walk);
+  return match;
 }
 
 /* ------------------------------------------------------------------ */
@@ -198,6 +213,41 @@ describe('design.compose — form intent', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/*  Domain-specific intent binding                                      */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — catalog tag binding', () => {
+  it('resolves "membership panel" to MembershipPanel', async () => {
+    const result = await handle({
+      intent: 'membership panel',
+      layout: 'detail',
+      preferences: { tabLabels: ['Membership'] },
+    });
+
+    const selection = result.selections.find(s => s.slotName === 'tab-0');
+    expect(selection?.selectedComponent).toBe('MembershipPanel');
+    expect(selection?.candidates?.[0]?.reason).toMatch(/tag match|trait match/);
+  });
+
+  it('intent "billing timeline" selects a billing timeline component', async () => {
+    const result = await handle({
+      intent: 'billing timeline',
+      layout: 'detail',
+    });
+
+    const selection = result.selections.find(s => s.slotName === 'tab-0');
+    expect(selection?.selectedComponent).toBe('PaymentEventTimeline');
+  });
+
+  it('address editor intent selects AddressEditor in form layout', async () => {
+    const result = await handle({ intent: 'address editor', layout: 'form' });
+    const fieldSelections = result.selections.filter(s => s.slotName.startsWith('field-'));
+
+    expect(fieldSelections.some(s => s.selectedComponent === 'AddressEditor')).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /*  Detail intent                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -263,6 +313,20 @@ describe('design.compose — component overrides', () => {
     expect(itemsSel).toBeTruthy();
     expect(itemsSel!.selectedComponent).toBe('Table');
     expect(itemsSel!.candidates[0].reason).toContain('user override');
+    const itemsSlot = findSlotElement(result, 'items');
+    expect(itemsSlot?.component).toBe('Table');
+  });
+
+  it('warns when override component is unknown', async () => {
+    const result = await handle({
+      intent: 'list',
+      layout: 'list',
+      preferences: { componentOverrides: { items: 'NotAComponent' } },
+      options: { validate: false },
+    });
+    expect(result.warnings.some(w => w.code === 'UNKNOWN_OVERRIDE_COMPONENT')).toBe(true);
+    const itemsSlot = findSlotElement(result, 'items');
+    expect(itemsSlot?.component).toBe('NotAComponent');
   });
 });
 

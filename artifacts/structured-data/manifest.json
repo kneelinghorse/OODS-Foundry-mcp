@@ -10,15 +10,15 @@
       "name": "components",
       "file": "oods-components-2026-03-01.json",
       "path": "artifacts/structured-data/oods-components-2026-03-01.json",
-      "etag": "630065f0283022995bfdffe269432a1aa4bb1205495286b35652a9b483f2623c",
-      "sizeBytes": 439452
+      "etag": "0c19136fed3c3df67f2cd0f5bc2d1a93546ce55e2d17f375608eec4d72a1f020",
+      "sizeBytes": 439784
     },
     {
       "name": "tokens",
       "file": "oods-tokens-2026-03-01.json",
       "path": "artifacts/structured-data/oods-tokens-2026-03-01.json",
-      "etag": "ff13f6d9cd07d548b394eb9759bd151ff49e0db827ccb0412072922282a8ec59",
-      "sizeBytes": 87977
+      "etag": "be92dc5dda8fdb81478e07da51710821f5e37833b6b316b496021da664bc91a9",
+      "sizeBytes": 88307
     },
     {
       "name": "code-connect",

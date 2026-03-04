@@ -1285,7 +1285,12 @@
       "contexts": [
         "detail"
       ],
-      "regions": [],
+      "regions": [
+        "detail",
+        "form",
+        "list",
+        "timeline"
+      ],
       "traitUsages": [
         {
           "trait": "Communicable",
@@ -1820,7 +1825,13 @@
       "contexts": [
         "timeline"
       ],
-      "regions": [],
+      "regions": [
+        "card",
+        "detail",
+        "form",
+        "list",
+        "timeline"
+      ],
       "traitUsages": [
         {
           "trait": "Communicable",
@@ -1855,7 +1866,13 @@
       "contexts": [
         "list"
       ],
-      "regions": [],
+      "regions": [
+        "card",
+        "detail",
+        "form",
+        "list",
+        "timeline"
+      ],
       "traitUsages": [
         {
           "trait": "Communicable",
@@ -3063,7 +3080,12 @@
       "contexts": [
         "form"
       ],
-      "regions": [],
+      "regions": [
+        "card",
+        "detail",
+        "form",
+        "list"
+      ],
       "traitUsages": [
         {
           "trait": "Communicable",

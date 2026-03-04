@@ -51,8 +51,10 @@ function resolveLayoutStyles(layout?: UiLayout): CssDecl {
 
   if (layout.align) {
     const value = ALIGN_MAP[layout.align];
-    if (layout.type === 'stack' || layout.type === 'inline') {
+    if (layout.type === 'stack') {
       s['align-items'] = value;
+    } else if (layout.type === 'inline') {
+      s['justify-content'] = value;
     } else {
       s['justify-content'] = value;
     }

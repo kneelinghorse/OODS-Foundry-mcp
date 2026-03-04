@@ -17,8 +17,11 @@ import type {
   DiagnosticsTokensSummary,
   DiagnosticsVrtSummary,
 } from '@oods/artifacts';
+import { DEFAULT_CONTRAST_RULES, evaluateContrastRules } from '@oods/a11y-tools';
 import type { BaseInput, GenericOutput, ArtifactDetail } from './types.js';
 import { readComponentsDataset, resolveComponentCount, type ComponentsDatasetLike } from './catalog.shared.js';
+import { flattenDTCGLayers, toFlatTokenMap } from '../a11y/token-color-resolver.js';
+import { loadTokenData } from '../a11y/validate-contrast.js';
 
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(CURRENT_DIR, '../../../..');
@@ -73,13 +76,28 @@ async function countPngAssets(): Promise<number> {
 
 async function collectBrandSummary(): Promise<DiagnosticsBrandSummary> {
   const markdown = await readFileSafe(BRAND_COVERAGE_PATH);
-  let aaPairsTotal = 0;
-  let aaPassCount = 0;
+  let aaPairsTotal: number | null = null;
+  let aaPassCount: number | null = null;
   let maxDeltaL: number | null = null;
   let maxDeltaC: number | null = null;
   const notes: string[] = [];
 
+  const tokenData = loadTokenData();
+  if (tokenData) {
+    const flatMap = flattenDTCGLayers(tokenData);
+    const flatTokenMap = toFlatTokenMap(flatMap);
+    const evaluations = evaluateContrastRules(flatTokenMap, {
+      prefix: 'oods',
+      rules: DEFAULT_CONTRAST_RULES,
+    });
+    aaPairsTotal = evaluations.length;
+    aaPassCount = evaluations.filter((e) => e.passed).length;
+  }
+
   if (markdown) {
+    let coveragePairsTotal = 0;
+    let coveragePassCount = 0;
+
     const rows = markdown
       .split('\n')
       .map((line) => line.trim())
@@ -96,8 +114,8 @@ async function collectBrandSummary(): Promise<DiagnosticsBrandSummary> {
       if (ratioMatch) {
         const ratio = Number.parseFloat(ratioMatch[1]);
         if (Number.isFinite(ratio)) {
-          aaPairsTotal += 1;
-          if (ratio >= 4.5) aaPassCount += 1;
+          coveragePairsTotal += 1;
+          if (ratio >= 4.5) coveragePassCount += 1;
         }
       }
       const deltaLMatch = deltaL.match(/[-+]?[\d.]+/);
@@ -120,9 +138,16 @@ async function collectBrandSummary(): Promise<DiagnosticsBrandSummary> {
         notes.push(note);
       }
     }
+
+    if (aaPairsTotal === null) {
+      aaPairsTotal = coveragePairsTotal;
+      aaPassCount = coveragePassCount;
+    }
   }
 
-  const aaPassPct = aaPairsTotal > 0 ? Math.round((aaPassCount / aaPairsTotal) * 100) : null;
+  const aaPassPct = aaPairsTotal && aaPassCount !== null
+    ? Math.round((aaPassCount / aaPairsTotal) * 100)
+    : null;
   const hcPngCount = await countPngAssets();
   const deltaGuardrailsOk =
     maxDeltaL !== null && maxDeltaC !== null ? maxDeltaL <= 0.12 && maxDeltaC <= 0.02 : null;

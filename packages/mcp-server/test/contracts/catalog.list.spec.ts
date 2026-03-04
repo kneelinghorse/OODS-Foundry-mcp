@@ -138,6 +138,15 @@ describe('catalog.list', () => {
     expect(output.components.every((c) => c.categories.includes('core'))).toBe(true);
   });
 
+  it('includes filteredCount in stats when filters are active', async () => {
+    const output: CatalogListOutput = await handle({ category: 'financial' });
+
+    expect(output.stats.filteredCount).toBeDefined();
+    expect(output.stats.filteredCount).toBe(output.totalCount);
+    expect(output.stats.filteredCount).toBe(output.returnedCount);
+    expect(output.stats.componentCount).toBeGreaterThanOrEqual(output.stats.filteredCount ?? 0);
+  });
+
   it('should filter by trait', async () => {
     const allComponents = await handle({});
 
@@ -202,6 +211,18 @@ describe('catalog.list', () => {
 
     expect(output.totalCount).toBe(output.components.length);
     expect(output.returnedCount).toBe(output.components.length);
+  });
+
+  it('deduplicates trait names per component', async () => {
+    const output: CatalogListOutput = await handle({ detail: 'full' });
+    const statusBadge = output.components.find((c) => c.name === 'StatusBadge');
+
+    expect(statusBadge).toBeDefined();
+    if (statusBadge) {
+      const unique = new Set(statusBadge.traits);
+      expect(statusBadge.traits.length).toBe(unique.size);
+      expect(statusBadge.traits).toEqual(['Stateful', 'Statusable']);
+    }
   });
 
   it('should include propSchema for components with traits', async () => {

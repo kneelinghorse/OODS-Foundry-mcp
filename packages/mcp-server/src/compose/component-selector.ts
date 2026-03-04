@@ -166,6 +166,12 @@ const WEIGHTS = {
   traitBonus: 0.02,
   /** Keyword match in component name or displayName. */
   nameKeyword: 0.15,
+  /** Keyword overlap with component tags (intent-driven). */
+  keywordTagMatch: 0.12,
+  /** Keyword overlap with component traits (intent-driven). */
+  keywordTraitMatch: 0.12,
+  /** Keyword overlap with component contexts (intent-driven). */
+  keywordContextMatch: 0.12,
 } as const;
 
 /** Maximum possible score (used for normalization). */
@@ -175,16 +181,112 @@ const MAX_RAW_SCORE = 1.0;
 /*  Scoring engine                                                     */
 /* ------------------------------------------------------------------ */
 
-function tokenizeIntent(intent: string): string[] {
-  return intent
-    .toLowerCase()
-    .split(/[-_\s]+/)
-    .filter(Boolean);
+function tokenizeIntent(intent: string | string[] | undefined): string[] {
+  const parts = Array.isArray(intent) ? intent : intent ? [intent] : [];
+  const tokens: string[] = [];
+  for (const part of parts) {
+    if (!part || typeof part !== 'string') continue;
+    tokens.push(
+      ...part
+        .toLowerCase()
+        .split(/[-_\s]+/)
+        .filter(Boolean),
+    );
+  }
+  return tokens;
+}
+
+const CONTEXT_STOPWORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'the',
+  'or',
+  'for',
+  'with',
+  'without',
+  'to',
+  'of',
+  'in',
+  'on',
+  'at',
+  'by',
+  'from',
+  'into',
+  'over',
+  'under',
+  'between',
+  'within',
+  'via',
+  'per',
+  'content',
+  'tab',
+  'tabs',
+  'panel',
+  'panels',
+  'section',
+  'sections',
+  'field',
+  'fields',
+  'group',
+  'groups',
+  'form',
+  'forms',
+  'detail',
+  'details',
+  'list',
+  'lists',
+  'dashboard',
+  'dashboards',
+  'page',
+  'pages',
+  'view',
+  'views',
+  'screen',
+  'screens',
+  'layout',
+  'layouts',
+  'header',
+  'headers',
+  'body',
+  'main',
+  'primary',
+  'secondary',
+  'data',
+  'display',
+  'item',
+  'items',
+  'record',
+  'records',
+  'entry',
+  'entries',
+  'entity',
+  'entities',
+  'overview',
+]);
+
+function filterContextTokens(tokens: string[]): string[] {
+  return tokens.filter((token) => (
+    token.length > 1
+    && !/^\d+$/.test(token)
+    && !CONTEXT_STOPWORDS.has(token)
+  ));
+}
+
+function intersectionList(a: string[], b: string[]): string[] {
+  const setB = new Set((b || []).map(s => s.toLowerCase()));
+  const matches: string[] = [];
+  for (const item of a) {
+    const lower = item.toLowerCase();
+    if (setB.has(lower)) {
+      matches.push(lower);
+    }
+  }
+  return matches;
 }
 
 function intersectionCount(a: string[], b: string[]): number {
-  const setB = new Set(b.map(s => s.toLowerCase()));
-  return a.filter(item => setB.has(item.toLowerCase())).length;
+  return intersectionList(a, b).length;
 }
 
 function scoreComponent(
@@ -192,9 +294,24 @@ function scoreComponent(
   intent: string,
   signals: IntentSignals | undefined,
   keywords: string[],
-): { score: number; reasons: string[] } {
+  contextKeywords: string[],
+): {
+  score: number;
+  reasons: string[];
+  keywordTagMatches: number;
+  keywordTraitMatches: number;
+  contextTagMatches: number;
+  contextTraitMatches: number;
+} {
   let score = 0;
   const reasons: string[] = [];
+  const componentTags = component.tags ?? [];
+  const componentTraits = component.traits ?? [];
+  const keywordTagMatches = intersectionList(keywords, componentTags);
+  const keywordTraitMatches = intersectionList(keywords, componentTraits);
+  const contextTagMatches = intersectionList(contextKeywords, componentTags);
+  const contextTraitMatches = intersectionList(contextKeywords, componentTraits);
+  const keywordContextMatches = intersectionList(keywords, component.contexts ?? []);
 
   // 1. Preferred component match
   if (signals?.preferredComponents) {
@@ -209,7 +326,7 @@ function scoreComponent(
 
   // 2. Tag keyword overlap
   if (signals?.tags) {
-    const overlap = intersectionCount(signals.tags, component.tags);
+    const overlap = intersectionCount(signals.tags, componentTags);
     if (overlap > 0) {
       score += WEIGHTS.tagMatch * Math.min(overlap, 3);
       reasons.push(`${overlap} tag match(es)`);
@@ -217,24 +334,30 @@ function scoreComponent(
   }
 
   // Also match intent keywords against component tags
-  const tagKeywordOverlap = intersectionCount(keywords, component.tags);
-  if (tagKeywordOverlap > 0) {
-    score += WEIGHTS.tagMatch * 0.5 * Math.min(tagKeywordOverlap, 2);
-    reasons.push(`${tagKeywordOverlap} keyword→tag match(es)`);
+  if (keywordTagMatches.length > 0) {
+    score += WEIGHTS.keywordTagMatch * Math.min(keywordTagMatches.length, 3);
+    const label = keywordTagMatches.slice(0, 3).join(', ');
+    reasons.push(`tag match (${label})`);
   }
 
   // 3. Context match
   if (signals?.contexts) {
-    const overlap = intersectionCount(signals.contexts, component.contexts);
+    const overlap = intersectionCount(signals.contexts, component.contexts ?? []);
     if (overlap > 0) {
       score += WEIGHTS.contextMatch * Math.min(overlap, 2);
       reasons.push(`${overlap} context match(es)`);
     }
   }
 
+  if (keywordContextMatches.length > 0) {
+    score += WEIGHTS.keywordContextMatch * Math.min(keywordContextMatches.length, 2);
+    const label = keywordContextMatches.slice(0, 2).join(', ');
+    reasons.push(`context match (${label})`);
+  }
+
   // 4. Region match
   if (signals?.regions) {
-    const overlap = intersectionCount(signals.regions, component.regions);
+    const overlap = intersectionCount(signals.regions, component.regions ?? []);
     if (overlap > 0) {
       score += WEIGHTS.regionMatch * Math.min(overlap, 2);
       reasons.push(`${overlap} region match(es)`);
@@ -243,20 +366,27 @@ function scoreComponent(
 
   // 5. Category match
   if (signals?.categories) {
-    const overlap = intersectionCount(signals.categories, component.categories);
+    const overlap = intersectionCount(signals.categories, component.categories ?? []);
     if (overlap > 0) {
       score += WEIGHTS.categoryMatch * Math.min(overlap, 2);
       reasons.push(`${overlap} category match(es)`);
     }
   }
 
-  // 6. Trait bonus
-  if (component.traits.length > 0) {
-    score += WEIGHTS.traitBonus * Math.min(component.traits.length, 3);
-    reasons.push(`${component.traits.length} trait(s)`);
+  // 6. Trait keyword overlap
+  if (keywordTraitMatches.length > 0) {
+    score += WEIGHTS.keywordTraitMatch * Math.min(keywordTraitMatches.length, 2);
+    const label = keywordTraitMatches.slice(0, 2).join(', ');
+    reasons.push(`trait match (${label})`);
   }
 
-  // 7. Name keyword match
+  // 7. Trait bonus
+  if (componentTraits.length > 0) {
+    score += WEIGHTS.traitBonus * Math.min(componentTraits.length, 3);
+    reasons.push(`${componentTraits.length} trait(s)`);
+  }
+
+  // 8. Name keyword match
   const nameLower = component.name.toLowerCase();
   const displayLower = component.displayName.toLowerCase();
   for (const kw of keywords) {
@@ -267,7 +397,14 @@ function scoreComponent(
     }
   }
 
-  return { score: Math.min(score, MAX_RAW_SCORE), reasons };
+  return {
+    score: Math.min(score, MAX_RAW_SCORE),
+    reasons,
+    keywordTagMatches: keywordTagMatches.length,
+    keywordTraitMatches: keywordTraitMatches.length,
+    contextTagMatches: contextTagMatches.length,
+    contextTraitMatches: contextTraitMatches.length,
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -279,6 +416,16 @@ export interface SelectOptions {
   topN?: number;
   /** Minimum confidence threshold (default: 0.05). */
   minConfidence?: number;
+  /**
+   * Additional context strings used to extract keyword signals
+   * (e.g., user intent, slot descriptions, tab labels).
+   */
+  intentContext?: string | string[];
+  /**
+   * When true, prefer candidates with keyword tag/trait matches
+   * whenever such matches exist.
+   */
+  preferKeywordMatches?: boolean;
 }
 
 /**
@@ -294,7 +441,7 @@ export function selectComponent(
   catalog: ComponentCatalogSummary[],
   options: SelectOptions = {},
 ): SelectionResult {
-  const { topN = 5, minConfidence = 0.05 } = options;
+  const { topN = 5, minConfidence = 0.05, intentContext, preferKeywordMatches = false } = options;
 
   if (!intent || !intent.trim()) {
     return {
@@ -305,25 +452,51 @@ export function selectComponent(
   }
 
   const normalizedIntent = intent.trim().toLowerCase();
-  const keywords = tokenizeIntent(normalizedIntent);
+  const slotKeywords = tokenizeIntent(normalizedIntent);
+  const contextKeywords = filterContextTokens(tokenizeIntent(intentContext));
+  const keywords = Array.from(new Set([...slotKeywords, ...contextKeywords]));
   const signals = INTENT_MAP[normalizedIntent];
 
   const scored = catalog.map(component => {
-    const { score, reasons } = scoreComponent(component, normalizedIntent, signals, keywords);
+    const {
+      score,
+      reasons,
+      keywordTagMatches,
+      keywordTraitMatches,
+      contextTagMatches,
+      contextTraitMatches,
+    } = scoreComponent(
+      component,
+      normalizedIntent,
+      signals,
+      keywords,
+      contextKeywords,
+    );
     return {
       name: component.name,
       confidence: score,
       reason: reasons.length > 0 ? reasons.join('; ') : 'no matching signals',
+      keywordTagMatches,
+      keywordTraitMatches,
+      contextTagMatches,
+      contextTraitMatches,
     };
   });
 
+  const hasContextMatches = scored.some(
+    (entry) => entry.contextTagMatches > 0 || entry.contextTraitMatches > 0,
+  );
+  const pool = preferKeywordMatches && hasContextMatches
+    ? scored.filter((entry) => entry.contextTagMatches > 0 || entry.contextTraitMatches > 0)
+    : scored;
+
   // Sort by confidence descending, then alphabetically for ties
-  scored.sort((a, b) => {
+  pool.sort((a, b) => {
     if (b.confidence !== a.confidence) return b.confidence - a.confidence;
     return a.name.localeCompare(b.name);
   });
 
-  const filtered = scored.filter(c => c.confidence >= minConfidence);
+  const filtered = pool.filter(c => c.confidence >= minConfidence);
   const candidates = filtered.slice(0, topN);
 
   // Normalize confidence scores so the top candidate is 1.0 (if any)

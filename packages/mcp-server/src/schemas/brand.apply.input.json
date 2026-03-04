@@ -17,10 +17,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "op": { "type": "string" },
-              "path": { "type": "string" }
+              "op": { "type": "string", "enum": ["add", "remove", "replace"] },
+              "path": { "type": "string" },
+              "value": {}
             },
-            "required": ["op", "path"]
+            "required": ["op", "path"],
+            "additionalProperties": false
           }
         }
       ]
@@ -50,5 +52,27 @@
     }
   },
   "required": ["delta"],
+  "allOf": [
+    {
+      "if": {
+        "properties": { "strategy": { "const": "patch" } },
+        "required": ["strategy"]
+      },
+      "then": {
+        "properties": {
+          "delta": {
+            "type": "array"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "delta": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ],
   "additionalProperties": false
 }
