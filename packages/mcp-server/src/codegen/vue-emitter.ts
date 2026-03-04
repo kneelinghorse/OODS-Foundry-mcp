@@ -318,10 +318,22 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   // Build optional scoped style block
   const styleBlock = buildScopedStyle(schema.screens, options);
 
+  // Inject token overrides as CSS custom properties
+  let tokenStyle = '';
+  if (schema.tokenOverrides && Object.keys(schema.tokenOverrides).length > 0) {
+    const declarations = Object.entries(schema.tokenOverrides)
+      .map(([key, value]) => `  --token-${key.replace(/[.\s_]+/g, '-')}: ${value};`)
+      .join('\n');
+    tokenStyle = `<style>\n:root {\n${declarations}\n}\n</style>`;
+  }
+
   // Assemble SFC
   const blocks = [templateBlock, '', scriptBlock];
   if (styleBlock) {
     blocks.push('', styleBlock);
+  }
+  if (tokenStyle) {
+    blocks.push('', tokenStyle);
   }
   blocks.push('');
 

@@ -1,10 +1,57 @@
 {
   "$schema": "../../packages/mcp-server/src/schemas/component-mapping.schema.json",
-  "generatedAt": "2026-03-03T22:40:10.456Z",
-  "version": "2026-03-03",
+  "generatedAt": "2026-03-04T21:37:36.397Z",
+  "version": "2026-03-04",
   "stats": {
-    "mappingCount": 0,
-    "systemCount": 0
+    "mappingCount": 2,
+    "systemCount": 2
   },
-  "mappings": []
+  "mappings": [
+    {
+      "id": "material-button",
+      "externalSystem": "material",
+      "externalComponent": "Button",
+      "oodsTraits": [
+        "Stateful"
+      ],
+      "propMappings": [
+        {
+          "externalProp": "variant",
+          "oodsProp": "appearance",
+          "coercion": {
+            "type": "enum-map",
+            "values": {
+              "primary": "primary"
+            }
+          }
+        }
+      ],
+      "confidence": "auto",
+      "metadata": {
+        "createdAt": "2026-03-04T21:37:36.370Z"
+      }
+    },
+    {
+      "id": "chakra-button",
+      "externalSystem": "chakra",
+      "externalComponent": "Button",
+      "oodsTraits": [
+        "Stateful"
+      ],
+      "propMappings": [
+        {
+          "externalProp": "size",
+          "oodsProp": "size",
+          "coercion": {
+            "type": "type-cast",
+            "targetType": "string"
+          }
+        }
+      ],
+      "confidence": "manual",
+      "metadata": {
+        "createdAt": "2026-03-04T21:37:36.397Z"
+      }
+    }
+  ]
 }

@@ -13,6 +13,11 @@
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/uiElement" }
+    },
+    "tokenOverrides": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)')."
     }
   },
   "additionalProperties": false,

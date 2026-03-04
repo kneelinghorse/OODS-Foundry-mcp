@@ -31,13 +31,18 @@ import {
 import { handle as validateHandle } from './repl.validate.js';
 import type { ComponentCatalogSummary } from './types.js';
 import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
+import { loadObject } from '../objects/object-loader.js';
+import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
+import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
 export interface DesignComposeInput {
-  intent: string;
+  intent?: string;
+  object?: string;
+  context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
   layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
   preferences?: {
     theme?: string;
@@ -71,6 +76,14 @@ export interface SlotSelectionEntry {
   }>;
 }
 
+export interface ObjectUsedInfo {
+  name: string;
+  version: string;
+  traits: string[];
+  fieldsComposed: number;
+  viewExtensionsApplied: Record<string, number>;
+}
+
 export interface DesignComposeOutput {
   status: 'ok' | 'error';
   layout: string;
@@ -86,11 +99,15 @@ export interface DesignComposeOutput {
   };
   warnings: ComposeIssue[];
   errors?: ComposeIssue[];
+  objectUsed?: ObjectUsedInfo;
   meta?: {
     intentParsed: string;
     layoutDetected: string;
     slotCount: number;
     nodeCount: number;
+    objectAutoDetected?: string;
+    contextAutoDetected?: string;
+    intentSynthetic?: boolean;
   };
 }
 
@@ -274,6 +291,45 @@ function applyOverridesToSchema(
 }
 
 /* ------------------------------------------------------------------ */
+/*  Context → layout inference                                         */
+/* ------------------------------------------------------------------ */
+
+const CONTEXT_TO_LAYOUT: Record<string, LayoutType> = {
+  detail: 'detail',
+  list: 'list',
+  form: 'form',
+  timeline: 'detail',
+  card: 'detail',
+  inline: 'list',
+};
+
+function inferLayoutFromContext(context: string | undefined): LayoutType {
+  if (context && context in CONTEXT_TO_LAYOUT) {
+    return CONTEXT_TO_LAYOUT[context];
+  }
+  return 'detail'; // default when context is unknown or missing
+}
+
+/* ------------------------------------------------------------------ */
+/*  Object → objectUsed metadata                                       */
+/* ------------------------------------------------------------------ */
+
+function buildObjectUsedInfo(composed: ComposedObject): ObjectUsedInfo {
+  const viewExtensionsApplied: Record<string, number> = {};
+  for (const [ctx, exts] of Object.entries(composed.viewExtensions)) {
+    viewExtensionsApplied[ctx] = exts.length;
+  }
+
+  return {
+    name: composed.object.name,
+    version: composed.object.version,
+    traits: composed.traits.map((t) => t.ref.name),
+    fieldsComposed: Object.keys(composed.schema).length,
+    viewExtensionsApplied,
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Node counting                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -294,14 +350,69 @@ function countNodes(schema: UiSchema): number {
 export async function handle(input: DesignComposeInput): Promise<DesignComposeOutput> {
   const warnings: ComposeIssue[] = [];
 
+  // Resolve intent/object/context via hybrid resolver
+  const resolved = resolveIntentObject(input.intent, input.object, input.context);
+
+  // Surface resolution warnings
+  for (const w of resolved.warnings) {
+    warnings.push({ code: 'RESOLUTION_WARNING', message: w });
+  }
+
+  // Use resolved values (may include auto-detected object/context)
+  const effectiveObject = resolved.object;
+  const effectiveContext = resolved.context ?? input.context;
+
+  // Object-aware composition: load and compose when object is present
+  let composed: ComposedObject | undefined;
+  let objectUsed: ObjectUsedInfo | undefined;
+
+  if (effectiveObject) {
+    try {
+      const objectDef = loadObject(effectiveObject);
+      composed = composeObject(objectDef);
+      objectUsed = buildObjectUsedInfo(composed);
+
+      // Surface composition warnings
+      for (const w of composed.warnings) {
+        warnings.push({
+          code: 'OBJECT_COMPOSITION_WARNING',
+          message: w,
+        });
+      }
+    } catch (e) {
+      // Fuzzy-match suggestion for unknown objects
+      const fuzzy = fuzzyMatchObject(effectiveObject);
+      const hint = fuzzy && fuzzy.similarity >= 0.4
+        ? `Did you mean "${fuzzy.match}"? (similarity: ${(fuzzy.similarity * 100).toFixed(0)}%)`
+        : 'Check the object name or verify objects/ directory.';
+
+      return {
+        status: 'error',
+        layout: '',
+        schema: { version: '2026.02', screens: [{ id: 'err-0', component: 'Box' }] },
+        selections: [],
+        warnings,
+        errors: [{
+          code: 'OBJECT_LOAD_FAILED',
+          message: `Failed to load object "${effectiveObject}": ${(e as Error).message}`,
+          hint,
+        }],
+      };
+    }
+  }
+
   // 1. Parse intent and detect layout
-  const intentStr = input.intent.trim();
+  const intentStr = resolved.intent;
   let layoutType: LayoutType;
   let layoutDetected: string;
 
   if (input.layout && input.layout !== 'auto') {
     layoutType = input.layout;
     layoutDetected = `explicit: ${input.layout}`;
+  } else if (composed && effectiveContext) {
+    // Object-aware: infer layout from context param
+    layoutType = inferLayoutFromContext(effectiveContext);
+    layoutDetected = `context-inferred: ${layoutType} (from context="${effectiveContext}")`;
   } else {
     const detection = detectLayout(intentStr);
     layoutType = detection.layout;
@@ -407,11 +518,15 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     selections,
     validation,
     warnings,
+    ...(objectUsed ? { objectUsed } : {}),
     meta: {
       intentParsed: intentStr,
       layoutDetected,
       slotCount: slots.length,
       nodeCount: countNodes(schema),
+      ...(resolved.objectSource === 'auto-detected' ? { objectAutoDetected: resolved.object } : {}),
+      ...(resolved.contextSource === 'auto-detected' ? { contextAutoDetected: resolved.context } : {}),
+      ...(resolved.intentSource === 'synthetic' ? { intentSynthetic: true } : {}),
     },
   };
 }

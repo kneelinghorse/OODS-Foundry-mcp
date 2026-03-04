@@ -298,6 +298,18 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
     '',
   ];
 
+  // Emit token overrides as CSS variable declarations comment
+  if (schema.tokenOverrides && Object.keys(schema.tokenOverrides).length > 0) {
+    lines.push('/**');
+    lines.push(' * Object-level token overrides (apply via CSS custom properties):');
+    for (const [key, value] of Object.entries(schema.tokenOverrides)) {
+      const varName = `--token-${key.replace(/[.\s_]+/g, '-')}`;
+      lines.push(` *   ${varName}: ${value};`);
+    }
+    lines.push(' */');
+    lines.push('');
+  }
+
   if (typeAnnotations) {
     lines.push(typeAnnotations, '');
   }

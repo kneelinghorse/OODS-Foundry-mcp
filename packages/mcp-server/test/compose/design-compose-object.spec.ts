@@ -1,0 +1,231 @@
+/**
+ * Contract tests for the object-aware design.compose path (s62-m01).
+ *
+ * Validates:
+ * 1. Object param loads and composes via loadObject/composeObject
+ * 2. Context param infers layout (detail→detail, list→list, form→form)
+ * 3. Output includes objectUsed block with name, version, traits, fieldsComposed, viewExtensionsApplied
+ * 4. Layout inference from context when layout not explicit
+ * 5. Explicit layout overrides context inference
+ * 6. Unknown object returns error with OBJECT_LOAD_FAILED code
+ * 7. Existing intent-only path remains unaffected (backward compatible)
+ */
+import { describe, it, expect } from 'vitest';
+import { handle } from '../../src/tools/design.compose.js';
+import type { DesignComposeOutput } from '../../src/tools/design.compose.js';
+
+/* ------------------------------------------------------------------ */
+/*  Object-aware composition: basic contracts                          */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — object-aware path', () => {
+  it('accepts object param and returns objectUsed', async () => {
+    const result = await handle({
+      intent: 'subscription detail view',
+      object: 'Subscription',
+      context: 'detail',
+    });
+    expect(result.status).toBe('ok');
+    expect(result.objectUsed).toBeDefined();
+    expect(result.objectUsed!.name).toBe('Subscription');
+  });
+
+  it('objectUsed contains version, traits, fieldsComposed, viewExtensionsApplied', async () => {
+    const result = await handle({
+      intent: 'subscription detail view',
+      object: 'Subscription',
+      context: 'detail',
+    });
+    const ou = result.objectUsed!;
+    expect(ou.version).toBe('1.0.0');
+    expect(ou.traits).toBeInstanceOf(Array);
+    expect(ou.traits.length).toBeGreaterThan(0);
+    expect(ou.fieldsComposed).toBeGreaterThan(0);
+    expect(typeof ou.viewExtensionsApplied).toBe('object');
+  });
+
+  it('Subscription traits include lifecycle/Stateful', async () => {
+    const result = await handle({
+      intent: 'subscription detail view',
+      object: 'Subscription',
+      context: 'detail',
+    });
+    const traitNames = result.objectUsed!.traits;
+    // lifecycle/Stateful is present on both core and domain Subscription objects
+    expect(traitNames).toContain('lifecycle/Stateful');
+    expect(traitNames.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('fieldsComposed reflects merged schema fields from traits + object', async () => {
+    const result = await handle({
+      intent: 'subscription detail view',
+      object: 'Subscription',
+      context: 'detail',
+    });
+    // Subscription has many fields across its 4 traits plus own schema
+    expect(result.objectUsed!.fieldsComposed).toBeGreaterThanOrEqual(10);
+  });
+
+  it('works with User object', async () => {
+    const result = await handle({
+      intent: 'user detail view',
+      object: 'User',
+      context: 'detail',
+    });
+    expect(result.status).toBe('ok');
+    expect(result.objectUsed).toBeDefined();
+    expect(result.objectUsed!.name).toBe('User');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Context → layout inference                                         */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — context layout inference', () => {
+  it('context=detail infers detail layout', async () => {
+    const result = await handle({
+      intent: 'subscription view',
+      object: 'Subscription',
+      context: 'detail',
+    });
+    expect(result.layout).toBe('detail');
+    expect(result.meta!.layoutDetected).toContain('context-inferred');
+  });
+
+  it('context=list infers list layout', async () => {
+    const result = await handle({
+      intent: 'subscription view',
+      object: 'Subscription',
+      context: 'list',
+    });
+    expect(result.layout).toBe('list');
+  });
+
+  it('context=form infers form layout', async () => {
+    const result = await handle({
+      intent: 'subscription view',
+      object: 'Subscription',
+      context: 'form',
+    });
+    expect(result.layout).toBe('form');
+  });
+
+  it('context=timeline maps to detail layout', async () => {
+    const result = await handle({
+      intent: 'subscription view',
+      object: 'Subscription',
+      context: 'timeline',
+    });
+    expect(result.layout).toBe('detail');
+  });
+
+  it('context=card maps to detail layout', async () => {
+    const result = await handle({
+      intent: 'subscription view',
+      object: 'Subscription',
+      context: 'card',
+    });
+    expect(result.layout).toBe('detail');
+  });
+
+  it('context=inline maps to list layout', async () => {
+    const result = await handle({
+      intent: 'subscription view',
+      object: 'Subscription',
+      context: 'inline',
+    });
+    expect(result.layout).toBe('list');
+  });
+
+  it('explicit layout overrides context inference', async () => {
+    const result = await handle({
+      intent: 'subscription view',
+      object: 'Subscription',
+      context: 'detail',
+      layout: 'form',
+    });
+    expect(result.layout).toBe('form');
+    expect(result.meta!.layoutDetected).toContain('explicit');
+  });
+
+  it('context without object falls through to intent detection', async () => {
+    const result = await handle({
+      intent: 'dashboard with metrics',
+      context: 'detail',
+    });
+    // No object → context is ignored, intent-based detection used
+    expect(result.layout).toBe('dashboard');
+    expect(result.objectUsed).toBeUndefined();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Error handling                                                     */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — object error handling', () => {
+  it('unknown object returns error status with OBJECT_LOAD_FAILED', async () => {
+    const result = await handle({
+      intent: 'detail view',
+      object: 'NonExistentObject',
+      context: 'detail',
+    });
+    expect(result.status).toBe('error');
+    expect(result.errors).toBeDefined();
+    expect(result.errors!.some(e => e.code === 'OBJECT_LOAD_FAILED')).toBe(true);
+    expect(result.errors![0].message).toContain('NonExistentObject');
+  });
+
+  it('unknown object error includes hint', async () => {
+    const result = await handle({
+      intent: 'detail view',
+      object: 'DoesNotExist',
+      context: 'detail',
+    });
+    expect(result.errors![0].hint).toBeTruthy();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Backward compatibility                                             */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — backward compatibility', () => {
+  it('intent-only path still works (no object param)', async () => {
+    const result = await handle({ intent: 'dashboard with metrics and sidebar' });
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('dashboard');
+    expect(result.objectUsed).toBeUndefined();
+  });
+
+  it('all required output fields present on intent-only path', async () => {
+    const result = await handle({ intent: 'simple dashboard' });
+    expect(result.status).toBeDefined();
+    expect(result.layout).toBeDefined();
+    expect(result.schema).toBeDefined();
+    expect(result.selections).toBeInstanceOf(Array);
+    expect(result.warnings).toBeInstanceOf(Array);
+    expect(result.schemaRef).toBeTruthy();
+  });
+
+  it('validation still works on object-aware path', async () => {
+    const result = await handle({
+      intent: 'subscription detail view',
+      object: 'Subscription',
+      context: 'detail',
+    });
+    expect(result.validation).toBeDefined();
+    expect(result.validation!.status).toBe('ok');
+  });
+
+  it('validation can be skipped on object-aware path', async () => {
+    const result = await handle({
+      intent: 'subscription detail view',
+      object: 'Subscription',
+      context: 'detail',
+      options: { validate: false },
+    });
+    expect(result.validation?.status).toBe('skipped');
+  });
+});

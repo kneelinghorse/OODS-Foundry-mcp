@@ -148,8 +148,20 @@ function renderNode(node: UiElement): string {
   return renderMappedComponent(styledNode, childHtml);
 }
 
+function renderTokenOverrides(tokenOverrides?: Record<string, string>): string {
+  if (!tokenOverrides || Object.keys(tokenOverrides).length === 0) return '';
+
+  const declarations = Object.entries(tokenOverrides)
+    .map(([key, value]) => `  --token-${normalizeToken(key)}: ${value};`)
+    .join('\n');
+
+  return `<style data-token-overrides="true">\n:root {\n${declarations}\n}\n</style>`;
+}
+
 export function renderTree(schema: UiSchema): string {
-  return schema.screens.map((screen) => renderNode(screen)).join('');
+  const tokenStyle = renderTokenOverrides(schema.tokenOverrides);
+  const body = schema.screens.map((screen) => renderNode(screen)).join('');
+  return tokenStyle ? `${tokenStyle}\n${body}` : body;
 }
 
 export function renderFragments(schema: UiSchema): Map<string, FragmentResult> {
