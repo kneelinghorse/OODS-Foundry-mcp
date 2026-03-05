@@ -9,7 +9,7 @@
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `dslVersion` | string | No |  | DSL version to use for this request. Defaults to the current version (1.0). |
-| `mode` | `full` \| `patch` | Yes | `"full"` |  |
+| `mode` | `full` \| `patch` | No | `"full"` |  |
 | `schema` | _ref_ | No |  |  |
 | `schemaRef` | string | No |  | Reference to a cached UiSchema returned by design.compose. |
 | `patch` | _ref_ | No |  | Required when mode='patch'. Accepts JSON Patch array or node patch object(s). |
@@ -47,7 +47,5 @@
 ## Example Request
 
 ```json
-{
-  "mode": "full"
-}
+{}
 ```

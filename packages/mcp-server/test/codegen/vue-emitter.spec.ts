@@ -395,3 +395,83 @@ describe('vue-emitter — event handler stubs (s63-m04)', () => {
     expect(result.code).not.toContain(': Event');
   });
 });
+
+describe('vue-emitter — interactive Tailwind guard (s71-m05)', () => {
+  const tailwindOpts: CodegenOptions = { typescript: true, styling: 'tailwind' };
+
+  it('non-interactive elements (Stack, Card, Text) have no hover/focus/disabled classes', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Stack',
+      children: [
+        { id: 'card', component: 'Card', props: { variant: 'primary' } },
+        { id: 'text', component: 'Text', props: { intent: 'info' } },
+      ],
+    });
+    const result = emit(schema, tailwindOpts);
+    // Extract class attributes for non-interactive elements
+    const lines = result.code.split('\n');
+    for (const line of lines) {
+      if (line.includes('data-oods-component="Stack"') ||
+          line.includes('data-oods-component="Card"') ||
+          line.includes('data-oods-component="Text"')) {
+        expect(line).not.toContain('hover:');
+        expect(line).not.toContain('focus:');
+        expect(line).not.toContain('disabled:');
+      }
+    }
+  });
+
+  it('interactive elements (Button, Input, Select) retain hover/focus/disabled classes', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Stack',
+      children: [
+        { id: 'btn', component: 'Button', props: { variant: 'primary' } },
+        { id: 'inp', component: 'Input', props: { name: 'email' } },
+        { id: 'sel', component: 'Select', props: { name: 'role' } },
+      ],
+    });
+    const result = emit(schema, tailwindOpts);
+    const lines = result.code.split('\n');
+    for (const line of lines) {
+      if (line.includes('data-oods-component="Button"')) {
+        expect(line).toContain('hover:');
+        expect(line).toContain('focus:');
+        expect(line).toContain('disabled:');
+      }
+    }
+  });
+
+  it('Tabs container has no interactive utilities', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Tabs',
+      props: { tabs: [{ id: 'a', label: 'A' }] },
+    });
+    const result = emit(schema, tailwindOpts);
+    const lines = result.code.split('\n');
+    for (const line of lines) {
+      if (line.includes('data-oods-component="Tabs"')) {
+        expect(line).not.toContain('hover:');
+        expect(line).not.toContain('focus:');
+        expect(line).not.toContain('disabled:');
+      }
+    }
+  });
+
+  it('elements with bindings are treated as interactive', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Box',
+      bindings: { onClick: 'handleClick' },
+    });
+    const result = emit(schema, tailwindOpts);
+    const lines = result.code.split('\n');
+    for (const line of lines) {
+      if (line.includes('data-oods-component="Box"')) {
+        expect(line).toContain('focus:');
+      }
+    }
+  });
+});

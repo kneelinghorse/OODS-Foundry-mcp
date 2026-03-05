@@ -41,9 +41,31 @@
       "description": "Styling strategy for code generation."
     },
     "save": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Optional schema name to persist via schema.save."
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "Schema name to persist (shorthand)."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Schema name to persist."
+            },
+            "tags": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Tags to attach to the saved schema."
+            }
+          }
+        }
+      ],
+      "description": "Optional schema save config. String for name-only, or { name, tags } for full control."
     },
     "options": {
       "type": "object",

@@ -9,6 +9,7 @@ export type SchemaSaveInput = {
   schemaRef: string;
   tags?: string[];
   author?: string;
+  object?: string;
 };
 
 export type SchemaSaveOutput = {
@@ -46,6 +47,13 @@ function inferContext(schema: UiSchema): string | undefined {
   return undefined;
 }
 
+function extractEntity(dotPath: string): string | undefined {
+  const parts = dotPath.split('.').filter(Boolean);
+  if (parts.length >= 3) return titleCase(parts[1]);
+  if (parts.length === 2) return titleCase(parts[0]);
+  return undefined;
+}
+
 function inferObject(schema: UiSchema): string | undefined {
   const candidates: string[] = [];
 
@@ -53,19 +61,15 @@ function inferObject(schema: UiSchema): string | undefined {
     for (const field of Object.values(schema.objectSchema)) {
       const semanticType = field.semanticType;
       if (!semanticType) continue;
-      const parts = semanticType.split('.').filter(Boolean);
-      if (parts.length >= 2) {
-        candidates.push(titleCase(parts[1]));
-      }
+      const entity = extractEntity(semanticType);
+      if (entity && entity.length >= 3) candidates.push(entity);
     }
   }
 
   if (schema.tokenOverrides) {
     for (const key of Object.keys(schema.tokenOverrides)) {
-      const parts = key.split('.').filter(Boolean);
-      if (parts.length >= 2) {
-        candidates.push(titleCase(parts[1]));
-      }
+      const entity = extractEntity(key);
+      if (entity && entity.length >= 3) candidates.push(entity);
     }
   }
 
@@ -125,7 +129,7 @@ export async function handle(input: SchemaSaveInput): Promise<SchemaSaveOutput> 
     schemaRef: input.schemaRef,
     tags: input.tags,
     author: input.author,
-    object: inferObject(resolved.schema),
+    object: input.object ?? inferObject(resolved.schema),
     context: inferContext(resolved.schema),
   });
 

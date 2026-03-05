@@ -141,6 +141,64 @@ describe('schema tool handlers', () => {
     await expect(schemaDeleteHandle({ name: 'sub_list' })).rejects.toThrow(/schema_list/i);
   });
 
+  it('schema_save uses explicit object over inference', async () => {
+    const schemaRef = createSchemaRef(
+      buildSchema('txn_receipt', '/transactions/detail', 'status.archive.state'),
+      'compose',
+    );
+
+    const saved = await schemaSaveHandle({
+      name: 'txn_receipt',
+      schemaRef: schemaRef.ref,
+      object: 'Transaction',
+    });
+
+    expect(saved.object).toBe('Transaction');
+  });
+
+  it('inferObject extracts entity from 3-part semantic types correctly', async () => {
+    const schema: UiSchema = {
+      version: '2026.02',
+      screens: [{ id: 's', component: 'Stack' }],
+      objectSchema: {
+        id: { type: 'string', required: true, semanticType: 'commerce.transaction.id' },
+        timestamp: { type: 'string', required: true, semanticType: 'commerce.transaction.timestamp' },
+        channel: { type: 'string', required: false, semanticType: 'commerce.transaction.channel' },
+        method: { type: 'string', required: false, semanticType: 'commerce.payment.method' },
+        archived: { type: 'boolean', required: false, semanticType: 'status.archive.state' },
+      },
+    };
+    const schemaRef = createSchemaRef(schema, 'compose');
+
+    const saved = await schemaSaveHandle({
+      name: 'txn_infer_test',
+      schemaRef: schemaRef.ref,
+    });
+
+    // 'transaction' appears 3 times, 'archive' and 'payment' each once → Transaction wins
+    expect(saved.object).toBe('Transaction');
+  });
+
+  it('inferObject handles 2-part semantic types using first segment', async () => {
+    const schema: UiSchema = {
+      version: '2026.02',
+      screens: [{ id: 's', component: 'Stack' }],
+      objectSchema: {
+        id: { type: 'string', required: true, semanticType: 'organization.id' },
+        name: { type: 'string', required: true, semanticType: 'organization.name' },
+        status: { type: 'string', required: false, semanticType: 'organization.status' },
+      },
+    };
+    const schemaRef = createSchemaRef(schema, 'compose');
+
+    const saved = await schemaSaveHandle({
+      name: 'org_infer_test',
+      schemaRef: schemaRef.ref,
+    });
+
+    expect(saved.object).toBe('Organization');
+  });
+
   it('integration lifecycle compose -> save -> list -> load -> validate -> delete', async () => {
     const composed = await composeHandle({
       object: 'Subscription',

@@ -234,10 +234,62 @@ describe('pipeline orchestration', () => {
         expect.objectContaining({
           name: 'my-schema',
           schemaRef: 'ref:test-schema-123',
+          object: 'Subscription',
         }),
       );
       expect(result.saved).toEqual({ name: 'my-schema', version: 1 });
       expect(result.pipeline.steps).toContain('save');
+    });
+
+    it('passes compose object name to save handler', async () => {
+      mockComposeHandle.mockResolvedValue({
+        ...composeOk(),
+        objectUsed: { name: 'Transaction' },
+      });
+
+      await handle({
+        object: 'Transaction',
+        framework: 'react',
+        save: 'txn-receipt',
+      });
+
+      expect(mockSchemaSaveHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'txn-receipt',
+          object: 'Transaction',
+        }),
+      );
+    });
+
+    it('saves schema with tags when object form is used', async () => {
+      const result = await handle({
+        object: 'Subscription',
+        framework: 'react',
+        save: { name: 'my-schema', tags: ['receipt', 'billing'] },
+      });
+
+      expect(mockSchemaSaveHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'my-schema',
+          schemaRef: 'ref:test-schema-123',
+          tags: ['receipt', 'billing'],
+          object: 'Subscription',
+        }),
+      );
+      expect(result.saved).toEqual({ name: 'my-schema', version: 1 });
+      expect(result.pipeline.steps).toContain('save');
+    });
+
+    it('saves schema with object form without tags', async () => {
+      await handle({
+        object: 'Subscription',
+        framework: 'react',
+        save: { name: 'no-tags-schema' },
+      });
+
+      const call = mockSchemaSaveHandle.mock.calls[0][0];
+      expect(call.name).toBe('no-tags-schema');
+      expect(call.tags).toBeUndefined();
     });
 
     it('does not save when save is not provided', async () => {
