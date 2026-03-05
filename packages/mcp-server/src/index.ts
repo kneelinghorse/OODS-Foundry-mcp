@@ -106,6 +106,11 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/design.compose.input.json',
     outputSchema: './schemas/design.compose.output.json',
   },
+  'health': {
+    modulePath: './tools/health.js',
+    inputSchema: './schemas/health.input.json',
+    outputSchema: './schemas/health.output.json',
+  },
   'map.create': {
     modulePath: './tools/map.create.js',
     inputSchema: './schemas/map.create.input.json',
@@ -130,6 +135,26 @@ const toolSpecs: Record<string, ToolSpec> = {
     modulePath: './tools/object.show.js',
     inputSchema: './schemas/object.show.input.json',
     outputSchema: './schemas/object.show.output.json',
+  },
+  'schema.save': {
+    modulePath: './tools/schema/save.js',
+    inputSchema: './schemas/schema.save.input.json',
+    outputSchema: './schemas/schema.save.output.json',
+  },
+  'schema.load': {
+    modulePath: './tools/schema/load.js',
+    inputSchema: './schemas/schema.load.input.json',
+    outputSchema: './schemas/schema.load.output.json',
+  },
+  'schema.list': {
+    modulePath: './tools/schema/list.js',
+    inputSchema: './schemas/schema.list.input.json',
+    outputSchema: './schemas/schema.list.output.json',
+  },
+  'schema.delete': {
+    modulePath: './tools/schema/delete.js',
+    inputSchema: './schemas/schema.delete.input.json',
+    outputSchema: './schemas/schema.delete.output.json',
   },
 };
 

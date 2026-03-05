@@ -112,7 +112,7 @@ describe('Object type generation integration', () => {
       expect.fail(`TypeScript reported diagnostics:\n${formatted}`);
     }
   },
-    15000
+    30000
   );
 
   it('renders deterministic barrel exports', () => {

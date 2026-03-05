@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import type { UiSchema } from '../schemas/generated.js';
 
-type SchemaRefRecord = {
+export type SchemaRefRecord = {
   ref: string;
   schema: UiSchema;
   source: string;
@@ -62,11 +62,18 @@ function buildRef(source: string): string {
   return `${source}-${suffix}`;
 }
 
-export function createSchemaRef(schema: UiSchema, source = 'compose'): SchemaRefRecord {
+type HydrateSchemaRefOptions = {
+  ref?: string;
+  source?: string;
+};
+
+export function hydrateSchemaRef(schema: UiSchema, options: HydrateSchemaRefOptions = {}): SchemaRefRecord {
+  const source = options.source ?? 'compose';
+  const ref = options.ref?.trim() ? options.ref : buildRef(source);
   const createdAtMs = nowMs();
   const expiresAtMs = createdAtMs + ttlMs();
   const record: SchemaRefRecord = {
-    ref: buildRef(source),
+    ref,
     schema: structuredClone(schema),
     source,
     createdAt: iso(createdAtMs),
@@ -78,6 +85,10 @@ export function createSchemaRef(schema: UiSchema, source = 'compose'): SchemaRef
   CACHE.set(record.ref, record);
   pruneOverflow();
   return record;
+}
+
+export function createSchemaRef(schema: UiSchema, source = 'compose'): SchemaRefRecord {
+  return hydrateSchemaRef(schema, { source });
 }
 
 export function resolveSchemaRef(ref: string): { ok: true; record: SchemaRefRecord; schema: UiSchema } | { ok: false; reason: 'missing' | 'expired' } {

@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "server", "registry", "tokens", "schemas", "latency"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "degraded"]
+    },
+    "server": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "uptime"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1 },
+        "uptime": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["components", "traits", "objects", "lastSync"],
+      "properties": {
+        "components": { "type": "integer", "minimum": 0 },
+        "traits": { "type": "integer", "minimum": 0 },
+        "objects": { "type": "integer", "minimum": 0 },
+        "lastSync": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["built", "theme", "brand"],
+      "properties": {
+        "built": { "type": "boolean" },
+        "theme": { "type": "string", "minLength": 1 },
+        "brand": { "type": "string", "minLength": 1 }
+      }
+    },
+    "schemas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["savedCount", "storeDir"],
+      "properties": {
+        "savedCount": { "type": "integer", "minimum": 0 },
+        "storeDir": { "type": "string", "minLength": 1 }
+      }
+    },
+    "latency": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}
