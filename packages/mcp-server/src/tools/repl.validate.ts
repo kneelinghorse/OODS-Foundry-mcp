@@ -44,7 +44,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
       if (resolved.ok) {
         workingTree = resolved.schema;
       } else {
-        const code = resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND';
+        const code = resolved.reason === 'expired' ? 'OODS-N004' : 'OODS-N003';
         errors.push({
           code,
           message: `schemaRef '${input.schemaRef}' is ${resolved.reason}.`,
@@ -52,7 +52,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
         });
       }
     } else {
-      errors.push({ code: 'MISSING_SCHEMA', message: 'schema is required when mode=full' });
+      errors.push({ code: 'OODS-V009', message: 'schema is required when mode=full' });
     }
   } else {
     if (input.baseTree) {
@@ -62,7 +62,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
       if (resolved.ok) {
         workingTree = resolved.schema;
       } else {
-        const code = resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND';
+        const code = resolved.reason === 'expired' ? 'OODS-N004' : 'OODS-N003';
         errors.push({
           code,
           message: `schemaRef '${input.schemaRef}' is ${resolved.reason}.`,
@@ -71,7 +71,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
       }
     } else {
       errors.push({
-        code: 'MISSING_BASE_TREE',
+        code: 'OODS-V010',
         message: 'baseTree is required when mode=patch',
         path: '/baseTree',
         hint: patchExampleHint(),
@@ -79,7 +79,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
     }
     if (!input.patch) {
       errors.push({
-        code: 'MISSING_PATCH',
+        code: 'OODS-V011',
         message: 'patch is required when mode=patch',
         path: '/patch',
         hint: patchExampleHint(),
@@ -111,7 +111,7 @@ export async function handle(input: ReplValidateInput): Promise<ReplValidateOutp
       warnings.push(...validateContrast(tokenData));
     } else {
       warnings.push({
-        code: 'A11Y_TOKEN_DATA_MISSING',
+        code: 'OODS-N012',
         message: 'Token data could not be loaded; a11y contrast checks skipped.',
         severity: 'warning',
       });

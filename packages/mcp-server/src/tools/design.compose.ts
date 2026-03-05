@@ -262,7 +262,7 @@ function applyOverridesToSchema(
   for (const [slotName, overrideName] of Object.entries(overrides)) {
     if (!knownComponents.has(overrideName) && !warned.has(`${slotName}:${overrideName}`)) {
       warnings.push({
-        code: 'UNKNOWN_OVERRIDE_COMPONENT',
+        code: 'OODS-V006',
         message: `Override component "${overrideName}" for slot "${slotName}" was not found in the catalog.`,
         hint: 'Check the component name or refresh structured data.',
       });
@@ -356,7 +356,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
 
   // Surface resolution warnings
   for (const w of resolved.warnings) {
-    warnings.push({ code: 'RESOLUTION_WARNING', message: w });
+    warnings.push({ code: 'OODS-V118', message: w });
   }
 
   // Use resolved values (may include auto-detected object/context)
@@ -376,7 +376,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       // Surface composition warnings
       for (const w of composed.warnings) {
         warnings.push({
-          code: 'OBJECT_COMPOSITION_WARNING',
+          code: 'OODS-V117',
           message: w,
         });
       }
@@ -394,7 +394,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         selections: [],
         warnings,
         errors: [{
-          code: 'OBJECT_LOAD_FAILED',
+          code: 'OODS-S004',
           message: `Failed to load object "${effectiveObject}": ${(e as Error).message}`,
           hint,
         }],
@@ -421,7 +421,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
 
     if (detection.confidence < 0.5) {
       warnings.push({
-        code: 'LOW_LAYOUT_CONFIDENCE',
+        code: 'OODS-V116',
         message: `Layout auto-detection confidence is low (${detection.confidence.toFixed(2)}). Consider specifying layout explicitly.`,
         hint: `Set layout to one of: dashboard, form, detail, list`,
       });
@@ -443,7 +443,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       selections: [],
       warnings,
       errors: [{
-        code: 'CATALOG_LOAD_FAILED',
+        code: 'OODS-S005',
         message: `Failed to load component catalog: ${(e as Error).message}`,
       }],
     };
@@ -509,7 +509,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       validation = {
         status: 'skipped',
         errors: [{
-          code: 'VALIDATION_ERROR',
+          code: 'OODS-V007',
           message: `Validation failed: ${(e as Error).message}`,
         }],
       };

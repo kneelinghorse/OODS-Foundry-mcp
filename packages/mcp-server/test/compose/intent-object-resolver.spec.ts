@@ -251,7 +251,7 @@ describe('design.compose — unknown object error with suggestion', () => {
     });
     expect(result.status).toBe('error');
     expect(result.errors).toBeDefined();
-    expect(result.errors!.some(e => e.code === 'OBJECT_LOAD_FAILED')).toBe(true);
+    expect(result.errors!.some(e => e.code === 'OODS-S004')).toBe(true);
     // Should suggest "Subscription" as closest match
     expect(result.errors![0].hint).toContain('Subscription');
     expect(result.errors![0].hint).toContain('Did you mean');
@@ -264,7 +264,7 @@ describe('design.compose — unknown object error with suggestion', () => {
       context: 'detail',
     });
     expect(result.status).toBe('error');
-    expect(result.errors![0].code).toBe('OBJECT_LOAD_FAILED');
+    expect(result.errors![0].code).toBe('OODS-S004');
   });
 });
 

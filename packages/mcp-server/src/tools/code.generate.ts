@@ -58,7 +58,7 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
         warnings,
         errors: [
           {
-            code: resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND',
+            code: resolved.reason === 'expired' ? 'OODS-N004' : 'OODS-N003',
             message:
               `schemaRef '${input.schemaRef}' is ${resolved.reason}. ` +
               'Run design.compose again to obtain a fresh schemaRef, or pass schema inline via the schema field.',
@@ -78,7 +78,7 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
       warnings,
       errors: [
         {
-          code: 'MISSING_SCHEMA',
+          code: 'OODS-V009',
           message: 'schema is required for code generation. Provide schema or schemaRef.',
         },
       ],
@@ -108,13 +108,13 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
   const registry = loadComponentRegistry();
   const componentErrors = validateComponents(schema, registry);
   const unknownComponents = componentErrors
-    .filter((e) => e.code === 'UNKNOWN_COMPONENT')
+    .filter((e) => e.code === 'OODS-V006')
     .map((e) => e.component)
     .filter((c): c is string => c !== undefined);
 
   if (unknownComponents.length > 0) {
     warnings.push({
-      code: 'UNKNOWN_COMPONENTS',
+      code: 'OODS-V119',
       message: `${unknownComponents.length} component(s) not found in registry: ${unknownComponents.join(', ')}`,
     });
   }
@@ -129,7 +129,7 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
       fileExtension: '',
       imports: [],
       warnings,
-      errors: [{ code: 'UNKNOWN_FRAMEWORK', message: `No emitter registered for framework '${framework}'` }],
+      errors: [{ code: 'OODS-V005', message: `No emitter registered for framework '${framework}'` }],
     };
   }
 

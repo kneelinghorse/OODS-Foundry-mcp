@@ -1,5 +1,6 @@
 import type { SchemaRecord } from '../../schema-store/types.js';
 import { SchemaStore } from '../../schema-store/index.js';
+import { ToolError } from '../../errors/tool-error.js';
 
 export type SchemaLoadInput = {
   name: string;
@@ -80,10 +81,10 @@ async function closestSchemaName(store: SchemaStore, name: string): Promise<stri
 
 export async function handle(input: SchemaLoadInput): Promise<SchemaLoadOutput> {
   if (!input.name?.trim()) {
-    throw new Error('name is required.');
+    throw new ToolError('OODS-V003', 'name is required.', { field: 'name' });
   }
   if (!NAME_PATTERN.test(input.name)) {
-    throw new Error('name must use slug format: letters, numbers, hyphens, and underscores only.');
+    throw new ToolError('OODS-V004', 'name must use slug format: letters, numbers, hyphens, and underscores only.', { field: 'name', value: input.name });
   }
 
   const store = getStore();
@@ -95,9 +96,9 @@ export async function handle(input: SchemaLoadInput): Promise<SchemaLoadOutput> 
     if (/not found/i.test(message)) {
       const suggestion = await closestSchemaName(store, input.name);
       if (suggestion) {
-        throw new Error(`Schema "${input.name}" not found. Did you mean "${suggestion}"?`);
+        throw new ToolError('OODS-N002', `Schema "${input.name}" not found. Did you mean "${suggestion}"?`, { name: input.name, suggestion });
       }
-      throw new Error(`Schema "${input.name}" not found. Use schema_list to see available schema names.`);
+      throw new ToolError('OODS-N002', `Schema "${input.name}" not found. Use schema_list to see available schema names.`, { name: input.name });
     }
     throw error;
   }

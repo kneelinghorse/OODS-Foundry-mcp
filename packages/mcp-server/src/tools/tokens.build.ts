@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { todayDir, loadPolicy, withinAllowed } from '../lib/security.js';
 import { writeTranscript, writeBundleIndex, sha256File } from '../lib/transcript.js';
 import type { TokensBuildInput, GenericOutput, ToolPreview, ArtifactDetail } from './types.js';
+import { ToolError } from '../errors/tool-error.js';
 
 type TokensBuildOutputs = {
   css: string;
@@ -62,7 +63,7 @@ async function ensureTokensBuildOutputs(): Promise<TokensBuildOutputs> {
 
   const stillMissing = Object.values(outputs).some((filePath) => !isNonEmptyFile(filePath));
   if (stillMissing) {
-    throw new Error('tokens build outputs are missing after running the pipeline');
+    throw new ToolError('OODS-N007', 'tokens build outputs are missing after running the pipeline');
   }
 
   return outputs;
@@ -70,7 +71,7 @@ async function ensureTokensBuildOutputs(): Promise<TokensBuildOutputs> {
 
 function ensureAllowed(base: string, candidate: string): void {
   if (!withinAllowed(base, candidate)) {
-    throw new Error(`Path not allowed: ${candidate}`);
+    throw new ToolError('OODS-S015', `Path not allowed: ${candidate}`, { path: candidate });
   }
   fs.mkdirSync(path.dirname(candidate), { recursive: true });
 }

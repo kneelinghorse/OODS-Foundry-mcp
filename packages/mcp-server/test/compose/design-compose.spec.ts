@@ -124,7 +124,7 @@ describe('design.compose — layout auto-detection', () => {
   it('unknown intent defaults to dashboard with low confidence warning', async () => {
     const result = await handle({ intent: 'something completely unrelated xyz' });
     expect(result.layout).toBe('dashboard');
-    expect(result.warnings.some(w => w.code === 'LOW_LAYOUT_CONFIDENCE')).toBe(true);
+    expect(result.warnings.some(w => w.code === 'OODS-V116')).toBe(true);
   });
 });
 
@@ -324,7 +324,7 @@ describe('design.compose — component overrides', () => {
       preferences: { componentOverrides: { items: 'NotAComponent' } },
       options: { validate: false },
     });
-    expect(result.warnings.some(w => w.code === 'UNKNOWN_OVERRIDE_COMPONENT')).toBe(true);
+    expect(result.warnings.some(w => w.code === 'OODS-V006')).toBe(true);
     const itemsSlot = findSlotElement(result, 'items');
     expect(itemsSlot?.component).toBe('NotAComponent');
   });

@@ -21,8 +21,8 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 
 | Tier | Theme | Sprints | Status |
 |------|-------|---------|--------|
-| **Tier 0** | The Bridge — Object system in MCP | 61, 62, 63 | Sprint 61-62 complete, Sprint 63 active |
-| **Tier 1** | Production Essentials | TBD (~2 sprints) | Not started |
+| **Tier 0** | The Bridge — Object system in MCP | 61, 62, 63 | COMPLETE |
+| **Tier 1** | Production Essentials | 64, 65 | COMPLETE |
 | **Tier 2** | Platform Hardening | TBD (~2 sprints) | Not started |
 | **Tier 3** | Differentiation | TBD (~2-3 sprints) | Not started |
 
@@ -53,7 +53,7 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 | s62-m06 | Intent + object hybrid mode (auto-detection, fuzzy matching) |
 | s62-m07 | Contract tests + green baseline |
 
-### Sprint 63 — Data Binding in Codegen (ACTIVE)
+### Sprint 63 — Data Binding in Codegen (COMPLETED)
 | Mission | Deliverable |
 |---------|-------------|
 | s63-m01 | Field schema bridge to codegen (objectSchema + bindings in UiSchema) |
@@ -67,42 +67,31 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 
 ---
 
-## Tier 1 — Production Essentials
+## Tier 1 — Production Essentials (COMPLETE)
 
-**Goal:** Make the tool usable for real iterative work by teams. Schemas persist, code is production-ready with class-based styling, and the pipeline collapses from 7 calls to 2-3.
+**Goal:** Make the tool usable for real iterative work by teams. Schemas persist, code is production-ready with class-based styling, and the pipeline collapses from 7 calls to 1.
 
-### 1.1 Schema Persistence
-- `schema_save(name, schemaRef)` — save a composed schema by name with metadata (object, context, version, author, createdAt, tags)
-- `schema_load(name)` — load a saved schema, return schemaRef for reuse in validate/render/codegen
-- `schema_list` — list saved schemas with filters (object, context, tags)
-- `schema_delete(name)` — remove a saved schema
-- Schema diffing between versions (optional, high value)
-- **Storage:** Filesystem-backed JSON store minimum; SQLite if we need query performance
-- **Source:** Both audits flagged this as must-have. Without it, agents can't build iteratively across sessions and teams can't share canonical layouts.
+### Sprint 64 — Schema Persistence & Health (COMPLETED)
+| Mission | Deliverable |
+|---------|-------------|
+| s64-m01 | Schema store infrastructure (filesystem-backed, _index.json fast path) |
+| s64-m02 | `schema_save` MCP tool |
+| s64-m03 | `schema_load` MCP tool (registers schemaRef in cache) |
+| s64-m04 | `schema_list` + `schema_delete` MCP tools |
+| s64-m05 | Schema persistence integration tests |
+| s64-m06 | `health` MCP tool (ok/degraded, <50ms, subsystem enumeration) |
+| s64-m07 | Contract tests + green baseline |
 
-### 1.2 Class-Based Styling Output (Tailwind)
-- Add `styling: "tailwind"` option to `code_generate`
-- Emit Tailwind utility classes derived from `tokens.tailwind.json` (artifact from `tokens_build`)
-- Connect the existing `tw-variants` package to the codegen pipeline
-- Interactive states (hover, focus, disabled, invalid) require class-based styling — inline styles can't express them
-- **Source:** Sonnet 4.6 Section 2.2 — "Inline styles block interactivity"
+### Sprint 65 — Tailwind Codegen + Pipeline Orchestration (COMPLETED)
+| Mission | Deliverable |
+|---------|-------------|
+| s65-m01 | Tailwind token mapping module (tailwind-mapper.ts, CVA variants) |
+| s65-m02 | `styling: "tailwind"` option for React + Vue emitters |
+| s65-m03 | `pipeline` MCP tool (compose→validate→render→codegen→save in 1 call) |
+| s65-m04 | Tailwind + pipeline tests |
+| s65-m05 | Contract tests + green baseline |
 
-### 1.3 Pipeline Orchestration
-- Single orchestration command/mode: compose -> validate -> render -> codegen in one call
-- Configurable flags: skip validation, skip render, select framework, select styling
-- Reduce the 7-call ceremony to 2-3 calls for the common case
-- **Source:** Both audits — GPT-5 "End-to-End Orchestration", Sonnet 4.6 Section 3
-
-### 1.4 Health / Readiness Tool
-- `health` tool returning: server version, DSL version, registry version, uptime, dependency status (token registry, object store, component catalog)
-- Response time target: <50ms
-- Usable as a startup check by agent orchestrators
-- **Source:** Sonnet 4.6 Section 4.6
-
-### Tier 1 Estimated Scope
-- ~10-12 missions across 2 sprints
-- Schema persistence is the largest workstream (~4-5 missions)
-- Tailwind codegen + orchestration + health could share a sprint
+**Tier 1 acceptance test (PASSING):** `pipeline(object="Subscription", context="detail", framework="react", styling="tailwind", save="name")` → `schema_load(name)` → `code_generate(schemaRef, framework="vue", styling="tailwind")` → `health()` shows savedCount=1. All steps verified 2026-03-05.
 
 ---
 
@@ -110,47 +99,33 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 
 **Goal:** Make the tool robust, diagnosable, and maintainable. Errors are documented, outputs are traceable, and the mapping system is complete.
 
-### 2.1 Error Taxonomy
-- Versioned error code registry with: code, category (validation/auth/rate-limit/server-error), human message, retryable (boolean)
-- Commitment: registered codes won't be renamed without deprecation period
-- Machine-readable error responses with code as top-level field
-- **Source:** Sonnet 4.6 Section 4.5
+### Sprint 66 — Error Taxonomy + Observability (PLANNED)
+| Mission | Deliverable |
+|---------|-------------|
+| s66-m01 | Error code registry (OODS-V/N/C/S format, createError helper) |
+| s66-m02 | Structured error responses in all tools (machine-readable codes) |
+| s66-m03 | Request correlation + latency tracking (meta.requestId, meta.latency) |
+| s66-m04 | Stable deterministic output ordering (props, nodes, catalog sort) |
+| s66-m05 | Error + observability tests + green baseline |
 
-### 2.2 Observability
-- Every tool response includes `requestId` (correlation ID)
-- Latency in milliseconds in `meta` block
-- Scoped `tokens_build` transcript redaction (redact secrets, not entire operation)
-- Structured error log accessible via tool or webhook
-- **Source:** Sonnet 4.6 Section 4.4
+**Key decisions:**
+- Error codes: `OODS-{category}{number}` — V (validation), N (not found), C (conflict), S (server error)
+- Observability via middleware wrapper pattern (auto-inject requestId + latency tracking)
+- No Math.random() in output-affecting code paths; version metadata in compose/codegen meta
 
-### 2.3 Coercion Engine for Map Prop Mappings
-- Currently `map_create` accepts `coercion` field but all coercions return `null`
-- Implement at minimum: `enum` coercion (source value -> target value lookup) and `boolean_to_string`
-- `coercion` field becomes a typed discriminated union, not nullable placeholder
-- Critical for external design system migration use case
-- **Source:** Sonnet 4.6 Section 1.4
+### Sprint 67 — Coercion Engine + Map CRUD + Catalog Completion (PLANNED)
+| Mission | Deliverable |
+|---------|-------------|
+| s67-m01 | Coercion engine (enum, boolean_to_string, template, identity types) |
+| s67-m02 | `map_update` + `map_delete` MCP tools |
+| s67-m03 | Communicable component resolution (implement or mark planned) |
+| s67-m04 | Coercion + map + catalog tests + green baseline |
 
-### 2.4 Map CRUD Completion
-- Add `map_update` and `map_delete` tools
-- Currently only `map_create`, `map_list`, `map_resolve` exist
-- Without update/delete, machine-generated mappings (`confidence: "auto"`) cannot be corrected
-- **Source:** Sonnet 4.6 Section 5.3
+**Key decisions:**
+- CoercionDef is a discriminated union on `type` field; existing null coercions → identity
+- Communicable components either get regions/code refs or `status: "planned"` with compose guard
 
-### 2.5 Communicable Component Resolution
-- 4 Communicable components (CommunicationDetailPanel, MessageEventTimeline, MessageStatusBadge, TemplatePicker) have `regions: []` and no code references
-- Either implement them as real components or exclude from catalog with `status: "planned"`
-- **Source:** Sonnet 4.6 Section 6.3
-
-### 2.6 Stable / Repeatable Outputs
-- Stable ordering of nodes and props in generated schemas
-- Seeded selection (or disabled randomness) for deterministic output
-- Registry and token source version metadata in all outputs
-- **Source:** GPT-5 "Stable, Repeatable Outputs"
-
-### Tier 2 Estimated Scope
-- ~10-14 missions across 2 sprints
-- Error taxonomy + observability could share a sprint
-- Coercion + map CRUD + Communicable resolution in another
+### Tier 2 Scope: 9 missions across 2 sprints
 
 ---
 
@@ -237,6 +212,9 @@ These were P0/P1 bugs from the same dual audit, fixed before roadmap planning:
 | Schema persistence is filesystem-backed minimum (Tier 1) | 2026-03-04 | SQLite if query performance needed later |
 | Tailwind codegen via existing tw-variants + tokens.tailwind.json | 2026-03-04 | Infrastructure exists, just needs pipeline connection |
 | Auth/rate limiting deferred to Tier 3 | 2026-03-04 | Appropriate for local dev tool; required for public API |
+| Schema store is filesystem-backed JSON (not SQLite) | 2026-03-05 | _index.json fast path for listing; no DB dependency needed |
+| Pipeline tool collapses 7-call ceremony to 1 call (not 2-3) | 2026-03-05 | Single call covers compose→validate→render→codegen→save |
+| Tier 0 + Tier 1 complete — 12 objects, 94 components, 37 traits, full CRUD + Tailwind | 2026-03-05 | Acceptance test passing end-to-end |
 
 ---
 

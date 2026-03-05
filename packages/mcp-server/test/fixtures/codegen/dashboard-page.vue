@@ -1,7 +1,7 @@
 <template>
   <Stack id="dashboard-screen" data-oods-component="Stack">
       <Card id="dashboard-overview-card" data-oods-component="Card">
-            <CardHeader id="dashboard-overview-header" data-oods-component="CardHeader" title="Overview" supporting="Live KPI" />
+            <CardHeader id="dashboard-overview-header" data-oods-component="CardHeader" supporting="Live KPI" title="Overview" />
             <Badge id="dashboard-overview-status" data-oods-component="Badge" label="Stable" />
             <Text id="dashboard-overview-text" data-oods-component="Text" text="Revenue up 12%" />
             <Button id="dashboard-overview-action" data-oods-component="Button" label="View details" />
@@ -15,7 +15,7 @@
       <Card id="dashboard-insights-card" data-oods-component="Card">
             <CardHeader id="dashboard-insights-header" data-oods-component="CardHeader" title="Insights" />
             <Input id="dashboard-insights-input" data-oods-component="Input" name="query" placeholder="Search insights" />
-            <Select id="dashboard-insights-select" data-oods-component="Select" name="range" value="7d" :options="[{'value':'24h','label':'Last 24h'},{'value':'7d','label':'Last 7d'}]" />
+            <Select id="dashboard-insights-select" data-oods-component="Select" name="range" :options="[{'value':'24h','label':'Last 24h'},{'value':'7d','label':'Last 7d'}]" value="7d" />
             <RoleBadgeList id="dashboard-insights-role" data-oods-component="RoleBadgeList" :roles="['analyst','owner']" />
           </Card>
     </Stack>

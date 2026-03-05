@@ -52,6 +52,7 @@ export type PipelineOutput = {
   };
   pipeline: {
     steps: string[];
+    stepLatency?: Record<string, number>;
     duration: number;
   };
   error?: {
@@ -82,7 +83,7 @@ function firstIssueMessage(issues: ReplIssue[] | CodegenIssue[] | undefined): { 
   const issue = issues?.[0];
   if (!issue) {
     return {
-      code: 'PIPELINE_STEP_FAILED',
+      code: 'OODS-S009',
       message: 'Step failed without a structured issue payload.',
     };
   }
@@ -120,8 +121,11 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
     },
   };
 
+  const stepLatency: Record<string, number> = {};
+
   const finish = (): PipelineOutput => {
     output.pipeline.steps = [...steps];
+    output.pipeline.stepLatency = stepLatency;
     output.pipeline.duration = Math.max(1, Date.now() - startedAt);
     return output;
   };
@@ -134,6 +138,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   steps.push('compose');
 
   let composeResult: Awaited<ReturnType<typeof composeHandle>>;
+  let stepStart = Date.now();
   try {
     composeResult = await composeHandle({
       object: input.object,
@@ -144,8 +149,10 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
         validate: false,
       },
     });
+    stepLatency.compose = Date.now() - stepStart;
   } catch (error) {
-    return fail('compose', 'COMPOSE_STEP_EXCEPTION', `compose step threw: ${errorMessage(error)}`);
+    stepLatency.compose = Date.now() - stepStart;
+    return fail('compose', 'OODS-S010', `compose step threw: ${errorMessage(error)}`);
   }
 
   output.compose = {
@@ -165,13 +172,14 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   }
 
   if (!composeResult.schemaRef) {
-    return fail('compose', 'SCHEMA_REF_MISSING', 'compose did not return schemaRef.');
+    return fail('compose', 'OODS-C001', 'compose did not return schemaRef.');
   }
 
   if (!skipValidation) {
     steps.push('validate');
 
     let validationResult: Awaited<ReturnType<typeof validateHandle>>;
+    stepStart = Date.now();
     try {
       validationResult = await validateHandle({
         mode: 'full',
@@ -182,8 +190,10 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
           includeNormalized: false,
         },
       });
+      stepLatency.validate = Date.now() - stepStart;
     } catch (error) {
-      return fail('validate', 'VALIDATE_STEP_EXCEPTION', `validate step threw: ${errorMessage(error)}`);
+      stepLatency.validate = Date.now() - stepStart;
+      return fail('validate', 'OODS-S011', `validate step threw: ${errorMessage(error)}`);
     }
 
     output.validation = {
@@ -202,6 +212,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
     steps.push('render');
 
     let renderResult: Awaited<ReturnType<typeof renderHandle>>;
+    stepStart = Date.now();
     try {
       renderResult = await renderHandle({
         mode: 'full',
@@ -211,8 +222,10 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
           includeTree: false,
         },
       });
+      stepLatency.render = Date.now() - stepStart;
     } catch (error) {
-      return fail('render', 'RENDER_STEP_EXCEPTION', `render step threw: ${errorMessage(error)}`);
+      stepLatency.render = Date.now() - stepStart;
+      return fail('render', 'OODS-S012', `render step threw: ${errorMessage(error)}`);
     }
 
     output.render = {
@@ -238,6 +251,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   steps.push('codegen');
 
   let codegenResult: Awaited<ReturnType<typeof codeGenerateHandle>>;
+  stepStart = Date.now();
   try {
     codegenResult = await codeGenerateHandle({
       schemaRef: composeResult.schemaRef,
@@ -246,8 +260,10 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
         styling,
       },
     });
+    stepLatency.codegen = Date.now() - stepStart;
   } catch (error) {
-    return fail('codegen', 'CODEGEN_STEP_EXCEPTION', `codegen step threw: ${errorMessage(error)}`);
+    stepLatency.codegen = Date.now() - stepStart;
+    return fail('codegen', 'OODS-S013', `codegen step threw: ${errorMessage(error)}`);
   }
 
   output.code = {
@@ -265,17 +281,20 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   if (saveName) {
     steps.push('save');
 
+    stepStart = Date.now();
     try {
       const saved = await schemaSaveHandle({
         name: saveName,
         schemaRef: composeResult.schemaRef,
       });
+      stepLatency.save = Date.now() - stepStart;
       output.saved = {
         name: saved.name,
         version: saved.version,
       };
     } catch (error) {
-      return fail('save', 'SAVE_STEP_EXCEPTION', `save step threw: ${errorMessage(error)}`);
+      stepLatency.save = Date.now() - stepStart;
+      return fail('save', 'OODS-S014', `save step threw: ${errorMessage(error)}`);
     }
   }
 

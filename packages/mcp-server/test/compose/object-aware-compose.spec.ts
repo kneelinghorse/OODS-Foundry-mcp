@@ -223,7 +223,7 @@ describe('object-aware compose — error handling', () => {
       context: 'detail',
     });
     expect(result.status).toBe('error');
-    expect(result.errors![0].code).toBe('OBJECT_LOAD_FAILED');
+    expect(result.errors![0].code).toBe('OODS-S004');
     expect(result.errors![0].hint).toContain('Did you mean');
     expect(result.errors![0].hint).toContain('Subscription');
   });
@@ -235,7 +235,7 @@ describe('object-aware compose — error handling', () => {
       context: 'detail',
     });
     expect(result.status).toBe('error');
-    expect(result.errors![0].code).toBe('OBJECT_LOAD_FAILED');
+    expect(result.errors![0].code).toBe('OODS-S004');
   });
 });
 

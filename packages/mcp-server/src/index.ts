@@ -1,10 +1,18 @@
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import { getAjv } from './lib/ajv.js';
 import { ERROR_CODES, err, formatValidationErrors, type TypedError } from './security/errors.js';
 import { formatSchemaInputError } from './security/schema-errors.js';
 import { isAllowed, tryAcquireSlot, releaseSlot, tryConsumeToken, timeoutMsFor } from './security/policy.js';
 import { resolveToolRegistry } from './tools/registry.js';
+import { isToolError } from './errors/tool-error.js';
+import { LEGACY_CODE_MAP } from './errors/registry.js';
+
+type ResponseMeta = { requestId: string; latency: number; timestamp: string };
+function buildMeta(requestId: string, startMs: number): ResponseMeta {
+  return { requestId, latency: Math.max(0, Date.now() - startMs), timestamp: new Date().toISOString() };
+}
 
 // Tool registry
 const tools: Record<string, { handle: (input: any) => Promise<any>; inputSchema: object; outputSchema: object }> = {};
@@ -220,32 +228,34 @@ async function stdioLoop() {
       buffer = buffer.slice(idx + 1);
       if (!line) continue;
       let messageId: string | number | undefined;
+      const requestId = randomUUID();
+      const startMs = Date.now();
       try {
         const msg = JSON.parse(line);
         const { id, tool, input, role: roleRaw } = msg as { id?: string | number; tool: string; input: unknown; role?: string };
         messageId = id;
         if (!tool || !tools[tool]) {
-          process.stdout.write(JSON.stringify({ id, error: err(ERROR_CODES.UNKNOWN_TOOL, `Unknown tool: ${tool}`) }) + '\n');
+          process.stdout.write(JSON.stringify({ id, error: { ...err(ERROR_CODES.UNKNOWN_TOOL, `Unknown tool: ${tool}`), code: LEGACY_CODE_MAP.UNKNOWN_TOOL }, meta: buildMeta(requestId, startMs) }) + '\n');
           continue;
         }
         const role = String(roleRaw || process.env.MCP_ROLE || 'designer');
         // Policy: allow/deny
         const allow = isAllowed(tool, role);
         if (!allow.allowed) {
-          const e = err(ERROR_CODES.POLICY_DENIED, `Role '${role}' not allowed for tool '${tool}'`, { tool, role, allow: allow?.rule?.allow ?? [] });
-          process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
+          const e = { ...err(ERROR_CODES.POLICY_DENIED, `Role '${role}' not allowed for tool '${tool}'`, { tool, role, allow: allow?.rule?.allow ?? [] }), code: LEGACY_CODE_MAP.POLICY_DENIED };
+          process.stdout.write(JSON.stringify({ id, error: e, meta: buildMeta(requestId, startMs) }) + '\n');
           continue;
         }
         // Rate limit token bucket
         if (!tryConsumeToken(tool)) {
-          const e = err(ERROR_CODES.RATE_LIMIT, `Rate limit exceeded for tool '${tool}'`, { tool });
-          process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
+          const e = { ...err(ERROR_CODES.RATE_LIMIT, `Rate limit exceeded for tool '${tool}'`, { tool }), code: LEGACY_CODE_MAP.RATE_LIMIT };
+          process.stdout.write(JSON.stringify({ id, error: e, meta: buildMeta(requestId, startMs) }) + '\n');
           continue;
         }
         // Concurrency guard
         if (!tryAcquireSlot(tool)) {
-          const e = err(ERROR_CODES.CONCURRENCY, `Too many concurrent requests for tool '${tool}'`, { tool });
-          process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
+          const e = { ...err(ERROR_CODES.CONCURRENCY, `Too many concurrent requests for tool '${tool}'`, { tool }), code: LEGACY_CODE_MAP.CONCURRENCY };
+          process.stdout.write(JSON.stringify({ id, error: e, meta: buildMeta(requestId, startMs) }) + '\n');
           continue;
         }
         try {
@@ -256,29 +266,35 @@ async function stdioLoop() {
             const details: Record<string, unknown> = { errors: formatted.details };
             if (formatted.hint) details.hint = formatted.hint;
             if (formatted.expected) details.expected = formatted.expected;
-            const e: TypedError = err(ERROR_CODES.SCHEMA_INPUT, formatted.message, details);
-            process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
+            const e = { ...err(ERROR_CODES.SCHEMA_INPUT, formatted.message, details), code: LEGACY_CODE_MAP.SCHEMA_INPUT };
+            process.stdout.write(JSON.stringify({ id, error: e, meta: buildMeta(requestId, startMs) }) + '\n');
             continue;
           }
           const timeout = timeoutMsFor(tool);
           const result = await Promise.race([
             reg.handle(input),
-            new Promise<never>((_, reject) => setTimeout(() => reject(err(ERROR_CODES.TIMEOUT, `Timeout after ${timeout}ms`, { timeoutMs: timeout })), timeout))
+            new Promise<never>((_, reject) => setTimeout(() => reject(Object.assign(err(ERROR_CODES.TIMEOUT, `Timeout after ${timeout}ms`, { timeoutMs: timeout }), { code: LEGACY_CODE_MAP.TIMEOUT })), timeout))
           ]);
           const validateOut = ajv.compile(reg.outputSchema);
           if (!validateOut(result)) {
             const formatted = formatValidationErrors(validateOut.errors as any, { prefix: 'Output validation failed' });
-            const e: TypedError = err(ERROR_CODES.SCHEMA_OUTPUT, formatted.message, { errors: formatted.details });
-            process.stdout.write(JSON.stringify({ id, error: e }) + '\n');
+            const e = { ...err(ERROR_CODES.SCHEMA_OUTPUT, formatted.message, { errors: formatted.details }), code: LEGACY_CODE_MAP.SCHEMA_OUTPUT };
+            process.stdout.write(JSON.stringify({ id, error: e, meta: buildMeta(requestId, startMs) }) + '\n');
             continue;
           }
-          process.stdout.write(JSON.stringify({ id, result }) + '\n');
+          process.stdout.write(JSON.stringify({ id, result, meta: buildMeta(requestId, startMs) }) + '\n');
         } finally {
           releaseSlot(tool);
         }
       } catch (e: any) {
-        const te: TypedError = err(ERROR_CODES.BAD_REQUEST, String(e?.message || e));
-        const payload: { id?: string | number; error: TypedError } = { error: te };
+        let te: TypedError;
+        if (isToolError(e)) {
+          const se = e.toStructured();
+          te = { code: se.code, message: se.message, details: { category: se.category, retryable: se.retryable, ...(se.details != null ? { context: se.details } : {}) }, incidentId: se.incidentId };
+        } else {
+          te = err(ERROR_CODES.BAD_REQUEST, String(e?.message || e));
+        }
+        const payload: { id?: string | number; error: TypedError; meta: ResponseMeta } = { error: te, meta: buildMeta(requestId, startMs) };
         if (messageId !== undefined) {
           payload.id = messageId;
         }

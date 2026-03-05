@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { todayDir, loadPolicy, withinAllowed } from '../lib/security.js';
 import { writeTranscript, writeBundleIndex } from '../lib/transcript.js';
 import type { BaseInput, GenericOutput } from './types.js';
+import { ToolError } from '../errors/tool-error.js';
 
 export async function handle(input: BaseInput = {}): Promise<GenericOutput> {
   const policy = loadPolicy();
@@ -13,7 +14,7 @@ export async function handle(input: BaseInput = {}): Promise<GenericOutput> {
 
   if (input.apply) {
     const file = path.join(outDir, 'vrt-summary.json');
-    if (!withinAllowed(policy.artifactsBase, file)) throw new Error('Path not allowed');
+    if (!withinAllowed(policy.artifactsBase, file)) throw new ToolError('OODS-S015', 'Path not allowed', { path: file });
     fs.writeFileSync(file, JSON.stringify({ diffs: 0 }, null, 2));
     artifacts.push(file);
   }

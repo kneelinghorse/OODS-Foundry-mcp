@@ -9,6 +9,7 @@ import type {
   SemanticMapping,
   ViewExtension,
 } from '../objects/types.js';
+import { ToolError } from '../errors/tool-error.js';
 
 export type ObjectShowInput = {
   name: string;
@@ -90,7 +91,7 @@ export async function handle(input: ObjectShowInput): Promise<ObjectShowOutput> 
     const msg = suggestion
       ? `Object "${name}" not found. Did you mean "${suggestion}"? Available: ${available.join(', ')}`
       : `Object "${name}" not found. Available: ${available.join(', ')}`;
-    throw new Error(msg);
+    throw new ToolError('OODS-N005', msg, { name, suggestion, available });
   }
 
   const composed = composeObject(objectDef);

@@ -87,7 +87,7 @@ export function generateHandlerStubs(
   if (handlers.size === 0) return '';
 
   const lines: string[] = [];
-  for (const [handlerName, bindingKey] of handlers) {
+  for (const [handlerName, bindingKey] of Array.from(handlers.entries()).sort(([a], [b]) => a.localeCompare(b))) {
     const baseKey = bindingKey.replace(/_\w+$/, '');
     const sig = signatures[baseKey] ?? signatures[bindingKey];
     const params = typescript ? (sig?.tsParams ?? '()') : (sig?.params ?? '()');

@@ -32,7 +32,7 @@ export function emit(schema: UiSchema, _options: CodegenOptions): CodegenResult 
       warnings,
       errors: [
         {
-          code: 'HTML_RENDER_FAILED',
+          code: 'OODS-S006',
           message: `HTML rendering failed: ${(error as Error).message}`,
         },
       ],

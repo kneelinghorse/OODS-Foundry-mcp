@@ -40,7 +40,7 @@ describe('react-emitter', () => {
         children: [],
       });
       const result = emit(schema, defaultOpts);
-      expect(result.code).toContain("style={{ padding: 'var(--ref-spacing-lg)', borderRadius: 'var(--ref-radius-sm)' }}");
+      expect(result.code).toContain("style={{ borderRadius: 'var(--ref-radius-sm)', padding: 'var(--ref-spacing-lg)' }}");
       expect(result.code).not.toMatch(/style=\{\{\{/);
     });
 

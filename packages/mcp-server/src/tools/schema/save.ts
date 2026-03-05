@@ -2,6 +2,7 @@ import type { UiSchema } from '../../schemas/generated.js';
 import type { SchemaRecord } from '../../schema-store/types.js';
 import { SchemaStore } from '../../schema-store/index.js';
 import { resolveSchemaRef } from '../schema-ref.js';
+import { ToolError } from '../../errors/tool-error.js';
 
 export type SchemaSaveInput = {
   name: string;
@@ -103,20 +104,19 @@ function getStore(): SchemaStore {
 
 export async function handle(input: SchemaSaveInput): Promise<SchemaSaveOutput> {
   if (!input.name?.trim()) {
-    throw new Error('name is required.');
+    throw new ToolError('OODS-V003', 'name is required.', { field: 'name' });
   }
   if (!NAME_PATTERN.test(input.name)) {
-    throw new Error('name must use slug format: letters, numbers, hyphens, and underscores only.');
+    throw new ToolError('OODS-V004', 'name must use slug format: letters, numbers, hyphens, and underscores only.', { field: 'name', value: input.name });
   }
   if (!input.schemaRef?.trim()) {
-    throw new Error('schemaRef is required.');
+    throw new ToolError('OODS-V003', 'schemaRef is required.', { field: 'schemaRef' });
   }
 
   const resolved = resolveSchemaRef(input.schemaRef);
   if (!resolved.ok) {
-    throw new Error(
-      `schemaRef '${input.schemaRef}' is ${resolved.reason}. Run design.compose again to obtain a fresh schemaRef.`,
-    );
+    const code = resolved.reason === 'expired' ? 'OODS-N004' : 'OODS-N003';
+    throw new ToolError(code, `schemaRef '${input.schemaRef}' is ${resolved.reason}. Run design.compose again to obtain a fresh schemaRef.`, { schemaRef: input.schemaRef });
   }
 
   const store = getStore();

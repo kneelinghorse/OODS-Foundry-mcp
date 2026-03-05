@@ -39,6 +39,7 @@ function tokenVar(group: string, token: string): string {
 
 function toCssString(declarations: CssDeclarations): string {
   return Object.entries(declarations)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([property, value]) => `${property}:${value}`)
     .join(';');
 }
@@ -152,6 +153,7 @@ function renderTokenOverrides(tokenOverrides?: Record<string, string>): string {
   if (!tokenOverrides || Object.keys(tokenOverrides).length === 0) return '';
 
   const declarations = Object.entries(tokenOverrides)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => `  --token-${normalizeToken(key)}: ${value};`)
     .join('\n');
 

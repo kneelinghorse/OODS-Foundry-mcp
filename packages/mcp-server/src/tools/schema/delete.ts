@@ -1,5 +1,6 @@
 import type { SchemaMetadata } from '../../schema-store/types.js';
 import { SchemaStore } from '../../schema-store/index.js';
+import { ToolError } from '../../errors/tool-error.js';
 
 export type SchemaDeleteInput = {
   name: string;
@@ -23,10 +24,10 @@ function getStore(): SchemaStore {
 
 export async function handle(input: SchemaDeleteInput): Promise<SchemaDeleteOutput> {
   if (!input.name?.trim()) {
-    throw new Error('name is required.');
+    throw new ToolError('OODS-V003', 'name is required.', { field: 'name' });
   }
   if (!NAME_PATTERN.test(input.name)) {
-    throw new Error('name must use slug format: letters, numbers, hyphens, and underscores only.');
+    throw new ToolError('OODS-V004', 'name must use slug format: letters, numbers, hyphens, and underscores only.', { field: 'name', value: input.name });
   }
 
   const store = getStore();
@@ -39,7 +40,7 @@ export async function handle(input: SchemaDeleteInput): Promise<SchemaDeleteOutp
   } catch (error) {
     const message = String((error as Error)?.message ?? error);
     if (/not found/i.test(message)) {
-      throw new Error(`Schema "${input.name}" not found. Use schema_list to see available schema names.`);
+      throw new ToolError('OODS-N002', `Schema "${input.name}" not found. Use schema_list to see available schema names.`, { name: input.name });
     }
     throw error;
   }

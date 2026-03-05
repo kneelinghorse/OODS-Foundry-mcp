@@ -456,7 +456,7 @@ describe('Agentic REPL validate handler', () => {
     const result = await validateHandle({ mode: 'patch', baseTree });
 
     expect(result.status).toBe('invalid');
-    const missing = result.errors.find((err) => err.code === 'MISSING_PATCH');
+    const missing = result.errors.find((err) => err.code === 'OODS-V011');
     expect(missing?.path).toBe('/patch');
     expect(missing?.hint).toContain('Valid patch examples');
   });
@@ -469,7 +469,7 @@ describe('Agentic REPL validate handler', () => {
     });
 
     expect(result.status).toBe('invalid');
-    const format = result.errors.find((err) => err.code === 'PATCH_JSON_ARRAY_REQUIRED');
+    const format = result.errors.find((err) => err.code === 'OODS-V115');
     expect(format?.path).toBe('/patch');
     expect(format?.hint).toContain('JSON Patch array');
   });
@@ -482,7 +482,7 @@ describe('Agentic REPL validate handler', () => {
     });
 
     expect(result.status).toBe('invalid');
-    const entry = result.errors.find((err) => err.code === 'PATCH_ENTRY_INVALID');
+    const entry = result.errors.find((err) => err.code === 'OODS-V107');
     expect(entry?.path).toBe('/patch/0');
     expect(entry?.hint).toContain('nodeId');
   });
@@ -509,8 +509,8 @@ describe('Agentic REPL validate handler', () => {
     });
 
     expect(result.status).toBe('invalid');
-    expect(result.errors.some((err) => err.code === 'SCHEMA_REF_NOT_FOUND')).toBe(true);
-    expect(result.errors.some((err) => err.code === 'MISSING_BASE_TREE')).toBe(false);
+    expect(result.errors.some((err) => err.code === 'OODS-N003')).toBe(true);
+    expect(result.errors.some((err) => err.code === 'OODS-V010')).toBe(false);
     expect(result.appliedPatch).toBe(false);
   });
 
@@ -522,7 +522,7 @@ describe('Agentic REPL validate handler', () => {
     });
 
     expect(result.status).toBe('invalid');
-    expect(result.errors.some((err) => err.code === 'PATCH_PATH_MISSING')).toBe(true);
+    expect(result.errors.some((err) => err.code === 'OODS-V104')).toBe(true);
     expect(result.appliedPatch).toBe(false);
   });
 
@@ -532,7 +532,7 @@ describe('Agentic REPL validate handler', () => {
 
     const result = await validateHandle({ mode: 'full', schema: invalidTree });
     expect(result.status).toBe('invalid');
-    expect(result.errors.some((err) => err.code === 'UNKNOWN_COMPONENT')).toBe(true);
+    expect(result.errors.some((err) => err.code === 'OODS-V006')).toBe(true);
     expect(validateValidateOutput(result)).toBe(true);
   });
 
@@ -631,7 +631,7 @@ describe('Agentic REPL render handler', () => {
     });
 
     expect(result.status).toBe('error');
-    expect(result.errors.some((err) => err.code === 'MISSING_BASE_TREE')).toBe(true);
+    expect(result.errors.some((err) => err.code === 'OODS-V010')).toBe(true);
     expect(validateRenderOutput(result)).toBe(true);
   });
 
