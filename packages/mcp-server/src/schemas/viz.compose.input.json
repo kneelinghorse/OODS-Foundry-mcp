@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/viz.compose.input.json",
+  "title": "Viz compose input",
+  "description": "Compose a visualization schema from chart type, data bindings, and/or object viz traits. Provide at least one of 'chartType', 'object', or 'traits'.",
+  "type": "object",
+  "anyOf": [
+    { "required": ["chartType"] },
+    { "required": ["object"] },
+    { "required": ["traits"] }
+  ],
+  "properties": {
+    "object": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Object name from the OODS registry. When provided, viz traits are resolved automatically to determine chart type and encodings."
+    },
+    "traits": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "description": "Explicit viz trait names (e.g., 'mark-bar', 'encoding-position-x'). Used when composing without an object."
+    },
+    "chartType": {
+      "type": "string",
+      "enum": ["bar", "line", "area", "point"],
+      "description": "Chart type to compose. Maps to mark traits: bar→mark-bar, line→mark-line, area→mark-area, point→mark-point."
+    },
+    "dataBindings": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string",
+          "description": "Field name for the x-axis encoding."
+        },
+        "y": {
+          "type": "string",
+          "description": "Field name for the y-axis encoding."
+        },
+        "color": {
+          "type": "string",
+          "description": "Field name for color encoding."
+        },
+        "size": {
+          "type": "string",
+          "description": "Field name for size encoding."
+        }
+      },
+      "additionalProperties": false
+    },
+    "theme": {
+      "type": "string",
+      "description": "Theme token (e.g., 'light', 'dark')."
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "validate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-validate the generated schema."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

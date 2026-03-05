@@ -225,6 +225,30 @@
       "timeoutMs": 30000,
       "ratePerMinute": 60,
       "concurrency": 4
+    },
+    {
+      "tool": "map.update",
+      "allow": ["designer", "maintainer"],
+      "writes": ["artifacts/structured-data/component-mappings.json"],
+      "timeoutMs": 30000,
+      "ratePerMinute": 30,
+      "concurrency": 1
+    },
+    {
+      "tool": "map.delete",
+      "allow": ["designer", "maintainer"],
+      "writes": ["artifacts/structured-data/component-mappings.json"],
+      "timeoutMs": 30000,
+      "ratePerMinute": 30,
+      "concurrency": 1
+    },
+    {
+      "tool": "viz.compose",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
     }
   ],
   "limits": {

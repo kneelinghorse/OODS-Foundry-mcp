@@ -20,7 +20,8 @@
     "schema.load",
     "schema.save",
     "object.list",
-    "object.show"
+    "object.show",
+    "viz.compose"
   ],
   "onDemand": [
     "diag.snapshot",

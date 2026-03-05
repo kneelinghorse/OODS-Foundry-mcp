@@ -167,6 +167,14 @@
       "approval": "optional",
       "allow": ["designer", "maintainer"],
       "ratePerMinute": 20
+    },
+    {
+      "name": "viz.compose",
+      "description": "Composes visualization schema from chart type, data bindings, and object viz traits",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
     }
   ],
   "connectors": [
@@ -187,7 +195,8 @@
         "catalog.list",
         "code.generate",
         "design.compose",
-        "pipeline"
+        "pipeline",
+        "viz.compose"
       ],
       "notes": "Apply requests must include the approval header value defined above."
     },
@@ -196,7 +205,7 @@
       "provider": "openai",
       "role": "designer",
       "defaultMode": "dry-run",
-      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render", "catalog.list", "code.generate", "design.compose", "pipeline"],
+      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render", "catalog.list", "code.generate", "design.compose", "pipeline", "viz.compose"],
       "notes": "Apply requires approval token and is rate limited to prevent context overrun."
     }
   ]

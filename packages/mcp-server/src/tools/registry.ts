@@ -38,6 +38,9 @@ const FALLBACK_REGISTRY: ToolRegistry = {
     'schema.list',
     'schema.load',
     'schema.save',
+    'object.list',
+    'object.show',
+    'viz.compose',
   ],
   onDemand: [
     'diag.snapshot',
