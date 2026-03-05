@@ -34,6 +34,7 @@ import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 import { loadObject } from '../objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
+import { populateObjectSchema, populateBindings } from '../compose/object-slot-filler.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -463,6 +464,19 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     catalog,
     warnings,
   );
+
+  // 3b. Populate object schema and bindings for codegen
+  if (composed) {
+    populateObjectSchema(schema, composed.schema, composed.semantics);
+
+    if (effectiveContext) {
+      populateBindings(
+        schema,
+        effectiveContext,
+        Object.keys(composed.schema),
+      );
+    }
+  }
 
   // 4. Auto-validate
   let validation: DesignComposeOutput['validation'];

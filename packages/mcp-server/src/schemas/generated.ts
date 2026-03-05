@@ -1776,6 +1776,24 @@ export namespace UiSchemaSchema {
     tokenOverrides?: {
       [k: string]: string;
     };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
+  }
+  export interface FieldSchemaEntry {
+    /** Field data type (string, integer, number, boolean, datetime, email, etc.) */
+    type: string;
+    /** Whether the field is required */
+    required: boolean;
+    /** Human-readable field description */
+    description?: string;
+    /** Allowed values for enum-constrained fields */
+    enum?: string[];
+    /** Semantic type from the object's semantic mapping */
+    semanticType?: string;
   }
   export interface UiElement {
     id: string;
@@ -2188,6 +2206,7 @@ export type UiStyle = UiSchemaSchema.Style;
 export type UiProps = UiSchemaSchema.Props;
 export type UiBindings = UiSchemaSchema.Bindings;
 export type UiMeta = UiSchemaSchema.Meta;
+export type FieldSchemaEntry = UiSchemaSchema.FieldSchemaEntry;
 
 export type ReplJsonPatchOperation = ReplPatchSchema.JsonPatchOp;
 export type ReplNodePatch = ReplPatchSchema.NodePatch;

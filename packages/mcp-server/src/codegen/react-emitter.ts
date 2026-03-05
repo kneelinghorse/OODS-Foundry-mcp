@@ -1,5 +1,13 @@
-import type { UiElement, UiLayout, UiSchema, UiStyle } from '../schemas/generated.js';
+import type { UiElement, UiLayout, UiSchema, UiStyle, FieldSchemaEntry } from '../schemas/generated.js';
 import type { CodegenIssue, CodegenOptions, CodegenResult } from './types.js';
+import type { HandlerSignatureMap } from './binding-utils.js';
+import {
+  mapFieldType,
+  snakeToCamel,
+  collectBindings,
+  generateHandlerStubs,
+  collectPropDefaults,
+} from './binding-utils.js';
 
 // ---------------------------------------------------------------------------
 // Token + layout helpers (mirrors tree-renderer.ts logic in React style format)
@@ -176,6 +184,13 @@ function emitNode(node: UiElement, depth: number, warnings: CodegenIssue[]): str
     if (propsStr) attrParts.push(propsStr);
   }
 
+  // Event bindings (e.g., onSubmit={handleSubmit})
+  if (node.bindings && typeof node.bindings === 'object') {
+    for (const [eventKey, handlerName] of Object.entries(node.bindings)) {
+      attrParts.push(`${eventKey}={${handlerName}}`);
+    }
+  }
+
   // Merged style attribute
   if (Object.keys(computedStyle).length > 0) {
     attrParts.push(`style={${styleObjToJsx(computedStyle)}}`);
@@ -258,6 +273,48 @@ function generatePropTypes(components: Set<string>): string {
 }
 
 // ---------------------------------------------------------------------------
+// Object schema → TypeScript type mapping (delegates to binding-utils)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a typed PageProps interface from the UiSchema's objectSchema.
+ * Required fields are non-optional; optional fields use `?`.
+ */
+function generatePagePropsInterface(
+  objectSchema: Record<string, FieldSchemaEntry>,
+): string {
+  const lines: string[] = ['export interface PageProps {'];
+
+  for (const [fieldName, entry] of Object.entries(objectSchema)) {
+    const tsType = mapFieldType(entry);
+    const optional = entry.required ? '' : '?';
+    const camelName = snakeToCamel(fieldName);
+
+    if (entry.description) {
+      lines.push(`  /** ${entry.description} */`);
+    }
+    lines.push(`  ${camelName}${optional}: ${tsType};`);
+  }
+
+  lines.push('}');
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// React-specific handler signatures (delegates to shared generateHandlerStubs)
+// ---------------------------------------------------------------------------
+
+const REACT_HANDLER_SIGNATURES: HandlerSignatureMap = {
+  onSubmit:   { params: '(e)',        tsParams: '(e: React.FormEvent)' },
+  onChange:   { params: '(value)',     tsParams: '(value: unknown)' },
+  onRowClick: { params: '(row)',      tsParams: '(row: Record<string, unknown>)' },
+  onSort:     { params: '(column)',   tsParams: '(column: string)' },
+  onFilter:   { params: '(criteria)', tsParams: '(criteria: Record<string, unknown>)' },
+  onEdit:     { params: '()',         tsParams: '()' },
+  onDelete:   { params: '()',         tsParams: '()' },
+};
+
+// ---------------------------------------------------------------------------
 // Top-level code assembly
 // ---------------------------------------------------------------------------
 
@@ -291,7 +348,13 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   const imports = buildImportList(components);
 
   const typeAnnotations = options.typescript ? generatePropTypes(components) : '';
-  const returnType = options.typescript ? ': React.FC' : '';
+  const hasObjectSchema = schema.objectSchema && Object.keys(schema.objectSchema).length > 0;
+  const pagePropsInterface = options.typescript && hasObjectSchema
+    ? generatePagePropsInterface(schema.objectSchema!)
+    : '';
+  const returnType = options.typescript
+    ? (hasObjectSchema ? ': React.FC<PageProps>' : ': React.FC')
+    : '';
 
   const lines: string[] = [
     importBlock,
@@ -310,12 +373,41 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
     lines.push('');
   }
 
+  // Emit PageProps interface when objectSchema is present
+  if (pagePropsInterface) {
+    lines.push(pagePropsInterface, '');
+  }
+
   if (typeAnnotations) {
     lines.push(typeAnnotations, '');
   }
 
+  // Collect and generate handler stubs from bindings
+  const handlers = collectBindings(schema.screens);
+  const handlerStubs = generateHandlerStubs(handlers, options.typescript, REACT_HANDLER_SIGNATURES, '  ');
+
+  // Collect prop defaults from objectSchema field values on elements
+  const propDefaults = hasObjectSchema
+    ? collectPropDefaults(schema.screens, schema.objectSchema!)
+    : null;
+
+  lines.push(`export const GeneratedUI${returnType} = () => {`);
+
+  if (handlerStubs) {
+    lines.push(handlerStubs);
+    lines.push('');
+  }
+
+  // Emit prop default declarations from objectSchema field values
+  if (propDefaults && propDefaults.size > 0) {
+    for (const [propName, { formatted, isExpression }] of propDefaults) {
+      const rhs = isExpression ? formatted : `'${formatted.replace(/'/g, "\\'")}'`;
+      lines.push(`  const ${propName} = ${rhs};`);
+    }
+    lines.push('');
+  }
+
   lines.push(
-    `export const GeneratedUI${returnType} = () => {`,
     `  return (`,
     `    <>`,
     indent(screenJsx, 3),

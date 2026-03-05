@@ -10,7 +10,8 @@
  * componentOverrides from preferences take precedence over view_extension placement.
  */
 
-import type { UiElement, UiSchema } from '../schemas/generated.js';
+import type { UiElement, UiSchema, FieldSchemaEntry } from '../schemas/generated.js';
+import type { FieldDefinition, SemanticMapping } from '../objects/types.js';
 import type { TemplateResult } from './templates/types.js';
 import { isSlotElement, uid } from './templates/types.js';
 import type { SlotPlan } from './view-extension-collector.js';
@@ -285,6 +286,119 @@ export function injectTokenOverrides(
   }
 
   return warnings;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Object schema bridge                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Convert ComposedObject.schema (FieldDefinition map) into a codegen-friendly
+ * objectSchema on the UiSchema root. Each FieldSchemaEntry carries type, required,
+ * optional enum, description, and semanticType for downstream typed prop generation.
+ */
+export function populateObjectSchema(
+  schema: UiSchema,
+  fieldSchema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): void {
+  const objectSchema: Record<string, FieldSchemaEntry> = {};
+
+  for (const [fieldName, fieldDef] of Object.entries(fieldSchema)) {
+    const entry: FieldSchemaEntry = {
+      type: fieldDef.type,
+      required: fieldDef.required,
+    };
+
+    if (fieldDef.description) {
+      entry.description = fieldDef.description;
+    }
+
+    if (fieldDef.validation?.enum && fieldDef.validation.enum.length > 0) {
+      entry.enum = fieldDef.validation.enum;
+    }
+
+    if (semantics?.[fieldName]?.semantic_type) {
+      entry.semanticType = semantics[fieldName].semantic_type;
+    }
+
+    objectSchema[fieldName] = entry;
+  }
+
+  if (Object.keys(objectSchema).length > 0) {
+    schema.objectSchema = objectSchema;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Context-aware bindings                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Context → default event binding map.
+ * Each context defines which event bindings should appear on relevant elements.
+ */
+const CONTEXT_BINDINGS: Record<string, Record<string, string>> = {
+  form: {
+    onSubmit: 'handleSubmit',
+    onChange: 'handleChange',
+  },
+  list: {
+    onRowClick: 'handleRowClick',
+    onSort: 'handleSort',
+    onFilter: 'handleFilter',
+  },
+  detail: {
+    onEdit: 'handleEdit',
+    onDelete: 'handleDelete',
+  },
+};
+
+/**
+ * Populate UiElement.bindings with context-appropriate event mappings.
+ * Form context adds onChange per field-bound component and onSubmit on the root form.
+ * List/detail contexts add action bindings on the root screen element.
+ * Only applies when a context is known; no-op otherwise (backward compatible).
+ */
+export function populateBindings(
+  schema: UiSchema,
+  context: string,
+  fieldNames?: string[],
+): void {
+  const contextBindings = CONTEXT_BINDINGS[context];
+  if (!contextBindings) return;
+
+  for (const screen of schema.screens) {
+    // Add context-level bindings to the root screen element
+    screen.bindings = { ...screen.bindings, ...contextBindings };
+
+    // For form context, walk the tree and add per-field onChange bindings
+    if (context === 'form' && fieldNames && fieldNames.length > 0) {
+      populateFormFieldBindings(screen, fieldNames);
+    }
+  }
+}
+
+/**
+ * Walk the element tree and add per-field onChange bindings to elements
+ * whose props reference a known field name (via `field` prop).
+ */
+function populateFormFieldBindings(el: UiElement, fieldNames: string[]): void {
+  const fieldSet = new Set(fieldNames);
+
+  const walk = (node: UiElement): void => {
+    // If this element has a `field` prop matching a known field, add onChange binding
+    const fieldProp = node.props?.field;
+    if (typeof fieldProp === 'string' && fieldSet.has(fieldProp)) {
+      node.bindings = {
+        ...node.bindings,
+        onChange: `handleChange_${fieldProp}`,
+      };
+    }
+    node.children?.forEach(walk);
+  };
+
+  walk(el);
 }
 
 /* ------------------------------------------------------------------ */
