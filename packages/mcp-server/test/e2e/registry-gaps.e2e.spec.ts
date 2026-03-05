@@ -65,16 +65,34 @@ async function startBridge(): Promise<BridgeProcess> {
   child.stderr.setEncoding('utf8');
 
   return await new Promise<BridgeProcess>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Timed out waiting for bridge startup')), 20_000);
-    child.stdout.on('data', (chunk: string) => {
+    let resolved = false;
+    const stderrChunks: string[] = [];
+    const stdoutChunks: string[] = [];
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        reject(new Error(`Timed out waiting for bridge startup.\nstdout: ${stdoutChunks.join('')}\nstderr: ${stderrChunks.join('')}`));
+      }
+    }, 20_000);
+
+    function checkStartup(chunk: string): void {
       const match = chunk.match(/\[mcp-bridge\] listening on :(\d+)/);
-      if (!match) return;
-      clearTimeout(timeout);
-      resolve({ child, port: Number(match[1]) });
-    });
-    child.once('exit', (code) => {
-      clearTimeout(timeout);
-      reject(new Error(`Bridge exited before startup (code=${String(code)})`));
+      if (match && !resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        resolve({ child, port: Number(match[1]) });
+      }
+    }
+
+    child.stdout.on('data', (chunk: string) => { stdoutChunks.push(chunk); checkStartup(chunk); });
+    child.stderr.on('data', (chunk: string) => { stderrChunks.push(chunk); checkStartup(chunk); });
+
+    child.once('close', (code) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        reject(new Error(`Bridge exited before startup (code=${String(code)}).\nstdout: ${stdoutChunks.join('')}\nstderr: ${stderrChunks.join('')}`));
+      }
     });
   });
 }

@@ -14,6 +14,10 @@
  *   6. Trait coverage bonus
  */
 import type { ComponentCatalogSummary } from '../tools/types.js';
+import { scoreFieldAffinity, type FieldHint } from './field-affinity.js';
+import { getPositionAffinity, type SlotPosition } from './position-affinity.js';
+export type { FieldHint } from './field-affinity.js';
+export type { SlotPosition } from './position-affinity.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -426,6 +430,18 @@ export interface SelectOptions {
    * whenever such matches exist.
    */
   preferKeywordMatches?: boolean;
+  /**
+   * Optional field metadata hint for field-type-aware scoring.
+   * When provided, components that naturally fit the field type
+   * receive a 0.15–0.30 score boost.
+   */
+  fieldHint?: FieldHint;
+  /**
+   * Optional slot position for position-aware scoring.
+   * When provided, components are multiplied by 0.85–1.15x
+   * based on how well they fit the target position.
+   */
+  slotPosition?: SlotPosition;
 }
 
 /**
@@ -441,7 +457,7 @@ export function selectComponent(
   catalog: ComponentCatalogSummary[],
   options: SelectOptions = {},
 ): SelectionResult {
-  const { topN = 5, minConfidence = 0.05, intentContext, preferKeywordMatches = false } = options;
+  const { topN = 5, minConfidence = 0.05, intentContext, preferKeywordMatches = false, fieldHint, slotPosition } = options;
 
   if (!intent || !intent.trim()) {
     return {
@@ -472,10 +488,31 @@ export function selectComponent(
       keywords,
       contextKeywords,
     );
+
+    // Apply field affinity boost when fieldHint is provided
+    let finalScore = score;
+    const finalReasons = [...reasons];
+    if (fieldHint) {
+      const affinity = scoreFieldAffinity(component.name, fieldHint);
+      if (affinity.boost > 0) {
+        finalScore = Math.min(finalScore + affinity.boost, MAX_RAW_SCORE);
+        finalReasons.push(affinity.reason);
+      }
+    }
+
+    // Apply position affinity multiplier when slotPosition is provided
+    if (slotPosition) {
+      const posAffinity = getPositionAffinity(component.name, slotPosition);
+      if (posAffinity.multiplier !== 1.0) {
+        finalScore = Math.min(finalScore * posAffinity.multiplier, MAX_RAW_SCORE);
+        finalReasons.push(posAffinity.reason);
+      }
+    }
+
     return {
       name: component.name,
-      confidence: score,
-      reason: reasons.length > 0 ? reasons.join('; ') : 'no matching signals',
+      confidence: finalScore,
+      reason: finalReasons.length > 0 ? finalReasons.join('; ') : 'no matching signals',
       keywordTagMatches,
       keywordTraitMatches,
       contextTagMatches,
