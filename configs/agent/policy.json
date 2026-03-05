@@ -159,6 +159,14 @@
       "approval": "optional",
       "allow": ["designer", "maintainer"],
       "ratePerMinute": 20
+    },
+    {
+      "name": "pipeline",
+      "description": "Runs compose, validate, render, and code generation in a single call with optional schema persistence",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
     }
   ],
   "connectors": [
@@ -178,7 +186,8 @@
         "repl.render",
         "catalog.list",
         "code.generate",
-        "design.compose"
+        "design.compose",
+        "pipeline"
       ],
       "notes": "Apply requests must include the approval header value defined above."
     },
@@ -187,7 +196,7 @@
       "provider": "openai",
       "role": "designer",
       "defaultMode": "dry-run",
-      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render", "catalog.list", "code.generate", "design.compose"],
+      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render", "catalog.list", "code.generate", "design.compose", "pipeline"],
       "notes": "Apply requires approval token and is rate limited to prevent context overrun."
     }
   ]

@@ -27,6 +27,7 @@ const REGISTRY = JSON.parse(readFileSync(
 ));
 const SCHEMAS_DIR = path.join(PROJECT_ROOT, 'packages', 'mcp-server', 'dist', 'schemas');
 const ALL_TOOLS = [...REGISTRY.auto, ...REGISTRY.onDemand];
+const EXPECTED_TOOL_COUNT = ALL_TOOLS.length;
 
 let passed = 0;
 let failed = 0;
@@ -66,7 +67,7 @@ test('Adapter code does not hardcode "Proxy to" as description', () => {
 
 test('Descriptions start with an action verb', () => {
   const actionVerbs = ['Build', 'Fetch', 'Validate', 'Render', 'Apply', 'List', 'Generate',
-    'Compose', 'Create', 'Resolve', 'Capture', 'Run', 'Verify', 'Switch', 'Audit'];
+    'Compose', 'Create', 'Resolve', 'Capture', 'Run', 'Verify', 'Switch', 'Audit', 'Execute', 'Show', 'Check', 'Delete', 'Load', 'Persist'];
   for (const [tool, desc] of Object.entries(DESCRIPTIONS)) {
     const firstWord = desc.split(/\s/)[0];
     assert.ok(
@@ -93,6 +94,7 @@ test('Tools with specific schemas expose typed properties', () => {
     'catalog.list',
     'code.generate',
     'design.compose',
+    'pipeline',
     'map.create',
     'map.list',
     'map.resolve',
@@ -163,10 +165,10 @@ test('tool-descriptions.json is a flat key-value map', () => {
   }
 });
 
-test('Description manifest has exactly 20 entries (all tools)', () => {
+test('Description manifest has an entry for every registry tool', () => {
   assert.equal(
-    Object.keys(DESCRIPTIONS).length, 20,
-    `Expected 20 descriptions, got ${Object.keys(DESCRIPTIONS).length}`
+    Object.keys(DESCRIPTIONS).length, EXPECTED_TOOL_COUNT,
+    `Expected ${EXPECTED_TOOL_COUNT} descriptions, got ${Object.keys(DESCRIPTIONS).length}`
   );
 });
 
@@ -207,8 +209,8 @@ test('No duplicated schema definitions in adapter code', () => {
 
 test('$ref properties are stripped from schemas (agents cannot resolve local file refs)', () => {
   assert.ok(
-    INDEX_SRC.includes('stripRefs'),
-    'Expected stripRefs function for removing $ref from schemas'
+    INDEX_SRC.includes('sanitizeSchema'),
+    'Expected sanitizeSchema usage for removing or normalizing unsupported schema fields'
   );
 });
 

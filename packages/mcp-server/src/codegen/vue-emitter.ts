@@ -2,6 +2,12 @@ import type { UiElement, UiLayout, UiSchema, UiStyle, FieldSchemaEntry } from '.
 import type { CodegenIssue, CodegenOptions, CodegenResult } from './types.js';
 import type { HandlerSignatureMap } from './binding-utils.js';
 import {
+  buildTailwindStaticClasses,
+  buildTailwindVariantExpression,
+  collectTailwindVariantDefinitions,
+  type TailwindVariantDefinition,
+} from './tailwind-codegen-utils.js';
+import {
   mapFieldType,
   snakeToCamel,
   collectBindings,
@@ -108,8 +114,10 @@ function ind(code: string, depth: number): string {
     .join('\n');
 }
 
-function isReservedProp(key: string): boolean {
-  return key === 'children' || key === 'style';
+function isReservedProp(key: string, omitClassProps = false): boolean {
+  if (key === 'children' || key === 'style') return true;
+  if (omitClassProps && key === 'class') return true;
+  return false;
 }
 
 function propToVueAttr(key: string, value: unknown): string {
@@ -121,14 +129,37 @@ function propToVueAttr(key: string, value: unknown): string {
   return `:${key}="${JSON.stringify(value).replace(/"/g, "'")}"`;
 }
 
-function propsToVueAttrs(props: Record<string, unknown>): string {
+function propsToVueAttrs(props: Record<string, unknown>, omitClassProps = false): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(props)) {
-    if (isReservedProp(key) || value === undefined) continue;
+    if (isReservedProp(key, omitClassProps) || value === undefined) continue;
     const attr = propToVueAttr(key, value);
     if (attr) parts.push(attr);
   }
   return parts.join(' ');
+}
+
+function escapeDoubleQuotedAttr(value: string): string {
+  return value.replace(/"/g, '&quot;');
+}
+
+function escapeSingleQuotedExpr(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function buildVueClassAttr(staticClasses: string, variantExpression: string | null): string | null {
+  const hasStatic = staticClasses.trim().length > 0;
+
+  if (variantExpression && hasStatic) {
+    return `:class="[${variantExpression}, '${escapeSingleQuotedExpr(staticClasses)}']"`;
+  }
+  if (variantExpression) {
+    return `:class="${variantExpression}"`;
+  }
+  if (hasStatic) {
+    return `class="${escapeDoubleQuotedAttr(staticClasses)}"`;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,12 +181,22 @@ function collectComponents(screens: UiElement[]): Set<string> {
 // Template tree emitter
 // ---------------------------------------------------------------------------
 
-function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue[]): string {
+function emitTemplateNode(
+  node: UiElement,
+  depth: number,
+  warnings: CodegenIssue[],
+  options: CodegenOptions,
+  tailwindVariants: Map<string, TailwindVariantDefinition>,
+): string {
   const tag = node.component;
   const computedStyle = mergeDecl(
     resolveLayoutStyles(node.layout),
     resolveStyleTokens(node.style),
   );
+  const propsObject = node.props && typeof node.props === 'object'
+    ? (node.props as Record<string, unknown>)
+    : null;
+  const tailwindVariant = tailwindVariants.get(tag);
 
   // Build attributes
   const attrParts: string[] = [];
@@ -166,8 +207,8 @@ function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue
     attrParts.push(`data-layout="${node.layout.type}"`);
   }
 
-  if (node.props && typeof node.props === 'object') {
-    const propsStr = propsToVueAttrs(node.props as Record<string, unknown>);
+  if (propsObject) {
+    const propsStr = propsToVueAttrs(propsObject, options.styling === 'tailwind');
     if (propsStr) attrParts.push(propsStr);
   }
 
@@ -180,9 +221,18 @@ function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue
     }
   }
 
-  const inlineStyle = declToInlineStyle(computedStyle);
-  if (inlineStyle) {
-    attrParts.push(`style="${inlineStyle}"`);
+  if (options.styling === 'tailwind') {
+    const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
+    const staticClasses = buildTailwindStaticClasses(node, computedStyle, {
+      includeVariantFallback: !tailwindVariant,
+    });
+    const classAttr = buildVueClassAttr(staticClasses, variantExpression);
+    if (classAttr) attrParts.push(classAttr);
+  } else {
+    const inlineStyle = declToInlineStyle(computedStyle);
+    if (inlineStyle) {
+      attrParts.push(`style="${inlineStyle}"`);
+    }
   }
 
   const attrs = attrParts.length > 0 ? ` ${attrParts.join(' ')}` : '';
@@ -191,8 +241,9 @@ function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue
   // Sidebar layout
   if (node.layout?.type === 'sidebar' && children.length > 0) {
     const [mainChild, ...asideChildren] = children;
-    const mainTemplate = mainChild ? emitTemplateNode(mainChild, depth + 2, warnings) : '';
-    const asideTemplates = asideChildren.map((c) => emitTemplateNode(c, depth + 2, warnings));
+    const mainTemplate = mainChild ? emitTemplateNode(mainChild, depth + 2, warnings, options, tailwindVariants) : '';
+    const asideTemplates = asideChildren
+      .map((c) => emitTemplateNode(c, depth + 2, warnings, options, tailwindVariants));
 
     const inner = [
       `<div data-sidebar-main>`,
@@ -210,22 +261,43 @@ function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue
 
   // Section layout
   if (node.layout?.type === 'section') {
-    const sectionStyle = inlineStyle ? ` style="${inlineStyle}"` : '';
-    const innerChildren = children.map((c) => emitTemplateNode(c, depth + 2, warnings)).join('\n');
+    let sectionClassOrStyle = '';
+    if (options.styling === 'tailwind') {
+      const sectionClasses = buildTailwindStaticClasses(node, computedStyle, {
+        includeUserClass: false,
+        includeInteractiveStates: false,
+        includeVariantFallback: false,
+      });
+      sectionClassOrStyle = sectionClasses ? ` class="${escapeDoubleQuotedAttr(sectionClasses)}"` : '';
+    } else {
+      const inlineStyle = declToInlineStyle(computedStyle);
+      sectionClassOrStyle = inlineStyle ? ` style="${inlineStyle}"` : '';
+    }
+    const innerChildren = children
+      .map((c) => emitTemplateNode(c, depth + 2, warnings, options, tailwindVariants))
+      .join('\n');
 
     const innerAttrParts: string[] = [`id="${node.id}"`, `data-oods-component="${tag}"`];
-    if (node.props && typeof node.props === 'object') {
-      const propsStr = propsToVueAttrs(node.props as Record<string, unknown>);
+    if (propsObject) {
+      const propsStr = propsToVueAttrs(propsObject, options.styling === 'tailwind');
       if (propsStr) innerAttrParts.push(propsStr);
+    }
+    if (options.styling === 'tailwind') {
+      const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
+      const staticClasses = buildTailwindStaticClasses(node, {}, {
+        includeVariantFallback: !tailwindVariant,
+      });
+      const classAttr = buildVueClassAttr(staticClasses, variantExpression);
+      if (classAttr) innerAttrParts.push(classAttr);
     }
     const innerAttrs = ` ${innerAttrParts.join(' ')}`;
 
     if (children.length === 0) {
-      return `<section data-layout="section" data-layout-node-id="${node.id}"${sectionStyle}>\n${ind(`<${tag}${innerAttrs} />`, depth + 1)}\n${'  '.repeat(depth)}</section>`;
+      return `<section data-layout="section" data-layout-node-id="${node.id}"${sectionClassOrStyle}>\n${ind(`<${tag}${innerAttrs} />`, depth + 1)}\n${'  '.repeat(depth)}</section>`;
     }
 
     return [
-      `<section data-layout="section" data-layout-node-id="${node.id}"${sectionStyle}>`,
+      `<section data-layout="section" data-layout-node-id="${node.id}"${sectionClassOrStyle}>`,
       ind(`<${tag}${innerAttrs}>`, depth + 1),
       ind(innerChildren, 0),
       ind(`</${tag}>`, depth + 1),
@@ -238,7 +310,9 @@ function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue
     return `<${tag}${attrs} />`;
   }
 
-  const childrenTemplate = children.map((c) => emitTemplateNode(c, depth + 1, warnings)).join('\n');
+  const childrenTemplate = children
+    .map((c) => emitTemplateNode(c, depth + 1, warnings, options, tailwindVariants))
+    .join('\n');
   return `<${tag}${attrs}>\n${ind(childrenTemplate, depth + 1)}\n${'  '.repeat(depth)}</${tag}>`;
 }
 
@@ -263,12 +337,14 @@ const VUE_HANDLER_SIGNATURES: HandlerSignatureMap = {
 function buildScriptSetup(
   components: Set<string>,
   options: CodegenOptions,
+  tailwindVariants: Map<string, TailwindVariantDefinition>,
   objectSchema?: Record<string, FieldSchemaEntry>,
   screens?: UiElement[],
 ): string {
   const sorted = Array.from(components).sort();
   const lines: string[] = [];
   const hasObjectSchema = objectSchema && Object.keys(objectSchema).length > 0;
+  const includeCva = tailwindVariants.size > 0;
 
   if (options.typescript) {
     lines.push(`<script setup lang="ts">`);
@@ -277,6 +353,18 @@ function buildScriptSetup(
   }
 
   lines.push(`import { ${sorted.join(', ')} } from '@oods/components';`);
+  if (includeCva) {
+    lines.push(`import { cva } from 'class-variance-authority';`);
+  }
+
+  if (includeCva) {
+    lines.push('');
+    const definitions = Array.from(tailwindVariants.values())
+      .sort((a, b) => a.variableName.localeCompare(b.variableName));
+    for (const { definition } of definitions) {
+      lines.push(definition);
+    }
+  }
 
   if (options.typescript && hasObjectSchema) {
     // Generate typed Props alias and populated defineProps
@@ -375,10 +463,13 @@ function buildScopedStyle(screens: UiElement[], options: CodegenOptions): string
 export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   const warnings: CodegenIssue[] = [];
   const components = collectComponents(schema.screens);
+  const tailwindVariants = options.styling === 'tailwind'
+    ? collectTailwindVariantDefinitions(schema.screens)
+    : new Map<string, TailwindVariantDefinition>();
 
   // Build template block
   const screenTemplates = schema.screens
-    .map((screen) => emitTemplateNode(screen, 1, warnings))
+    .map((screen) => emitTemplateNode(screen, 1, warnings, options, tailwindVariants))
     .join('\n');
 
   const templateBlock = [
@@ -388,7 +479,13 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   ].join('\n');
 
   // Build script setup block
-  const scriptBlock = buildScriptSetup(components, options, schema.objectSchema, schema.screens);
+  const scriptBlock = buildScriptSetup(
+    components,
+    options,
+    tailwindVariants,
+    schema.objectSchema,
+    schema.screens,
+  );
 
   // Build optional scoped style block
   const styleBlock = buildScopedStyle(schema.screens, options);
@@ -419,7 +516,9 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
     framework: 'vue',
     code,
     fileExtension: '.vue',
-    imports: ['@oods/components'],
+    imports: tailwindVariants.size > 0
+      ? ['@oods/components', 'class-variance-authority']
+      : ['@oods/components'],
     warnings,
   };
 }

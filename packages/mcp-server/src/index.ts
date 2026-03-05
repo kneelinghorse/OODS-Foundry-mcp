@@ -106,6 +106,11 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/design.compose.input.json',
     outputSchema: './schemas/design.compose.output.json',
   },
+  'pipeline': {
+    modulePath: './tools/pipeline.js',
+    inputSchema: './schemas/pipeline.input.json',
+    outputSchema: './schemas/pipeline.output.json',
+  },
   'health': {
     modulePath: './tools/health.js',
     inputSchema: './schemas/health.input.json',

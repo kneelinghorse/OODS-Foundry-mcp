@@ -224,7 +224,7 @@ export type CatalogListOutput = {
 
 export type CodegenFramework = 'react' | 'vue' | 'html';
 
-export type CodegenStyling = 'inline' | 'tokens';
+export type CodegenStyling = 'inline' | 'tokens' | 'tailwind';
 
 export type CodeGenerateInput = {
   schema?: import('../schemas/generated.js').UiSchema;
