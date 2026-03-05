@@ -28,6 +28,7 @@ export type ObjectShowOutput = {
   domain: string;
   description: string;
   tags: string[];
+  maturity: string | null;
   traits: ObjectShowTraitEntry[];
   schema: Record<string, FieldDefinition>;
   semantics: Record<string, SemanticMapping>;
@@ -123,6 +124,7 @@ export async function handle(input: ObjectShowInput): Promise<ObjectShowOutput> 
     domain: composed.object.domain,
     description: composed.object.description,
     tags: composed.object.tags ?? [],
+    maturity: objectDef.metadata?.maturity ?? null,
     traits,
     schema: composed.schema,
     semantics: composed.semantics,

@@ -48,6 +48,10 @@
             "enum": ["stable", "beta", "planned"],
             "description": "Component implementation status. 'stable' = has renderer, 'planned' = not yet implemented."
           },
+          "maturity": {
+            "type": "string",
+            "description": "Maturity indicator derived from the source trait (e.g., 'stable', 'beta', 'draft')."
+          },
           "propSchema": {
             "type": "object",
             "description": "Component prop schema with types and defaults (detail=full only).",

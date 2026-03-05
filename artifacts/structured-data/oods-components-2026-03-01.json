@@ -2,7 +2,7 @@
   "$schema": "./component-schema.json",
   "generatedAt": "2026-03-01T06:18:26Z",
   "stats": {
-    "componentCount": 94,
+    "componentCount": 97,
     "traitCount": 37,
     "objectCount": 12,
     "domainCount": 1,
@@ -4187,6 +4187,129 @@
         ],
         "source": "traitCategories"
       }
+    },
+    {
+      "id": "SearchInput",
+      "displayName": "SearchInput",
+      "categories": [
+        "behavioral"
+      ],
+      "tags": [
+        "search",
+        "filtering",
+        "discovery",
+        "list-behavior"
+      ],
+      "contexts": [
+        "list",
+        "detail"
+      ],
+      "regions": [
+        "header"
+      ],
+      "traitUsages": [
+        {
+          "trait": "Searchable",
+          "traitCategory": "behavioral",
+          "context": "list",
+          "position": "header",
+          "priority": 10,
+          "props": {
+            "field": "searchQuery",
+            "placeholderParameter": "placeholder",
+            "debounceParameter": "debounceMs",
+            "minQueryLengthParameter": "minQueryLength",
+            "clearableParameter": "clearable"
+          },
+          "source": "traits/behavioral/Searchable.trait.yaml"
+        }
+      ],
+      "sourceFiles": [
+        "traits/behavioral/Searchable.trait.yaml"
+      ]
+    },
+    {
+      "id": "PaginationBar",
+      "displayName": "PaginationBar",
+      "categories": [
+        "behavioral"
+      ],
+      "tags": [
+        "pagination",
+        "list-behavior",
+        "navigation",
+        "data-loading"
+      ],
+      "contexts": [
+        "list"
+      ],
+      "regions": [
+        "footer"
+      ],
+      "traitUsages": [
+        {
+          "trait": "Pageable",
+          "traitCategory": "behavioral",
+          "context": "list",
+          "position": "footer",
+          "priority": 10,
+          "props": {
+            "pageField": "page",
+            "pageSizeField": "pageSize",
+            "totalItemsField": "totalItems",
+            "totalPagesField": "totalPages",
+            "pageSizeOptionsParameter": "pageSizeOptions",
+            "showPageSizeSelectorParameter": "showPageSizeSelector",
+            "showGotoPageParameter": "showGotoPage",
+            "showItemRangeParameter": "showItemRange"
+          },
+          "source": "traits/behavioral/Pageable.trait.yaml"
+        }
+      ],
+      "sourceFiles": [
+        "traits/behavioral/Pageable.trait.yaml"
+      ]
+    },
+    {
+      "id": "FilterPanel",
+      "displayName": "FilterPanel",
+      "categories": [
+        "behavioral"
+      ],
+      "tags": [
+        "filtering",
+        "facets",
+        "list-behavior",
+        "data-refinement"
+      ],
+      "contexts": [
+        "list",
+        "detail"
+      ],
+      "regions": [
+        "sidebar",
+        "header"
+      ],
+      "traitUsages": [
+        {
+          "trait": "Filterable",
+          "traitCategory": "behavioral",
+          "context": "list",
+          "position": "sidebar",
+          "priority": 8,
+          "props": {
+            "field": "filters",
+            "activeField": "activeFilters",
+            "modeParameter": "filterMode",
+            "maxActiveParameter": "maxActiveFilters",
+            "collapsibleParameter": "collapsible"
+          },
+          "source": "traits/behavioral/Filterable.trait.yaml"
+        }
+      ],
+      "sourceFiles": [
+        "traits/behavioral/Filterable.trait.yaml"
+      ]
     }
   ],
   "traits": [

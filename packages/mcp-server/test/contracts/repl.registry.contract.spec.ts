@@ -3,7 +3,7 @@ import { componentRenderers } from '../../src/render/component-map.js';
 import { loadComponentRegistry } from '../../src/tools/repl.utils.js';
 
 const BASIC_COMPONENTS = ['Button', 'Card', 'Grid', 'Stack', 'Text', 'Input', 'Select', 'Badge', 'Banner', 'Table', 'Tabs'];
-const EXPECTED_COMPONENT_COUNT = 94;
+const EXPECTED_COMPONENT_COUNT = 97;
 
 describe('REPL registry contract', () => {
   it('includes all registry components and the basic primitives', () => {

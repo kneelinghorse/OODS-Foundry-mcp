@@ -10,6 +10,7 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "maturity": { "type": ["string", "null"] },
     "traits": {
       "type": "array",
       "items": {
@@ -83,6 +84,6 @@
     },
     "filePath": { "type": "string" }
   },
-  "required": ["name", "version", "domain", "description", "tags", "traits", "schema", "semantics", "viewExtensions", "tokens", "warnings", "filePath"],
+  "required": ["name", "version", "domain", "description", "tags", "maturity", "traits", "schema", "semantics", "viewExtensions", "tokens", "warnings", "filePath"],
   "additionalProperties": false
 }

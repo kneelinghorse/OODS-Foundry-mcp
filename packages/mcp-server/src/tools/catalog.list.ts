@@ -14,6 +14,7 @@ import type {
 import { readComponentsDataset, resolveComponentCount } from './catalog.shared.js';
 import { hasMappedRenderer } from '../render/component-map.js';
 import { withinAllowed } from '../lib/security.js';
+import { loadTrait } from '../objects/trait-loader.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
@@ -512,23 +513,42 @@ function deriveComponentStatus(componentId: string): ComponentStatus {
   return hasMappedRenderer(componentId) ? 'stable' : 'planned';
 }
 
+function deriveComponentMaturity(traitUsages: TraitUsage[] | undefined): string | undefined {
+  if (!traitUsages || traitUsages.length === 0) return undefined;
+  for (const usage of traitUsages) {
+    try {
+      const traitDef = loadTrait(usage.trait);
+      if (traitDef.metadata?.maturity) {
+        return traitDef.metadata.maturity;
+      }
+    } catch {
+      // trait not found — skip
+    }
+  }
+  return undefined;
+}
+
 function transformComponentsToSummary(componentsData: ComponentsDataset): ComponentCatalogSummary[] {
   if (!componentsData.components) {
     return [];
   }
 
-  return componentsData.components.map((component) => ({
-    name: component.id,
-    displayName: component.displayName,
-    categories: component.categories || [],
-    tags: component.tags || [],
-    contexts: component.contexts || [],
-    regions: component.regions || [],
-    traits: Array.from(
-      new Set(component.traitUsages?.map((usage) => usage.trait) || []),
-    ),
-    status: deriveComponentStatus(component.id),
-  }));
+  return componentsData.components.map((component) => {
+    const maturity = deriveComponentMaturity(component.traitUsages);
+    return {
+      name: component.id,
+      displayName: component.displayName,
+      categories: component.categories || [],
+      tags: component.tags || [],
+      contexts: component.contexts || [],
+      regions: component.regions || [],
+      traits: Array.from(
+        new Set(component.traitUsages?.map((usage) => usage.trait) || []),
+      ),
+      status: deriveComponentStatus(component.id),
+      ...(maturity ? { maturity } : {}),
+    };
+  });
 }
 
 function enrichComponentsToDetail(

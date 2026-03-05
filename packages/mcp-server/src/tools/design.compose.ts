@@ -34,7 +34,8 @@ import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 import { loadObject } from '../objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
-import { populateObjectSchema, populateBindings } from '../compose/object-slot-filler.js';
+import { populateObjectSchema, populateBindings, fillSlotsWithObject } from '../compose/object-slot-filler.js';
+import { collectViewExtensions } from '../compose/view-extension-collector.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -109,6 +110,7 @@ export interface DesignComposeOutput {
     objectAutoDetected?: string;
     contextAutoDetected?: string;
     intentSynthetic?: boolean;
+    warnings?: string[];
   };
 }
 
@@ -373,6 +375,16 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       composed = composeObject(objectDef);
       objectUsed = buildObjectUsedInfo(composed);
 
+      // Surface maturity warning for non-stable objects
+      const maturity = objectDef.metadata?.maturity;
+      if (maturity && maturity !== 'stable') {
+        warnings.push({
+          code: 'OODS-V121',
+          message: `Object '${effectiveObject}' has maturity '${maturity}' — composed output may change.`,
+          hint: 'Consider using stable objects for production compositions.',
+        });
+      }
+
       // Surface composition warnings
       for (const w of composed.warnings) {
         warnings.push({
@@ -451,14 +463,79 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   const topN = input.options?.topN ?? 3;
-  const selections = fillSlots(
-    slots,
-    catalog,
-    input.preferences?.componentOverrides,
-    topN,
-    intentStr,
-    input.preferences?.tabLabels,
-  );
+
+  // 3a. Object-aware slot filling: use view_extensions when object is present
+  let selections: SlotSelectionEntry[];
+  const contextForExtensions = effectiveContext ?? layoutType;
+
+  if (composed) {
+    const collected = collectViewExtensions(composed, contextForExtensions);
+    for (const w of collected.warnings) {
+      warnings.push({ code: 'OODS-V119', message: w });
+    }
+
+    if (collected.plan.length > 0) {
+      // Use view_extension-driven slot filling
+      const fillResult = fillSlotsWithObject(
+        { schema, slots },
+        collected.plan,
+        catalog,
+        input.preferences?.componentOverrides,
+        intentStr,
+      );
+      for (const w of fillResult.warnings) {
+        warnings.push({ code: 'OODS-V120', message: w });
+      }
+
+      // Convert placements to selections format
+      selections = fillResult.placements.map((p) => ({
+        slotName: p.slotName,
+        intent: slots.find((s) => s.name === p.slotName)?.intent ?? '',
+        selectedComponent: p.components[0],
+        candidates: p.components.map((name) => ({
+          name,
+          confidence: p.source === 'view_extension' ? 0.95 : p.source === 'override' ? 1 : 0.5,
+          reason: `${p.source} placement`,
+        })),
+      }));
+
+      // Also fill any remaining slots not covered by view_extensions
+      const filledSlotNames = new Set(fillResult.placements.map((p) => p.slotName));
+      const unfilledSlots = slots.filter((s) => !filledSlotNames.has(s.name));
+      if (unfilledSlots.length > 0) {
+        const fallbackSelections = fillSlots(
+          unfilledSlots,
+          catalog,
+          input.preferences?.componentOverrides,
+          topN,
+          intentStr,
+          input.preferences?.tabLabels,
+        );
+        selections.push(...fallbackSelections);
+      }
+    } else {
+      // No view_extensions for this context — fall back to generic slot filling
+      selections = fillSlots(
+        slots,
+        catalog,
+        input.preferences?.componentOverrides,
+        topN,
+        intentStr,
+        input.preferences?.tabLabels,
+      );
+    }
+  } else {
+    // No object — use generic slot filling (backward compatible)
+    selections = fillSlots(
+      slots,
+      catalog,
+      input.preferences?.componentOverrides,
+      topN,
+      intentStr,
+      input.preferences?.tabLabels,
+    );
+  }
+
   applyOverridesToSchema(
     schema,
     input.preferences?.componentOverrides,
@@ -542,6 +619,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       ...(resolved.objectSource === 'auto-detected' ? { objectAutoDetected: resolved.object } : {}),
       ...(resolved.contextSource === 'auto-detected' ? { contextAutoDetected: resolved.context } : {}),
       ...(resolved.intentSource === 'synthetic' ? { intentSynthetic: true } : {}),
+      ...(warnings.length > 0 ? { warnings: warnings.map((w) => w.message) } : {}),
     },
   };
 }
