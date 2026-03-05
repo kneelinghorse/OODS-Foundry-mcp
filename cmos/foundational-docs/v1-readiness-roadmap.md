@@ -23,8 +23,8 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 |------|-------|---------|--------|
 | **Tier 0** | The Bridge — Object system in MCP | 61, 62, 63 | COMPLETE |
 | **Tier 1** | Production Essentials | 64, 65 | COMPLETE |
-| **Tier 2** | Platform Hardening | TBD (~2 sprints) | Not started |
-| **Tier 3** | Differentiation | TBD (~2-3 sprints) | Not started |
+| **Tier 2** | Platform Hardening | 66, 67 | COMPLETE |
+| **Tier 3** | Differentiation | 68, 69, 70 | PLANNED |
 
 ---
 
@@ -95,11 +95,11 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 
 ---
 
-## Tier 2 — Platform Hardening
+## Tier 2 — Platform Hardening (COMPLETE)
 
 **Goal:** Make the tool robust, diagnosable, and maintainable. Errors are documented, outputs are traceable, and the mapping system is complete.
 
-### Sprint 66 — Error Taxonomy + Observability (PLANNED)
+### Sprint 66 — Error Taxonomy + Observability (COMPLETED)
 | Mission | Deliverable |
 |---------|-------------|
 | s66-m01 | Error code registry (OODS-V/N/C/S format, createError helper) |
@@ -113,7 +113,7 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 - Observability via middleware wrapper pattern (auto-inject requestId + latency tracking)
 - No Math.random() in output-affecting code paths; version metadata in compose/codegen meta
 
-### Sprint 67 — Coercion Engine + Map CRUD + Catalog Completion (PLANNED)
+### Sprint 67 — Coercion Engine + Map CRUD + Catalog Completion (COMPLETED)
 | Mission | Deliverable |
 |---------|-------------|
 | s67-m01 | Coercion engine (enum, boolean_to_string, template, identity types) |
@@ -124,64 +124,77 @@ The object system (12 domain objects with traits, view_extensions, propSchemas, 
 **Key decisions:**
 - CoercionDef is a discriminated union on `type` field; existing null coercions → identity
 - Communicable components either get regions/code refs or `status: "planned"` with compose guard
+- ComponentStatus type added; catalog_list supports status filter; compose guards exclude planned
 
-### Tier 2 Scope: 9 missions across 2 sprints
+### Tier 2 Scope: 9 missions across 2 sprints — all delivered. Test count: 1145.
 
 ---
 
 ## Tier 3 — Differentiation
 
-**Goal:** Features that make OODS genuinely distinctive and publicly compelling. New trait categories, visualization support, SDK, documentation, and platform security.
+**Goal:** Features that make OODS genuinely distinctive and publicly compelling. New trait categories, visualization support, SDK, documentation, and API versioning.
 
-### 3.1 Behavioral Traits (Searchable, Pageable, Filterable, Sortable)
-- No behavioral traits exist for common data-intensive patterns
-- `design_compose(layout="list")` uses raw Input/Select — no semantic trait connection
-- Adding Searchable and Pageable traits with components (SearchInput, PaginationBar, FilterPanel) makes list layout a first-class semantic composition
-- **Source:** Sonnet 4.6 Section 5.4
+### Sprint 68 — Behavioral Traits + Maturity Surfacing (PLANNED)
 
-### 3.2 Visualization Compose Path
-- 20+ viz traits and 15+ viz components exist but have no compose path
-- `design_compose(layout="dashboard")` produces generic main-content, not chart areas
-- Need either a `viz_compose` tool or chart slot integration in dashboard layout
+*Items: 3.1 Behavioral Traits + 3.7 Object Maturity*
+
+| Mission | Deliverable |
+|---------|-------------|
+| s68-m01 | Searchable + Filterable trait definitions (YAMLs, view_extensions, propSchemas) |
+| s68-m02 | Pageable + Sortable trait definitions |
+| s68-m03 | Behavioral components (SearchInput, PaginationBar, FilterPanel) + renderers |
+| s68-m04 | List layout behavioral trait integration in design_compose |
+| s68-m05 | Object maturity surfacing (object_show field, compose beta warning, catalog_list indicator) |
+| s68-m06 | Behavioral traits + maturity tests + green baseline |
+
+**Key context:**
+- Only 1 behavioral trait exists (Taggable) — Searchable/Pageable/Filterable/Sortable are net-new
+- object_list already has maturity filtering; object_show does not expose maturity
+- **Sources:** Sonnet 4.6 Sections 5.4, 5.6
+
+### Sprint 69 — Visualization Compose Path (PLANNED)
+
+*Item: 3.2 Viz Compose — dedicated `viz_compose` MCP tool*
+
+| Mission | Deliverable |
+|---------|-------------|
+| s69-m01 | viz_compose tool scaffold + full registration (handler, schemas, registry, policy, bridge, adapter, error codes) |
+| s69-m02 | Viz trait resolution engine (mark→chart type, encoding→axis, layout→composition, scale, interaction) |
+| s69-m03 | Viz component wiring + slot placement (18 existing components paired and slotted) |
+| s69-m04 | Viz codegen support (React/Vue emitters handle viz component props and imports) |
+| s69-m05 | Viz compose tests + green baseline |
+
+**Key context:**
+- 15 viz traits + 18 viz components already exist but are orphaned from compose
+- New tool registration requires ~13 file touchpoints; middleware/observability is automatic
+- Decision: dedicated `viz_compose` tool chosen over dashboard layout extension
 - **Source:** Sonnet 4.6 Section 5.5
 
-### 3.3 TypeScript SDK
-- Thin public-facing SDK wrapping MCP tools with typed methods
-- Internal packages (mcp-server, mcp-bridge, mcp-adapter) provide the infrastructure
-- Example: `client.compose({ object: 'Subscription', context: 'detail' })`
-- **Source:** Sonnet 4.6 Section 5.2
+### Sprint 70 — SDK + Docs + API Versioning (PLANNED)
 
-### 3.4 Public API Reference + Quickstart
-- Tool contract docs (params, return shape, error codes) for all tools
-- 5-minute quickstart guide (zero to working component code)
-- Object reference (what objects exist, traits, fields)
-- Cookbook (common patterns)
-- **Source:** Sonnet 4.6 Section 5.1
+*Items: 3.3 SDK + 3.4 Docs + 3.6 Versioning*
 
-### 3.5 Authentication + Rate Limiting
-- API key authentication passed as header or MCP init param
-- Tenant ID derivation from API key
-- Per-key rate limits on compute-intensive tools (render, codegen, compose)
-- `Retry-After` header on rate limit errors
+| Mission | Deliverable |
+|---------|-------------|
+| s70-m01 | @oods/sdk package scaffold (OodsClient, transport layer, type exports) |
+| s70-m02 | SDK core workflow methods (compose, vizCompose, pipeline, codegen, schema CRUD, objects, catalog, health) |
+| s70-m03 | Auto-generated per-tool API reference from schemas (pnpm run docs:api) |
+| s70-m04 | Cookbook — 5 recipes (list→detail, dashboard+charts, multi-brand, full pipeline, schema iteration) |
+| s70-m05 | Accept-DSL-Version param + deprecated_since fields + health changelog |
+| s70-m06 | SDK + docs + versioning tests + green baseline |
+
+**Key context:**
+- Comprehensive docs already exist (807-line Tool-Specs.md) — per-tool pages are auto-generated expansion
+- No @oods/sdk package yet; thin wrapper over MCP tools
+- Data versioning exists in structuredData.fetch; dslVersion is new infrastructure for tool evolution
+- **Sources:** Sonnet 4.6 Sections 5.1, 5.2, 4.3
+
+### Deferred: Authentication + Rate Limiting (3.5)
+- Role-based policy.json (designer/maintainer), bridge token, per-tool rate limits already cover local/team use
+- Per-user API keys and tenant derivation deferred to post-v1 when public API is needed
 - **Source:** Sonnet 4.6 Sections 4.1, 4.2
 
-### 3.6 API Versioning Contract
-- `Accept-DSL-Version` parameter on compose/validate/render tools
-- `deprecated_since` and `removal_date` on superseded DSL features
-- Changelog tool/endpoint for breaking changes since a given version
-- **Source:** Sonnet 4.6 Section 4.3
-
-### 3.7 Object Maturity Surfacing
-- `object_list` and `object_show` expose maturity (draft/beta/stable) — done in Tier 0
-- `catalog_list` should indicate which components come from beta objects
-- `design_compose` should warn when composing from beta trait definitions
-- **Source:** Sonnet 4.6 Section 5.6
-
-### Tier 3 Estimated Scope
-- ~15-20 missions across 2-3 sprints
-- Behavioral traits + viz compose could be one sprint
-- SDK + docs + auth could be one sprint
-- API versioning + maturity could fold into either
+### Tier 3 Scope: 17 missions across 3 sprints
 
 ---
 
@@ -215,6 +228,9 @@ These were P0/P1 bugs from the same dual audit, fixed before roadmap planning:
 | Schema store is filesystem-backed JSON (not SQLite) | 2026-03-05 | _index.json fast path for listing; no DB dependency needed |
 | Pipeline tool collapses 7-call ceremony to 1 call (not 2-3) | 2026-03-05 | Single call covers compose→validate→render→codegen→save |
 | Tier 0 + Tier 1 complete — 12 objects, 94 components, 37 traits, full CRUD + Tailwind | 2026-03-05 | Acceptance test passing end-to-end |
+| Tier 2 complete — error taxonomy, observability, coercion engine, map CRUD, catalog status | 2026-03-05 | 9/9 missions, 1145 tests |
+| Tier 3 planned as 3 sprints (68-70): behavioral traits, viz_compose tool, SDK+docs+versioning | 2026-03-05 | Auth deferred past v1 |
+| viz_compose as dedicated tool (not dashboard layout extension) | 2026-03-05 | 15 traits + 18 components orphaned; dedicated tool is cleaner composition boundary |
 
 ---
 

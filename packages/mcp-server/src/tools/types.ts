@@ -195,6 +195,7 @@ export type ComponentCatalogSummary = {
   regions: string[];
   traits: string[];
   status: ComponentStatus;
+  maturity?: string;
 };
 
 export type ComponentCatalogEntry = ComponentCatalogSummary & {

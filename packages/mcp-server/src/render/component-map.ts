@@ -1652,6 +1652,74 @@ function renderFallback(node: UiElement, childrenHtml = ''): string {
   return `<div${attrs}><span data-oods-fallback-label="true">${label}</span>${childrenHtml}</div>`;
 }
 
+function renderSearchInput(node: UiElement): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const placeholder = asString(props.placeholder) ?? 'Search...';
+  const value = asString(props.value) ?? '';
+  const clearable = props.clearable !== false;
+  const attrs = buildAttributes(node, {
+    allowedHtmlAttrs: GENERIC_HTML_ATTRS,
+    consumedProps: new Set(['placeholder', 'value', 'clearable', 'field', 'debounce', 'minQueryLength']),
+    dataOverrides: { 'data-behavioral': 'search' },
+  });
+  const clearBtn = clearable && value
+    ? ' <button type="button" data-search-clear="true" aria-label="Clear search">&times;</button>'
+    : '';
+  return `<div${attrs} role="search"><input type="search" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(placeholder)}" />${clearBtn}</div>`;
+}
+
+function renderPaginationBar(node: UiElement): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const page = asNumber(props.page) ?? 1;
+  const pageSize = asNumber(props.pageSize) ?? 25;
+  const totalItems = asNumber(props.totalItems) ?? 0;
+  const totalPages = asNumber(props.totalPages) ?? (pageSize > 0 ? Math.ceil(totalItems / pageSize) : 0);
+  const showItemRange = props.showItemRange !== false;
+  const attrs = buildAttributes(node, {
+    allowedHtmlAttrs: GENERIC_HTML_ATTRS,
+    consumedProps: new Set(['page', 'pageSize', 'totalItems', 'totalPages', 'showItemRange', 'showPageSizeSelector', 'showGotoPage', 'pageSizeOptions']),
+    dataOverrides: { 'data-behavioral': 'pagination' },
+  });
+  const start = Math.min((page - 1) * pageSize + 1, totalItems);
+  const end = Math.min(page * pageSize, totalItems);
+  const rangeHtml = showItemRange && totalItems > 0
+    ? `<span data-pagination-range="true">Showing ${start}\u2013${end} of ${totalItems}</span>`
+    : '';
+  const prevDisabled = page <= 1 ? ' disabled' : '';
+  const nextDisabled = page >= totalPages ? ' disabled' : '';
+  return `<nav${attrs} aria-label="Pagination">${rangeHtml}<button type="button" data-pagination-prev="true"${prevDisabled} aria-label="Previous page">\u2039</button><span data-pagination-current="true" aria-current="page">${page}</span><span data-pagination-total="true"> / ${totalPages}</span><button type="button" data-pagination-next="true"${nextDisabled} aria-label="Next page">\u203A</button></nav>`;
+}
+
+function renderFilterPanel(node: UiElement, childrenHtml = ''): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const filters = Array.isArray(props.filters) ? props.filters : [];
+  const activeFilters = Array.isArray(props.activeFilters) ? props.activeFilters : [];
+  const mode = asString(props.mode) ?? 'immediate';
+  const collapsible = props.collapsible !== false;
+  const attrs = buildAttributes(node, {
+    allowedHtmlAttrs: GENERIC_HTML_ATTRS,
+    consumedProps: new Set(['filters', 'activeFilters', 'mode', 'collapsible', 'maxActiveFilters', 'showFilterCount']),
+    dataOverrides: { 'data-behavioral': 'filter', 'data-filter-mode': mode },
+  });
+  if (hasChildrenHtml(childrenHtml)) {
+    return `<aside${attrs} role="region" aria-label="Filters">${childrenHtml}</aside>`;
+  }
+  const filterSections = filters.map((f) => {
+    if (!isRecord(f)) return '';
+    const label = asString(f.label as unknown) ?? asString(f.field as unknown) ?? 'Filter';
+    const collapseAttr = collapsible ? ' data-collapsible="true"' : '';
+    return `<fieldset data-filter-section="true"${collapseAttr}><legend>${escapeHtml(label)}</legend></fieldset>`;
+  }).join('');
+  const activeCount = activeFilters.length;
+  const activeHtml = activeCount > 0
+    ? `<div data-active-filters="true" aria-live="polite"><span data-filter-count="true">${activeCount} active</span><button type="button" data-filter-clear-all="true">Clear all</button></div>`
+    : '';
+  const applyBtn = mode === 'batch'
+    ? '<button type="button" data-filter-apply="true">Apply</button>'
+    : '';
+  return `<aside${attrs} role="region" aria-label="Filters">${activeHtml}${filterSections}${applyBtn}</aside>`;
+}
+
 export const componentRenderers: Record<string, ComponentRenderer> = {
   Button: renderButton,
   Card: renderCard,
@@ -1737,6 +1805,9 @@ export const componentRenderers: Record<string, ComponentRenderer> = {
   Banner: renderBanner,
   Table: renderTable,
   Tabs: renderTabs,
+  SearchInput: renderSearchInput,
+  PaginationBar: renderPaginationBar,
+  FilterPanel: renderFilterPanel,
 };
 
 export function renderMappedComponent(node: UiElement, childrenHtml = ''): string {

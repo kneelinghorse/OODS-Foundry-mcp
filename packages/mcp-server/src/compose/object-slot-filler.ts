@@ -51,8 +51,10 @@ export interface SlotPlacement {
  */
 const POSITION_TO_SLOTS: Record<string, string[]> = {
   top: ['header', 'title', 'banner'],
+  header: ['search', 'header', 'title', 'banner'],
   main: ['main-content', 'tab-0', 'items'],
   bottom: ['footer', 'actions', 'pagination'],
+  footer: ['pagination', 'footer', 'actions'],
   sidebar: ['metadata', 'sidebar', 'filters'],
   before: ['header', 'banner', 'title'],
   after: ['footer', 'actions'],
