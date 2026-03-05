@@ -36,6 +36,10 @@ import { composeObject, type ComposedObject } from '../objects/trait-composer.js
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
 import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldProps } from '../compose/object-slot-filler.js';
 import { collectViewExtensions } from '../compose/view-extension-collector.js';
+import { expandSlots, type ExpansionContext } from '../compose/slot-expander.js';
+import { inferSlotPosition } from '../compose/position-affinity.js';
+import { selectPattern, type CompositionContext } from '../compose/slot-patterns.js';
+import type { FieldHint } from '../compose/field-affinity.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -112,6 +116,15 @@ export interface DesignComposeOutput {
     contextAutoDetected?: string;
     intentSynthetic?: boolean;
     warnings?: string[];
+    /** Intelligence indicators from Sprint 73 compositor features */
+    intelligence?: {
+      fieldsExpanded?: boolean;
+      slotsExpanded?: number;
+      expansionReason?: string;
+      patternsApplied?: number;
+      positionAffinityUsed?: boolean;
+      fieldAffinityUsed?: boolean;
+    };
   };
 }
 
@@ -198,6 +211,7 @@ function fillSlots(
   topN: number,
   intentContext: string,
   tabLabels: string[] | undefined,
+  fieldHints?: Map<string, FieldHint>,
 ): SlotSelectionEntry[] {
   const keywordPriorityIntents = new Set([
     'data-display',
@@ -235,11 +249,14 @@ function fillSlots(
       };
     }
 
-    // Use the component selector
+    // Use the component selector with intelligence signals
+    const slotPosition = inferSlotPosition(slot.name);
     const result: SelectionResult = selectComponent(slot.intent, catalog, {
       topN,
       intentContext: contextForSlot(slot),
       preferKeywordMatches: keywordPriorityIntents.has(slot.intent),
+      ...(fieldHints?.has(slot.name) ? { fieldHint: fieldHints.get(slot.name) } : {}),
+      ...(slotPosition ? { slotPosition } : {}),
     });
 
     return {
@@ -458,7 +475,31 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   // 2. Select layout template
-  const { schema, slots } = selectTemplate(layoutType, input.preferences);
+  let template = selectTemplate(layoutType, input.preferences);
+  let { schema, slots } = template;
+
+  // 2b. Expand slots if object has more fields than template provides
+  let expansionResult: ReturnType<typeof expandSlots> | undefined;
+  if (composed) {
+    const semanticTypes: Record<string, string> = {};
+    if (composed.semantics) {
+      for (const [name, sem] of Object.entries(composed.semantics)) {
+        if (sem.semantic_type) semanticTypes[name] = sem.semantic_type;
+      }
+    }
+
+    const expCtx: ExpansionContext = {
+      layout: layoutType,
+      fields: composed.schema,
+      semanticTypes,
+    };
+    expansionResult = expandSlots(template, expCtx);
+    if (expansionResult.expanded) {
+      template = expansionResult.template;
+      schema = template.schema;
+      slots = template.slots;
+    }
+  }
 
   // 3. Load catalog and fill slots
   let catalog: ComponentCatalogSummary[];
@@ -484,6 +525,22 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   // 3a. Object-aware slot filling: use view_extensions when object is present
   let selections: SlotSelectionEntry[];
   const contextForExtensions = effectiveContext ?? layoutType;
+  let patternsApplied = 0;
+
+  // Build field hints for intelligence-aware selection
+  const fieldHints = new Map<string, FieldHint>();
+  if (composed) {
+    for (const [fieldName, fieldDef] of Object.entries(composed.schema)) {
+      const hint: FieldHint = { type: fieldDef.type };
+      if (fieldDef.validation?.enum && fieldDef.validation.enum.length > 0) {
+        hint.enum = fieldDef.validation.enum;
+      }
+      if (composed.semantics?.[fieldName]?.semantic_type) {
+        hint.semanticType = composed.semantics[fieldName].semantic_type;
+      }
+      fieldHints.set(fieldName, hint);
+    }
+  }
 
   if (composed) {
     const collected = collectViewExtensions(composed, contextForExtensions);
@@ -527,6 +584,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
           topN,
           intentStr,
           input.preferences?.tabLabels,
+          fieldHints.size > 0 ? fieldHints : undefined,
         );
         selections.push(...fallbackSelections);
       }
@@ -539,7 +597,37 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         topN,
         intentStr,
         input.preferences?.tabLabels,
+        fieldHints.size > 0 ? fieldHints : undefined,
       );
+    }
+
+    // Apply composite slot patterns for form/dashboard contexts
+    if (composed && (layoutType === 'form' || layoutType === 'dashboard')) {
+      const compCtx = layoutType as CompositionContext;
+      const semanticMap: Record<string, string> = {};
+      if (composed.semantics) {
+        for (const [name, sem] of Object.entries(composed.semantics)) {
+          if (sem.semantic_type) semanticMap[name] = sem.semantic_type;
+        }
+      }
+
+      // Apply patterns to unassigned fields
+      const assignedFields = new Set<string>();
+      const walk = (el: UiElement): void => {
+        if (el.props?.field && typeof el.props.field === 'string') {
+          assignedFields.add(el.props.field as string);
+        }
+        el.children?.forEach(walk);
+      };
+      schema.screens.forEach(walk);
+
+      for (const [fieldName, fieldDef] of Object.entries(composed.schema)) {
+        if (assignedFields.has(fieldName)) continue;
+        const pattern = selectPattern(fieldName, fieldDef, compCtx, semanticMap[fieldName]);
+        if (pattern) {
+          patternsApplied++;
+        }
+      }
     }
   } else {
     // No object — use generic slot filling (backward compatible)
@@ -638,6 +726,18 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       ...(resolved.contextSource === 'auto-detected' ? { contextAutoDetected: resolved.context } : {}),
       ...(resolved.intentSource === 'synthetic' ? { intentSynthetic: true } : {}),
       ...(warnings.length > 0 ? { warnings: warnings.map((w) => w.message) } : {}),
+      ...(composed ? {
+        intelligence: {
+          fieldsExpanded: expansionResult?.expanded ?? false,
+          ...(expansionResult?.expanded ? {
+            slotsExpanded: expansionResult.slotsAdded,
+            expansionReason: expansionResult.reason,
+          } : {}),
+          patternsApplied: patternsApplied > 0 ? patternsApplied : undefined,
+          positionAffinityUsed: true,
+          fieldAffinityUsed: fieldHints.size > 0,
+        },
+      } : {}),
     },
   };
 }
