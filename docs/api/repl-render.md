@@ -1,6 +1,6 @@
 # repl.render
 
-> Render a validated UiSchema into HTML/CSS preview output. Accepts schemaRef from design.compose. Supports document and fragment formats; HTML/fragments are returned only when apply=true (apply=false returns metadata-only preview). Note: schemaRef expires after 30 minutes — use schema.save to persist.
+> Render a validated UiSchema into HTML/CSS preview output. Accepts schemaRef from design.compose. Supports document and fragment formats; HTML/fragments are returned only when apply=true (apply=false returns metadata-only preview). Use output.compact=true to omit token CSS (~40% size reduction) and receive a tokenCssRef instead. Note: schemaRef expires after 30 minutes — use schema.save to persist.
 
 **Registration:** auto
 
@@ -21,6 +21,7 @@
 | `output.format` | `document` \| `fragments` | No | `"document"` |  |
 | `output.strict` | boolean | No | `false` |  |
 | `output.includeCss` | boolean | No | `true` |  |
+| `output.compact` | boolean | No | `false` | When true, omit the full token CSS from the response and return a tokenCssRef instead. Reduces response size by ~40%. Default false for repl.render, true for pipeline. |
 | `output.depth` | number | No |  | Reserved for v2 fragment-depth controls; currently ignored. |
 | `apply` | boolean | No |  |  |
 
@@ -39,6 +40,7 @@
 | `appliedPatch` | boolean | No |  |
 | `preview` | object | No |  |
 | `html` | string | No | Standalone HTML5 document generated when apply=true, output.format=document (or omitted), and render validation passes. |
+| `tokenCssRef` | string | No | Reference to the token CSS artifact when compact mode is enabled. Use tokens.build to obtain the full CSS. |
 | `fragments` | Record<string, object> | No | Fragment payload keyed by canonical node id when output.format=fragments. |
 | `css` | Record<string, string> | No | Resolved CSS map keyed by cssRef identifier. |
 | `output` | object | No | Echoes normalized output controls used by the renderer. |

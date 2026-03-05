@@ -13,6 +13,7 @@ import {
   collectBindings,
   generateHandlerStubs,
   collectPropDefaults,
+  resolveChildContent,
 } from './binding-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -188,6 +189,7 @@ function emitTemplateNode(
   warnings: CodegenIssue[],
   options: CodegenOptions,
   tailwindVariants: Map<string, TailwindVariantDefinition>,
+  objectSchema?: Record<string, FieldSchemaEntry>,
 ): string {
   const tag = node.component;
   const computedStyle = mergeDecl(
@@ -242,9 +244,9 @@ function emitTemplateNode(
   // Sidebar layout
   if (node.layout?.type === 'sidebar' && children.length > 0) {
     const [mainChild, ...asideChildren] = children;
-    const mainTemplate = mainChild ? emitTemplateNode(mainChild, depth + 2, warnings, options, tailwindVariants) : '';
+    const mainTemplate = mainChild ? emitTemplateNode(mainChild, depth + 2, warnings, options, tailwindVariants, objectSchema) : '';
     const asideTemplates = asideChildren
-      .map((c) => emitTemplateNode(c, depth + 2, warnings, options, tailwindVariants));
+      .map((c) => emitTemplateNode(c, depth + 2, warnings, options, tailwindVariants, objectSchema));
 
     const inner = [
       `<div data-sidebar-main>`,
@@ -275,7 +277,7 @@ function emitTemplateNode(
       sectionClassOrStyle = inlineStyle ? ` style="${inlineStyle}"` : '';
     }
     const innerChildren = children
-      .map((c) => emitTemplateNode(c, depth + 2, warnings, options, tailwindVariants))
+      .map((c) => emitTemplateNode(c, depth + 2, warnings, options, tailwindVariants, objectSchema))
       .join('\n');
 
     const innerAttrParts: string[] = [`id="${node.id}"`, `data-oods-component="${tag}"`];
@@ -306,13 +308,21 @@ function emitTemplateNode(
     ].join('\n');
   }
 
-  // Self-closing
+  // Self-closing — but inject field content if bound
   if (children.length === 0) {
+    const fieldContent = resolveChildContent(node, objectSchema);
+    if (fieldContent) {
+      if (fieldContent.isChildren) {
+        return `<${tag}${attrs}>{{ ${fieldContent.fieldName} }}</${tag}>`;
+      }
+      const propAttr = `:${fieldContent.propName}="${fieldContent.fieldName}"`;
+      return `<${tag}${attrs} ${propAttr} />`;
+    }
     return `<${tag}${attrs} />`;
   }
 
   const childrenTemplate = children
-    .map((c) => emitTemplateNode(c, depth + 1, warnings, options, tailwindVariants))
+    .map((c) => emitTemplateNode(c, depth + 1, warnings, options, tailwindVariants, objectSchema))
     .join('\n');
   return `<${tag}${attrs}>\n${ind(childrenTemplate, depth + 1)}\n${'  '.repeat(depth)}</${tag}>`;
 }
@@ -470,7 +480,7 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
 
   // Build template block
   const screenTemplates = schema.screens
-    .map((screen) => emitTemplateNode(screen, 1, warnings, options, tailwindVariants))
+    .map((screen) => emitTemplateNode(screen, 1, warnings, options, tailwindVariants, schema.objectSchema))
     .join('\n');
 
   const templateBlock = [

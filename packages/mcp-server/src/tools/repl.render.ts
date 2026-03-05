@@ -36,6 +36,10 @@ function normalizeStrict(input: ReplRenderInput): boolean {
   return input.output?.strict ?? false;
 }
 
+function normalizeCompact(input: ReplRenderInput): boolean {
+  return input.output?.compact ?? false;
+}
+
 function normalizeIncludeCss(input: ReplRenderInput): boolean {
   return input.output?.includeCss ?? true;
 }
@@ -104,6 +108,7 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
 
   const format = normalizeOutputFormat(input);
   const strict = normalizeStrict(input);
+  const compact = normalizeCompact(input);
 
   // In non-strict fragment mode, UNKNOWN_COMPONENT errors should not block the
   // entire render. They are deferred and reported as per-node errors after
@@ -153,7 +158,7 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
 
   if (input.apply === true && status === 'ok' && workingTree) {
     if (format === 'fragments') {
-      const includeCss = normalizeIncludeCss(input);
+      const includeCss = compact ? false : normalizeIncludeCss(input);
       const { fragments: fragmentMap, errors: fragmentErrors } = renderFragmentsWithErrors(workingTree);
 
       // Per-node isolation: remove fallback fragments for unknown top-level
@@ -226,10 +231,15 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
       output.html = renderDocument({
         screenHtml,
         schema: workingTree,
+        compact,
       });
     }
 
-    output.output = { format, strict };
+    if (compact) {
+      output.tokenCssRef = 'tokens.build';
+    }
+
+    output.output = { format, strict, ...(compact ? { compact } : {}) };
   }
 
   output.status = status;

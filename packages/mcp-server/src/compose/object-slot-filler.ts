@@ -20,6 +20,7 @@ import {
   type SelectionResult,
 } from './component-selector.js';
 import type { ComponentCatalogSummary } from '../tools/types.js';
+import { getContentStrategy, type ContentStrategy } from '../codegen/content-strategy.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -401,6 +402,119 @@ function populateFormFieldBindings(el: UiElement, fieldNames: string[]): void {
   };
 
   walk(el);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Field → component prop wiring                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Field type to preferred component content strategy mapping.
+ * Used to rank how well a field type matches a component's strategy.
+ */
+const FIELD_TYPE_PREFERRED_STRATEGY: Record<string, ContentStrategy[]> = {
+  string:   ['children', 'label-prop', 'value-prop'],
+  integer:  ['children', 'value-prop'],
+  number:   ['children', 'value-prop'],
+  boolean:  ['value-prop'],
+  datetime: ['children'],
+  date:     ['children'],
+  email:    ['children', 'value-prop'],
+  url:      ['children'],
+  uuid:     ['children'],
+};
+
+/**
+ * Enum fields prefer status/label display over plain text.
+ */
+const ENUM_PREFERRED_STRATEGY: ContentStrategy[] = ['status-prop', 'label-prop', 'children'];
+
+/**
+ * Walk the UiSchema tree and set `props.field` on leaf components that
+ * match objectSchema fields. Uses field type, component content strategy,
+ * and field name heuristics for intelligent matching.
+ *
+ * Each field is assigned to at most one component. Each leaf component
+ * gets at most one field. Fields are matched in priority order:
+ * required fields first, then by name match quality.
+ */
+export function wireFieldProps(
+  schema: UiSchema,
+): number {
+  const objectSchema = schema.objectSchema;
+  if (!objectSchema || Object.keys(objectSchema).length === 0) return 0;
+
+  // Collect leaf components that accept field content
+  const leafNodes: UiElement[] = [];
+  const walkCollect = (el: UiElement): void => {
+    const hasChildren = Array.isArray(el.children) && el.children.length > 0;
+    if (!hasChildren && getContentStrategy(el.component) !== 'none') {
+      leafNodes.push(el);
+    }
+    el.children?.forEach(walkCollect);
+  };
+  schema.screens.forEach(walkCollect);
+
+  if (leafNodes.length === 0) return 0;
+
+  // Sort fields: required first, then alphabetical
+  const fields = Object.entries(objectSchema).sort(([aName, aEntry], [bName, bEntry]) => {
+    if (aEntry.required !== bEntry.required) return aEntry.required ? -1 : 1;
+    return aName.localeCompare(bName);
+  });
+
+  const assignedNodes = new Set<UiElement>();
+  const assignedFields = new Set<string>();
+  let boundCount = 0;
+
+  // Pass 1: Try to match fields to components with strategy+type affinity
+  for (const [fieldName, fieldEntry] of fields) {
+    if (assignedFields.has(fieldName)) continue;
+
+    const preferredStrategies = fieldEntry.enum && fieldEntry.enum.length > 0
+      ? ENUM_PREFERRED_STRATEGY
+      : FIELD_TYPE_PREFERRED_STRATEGY[fieldEntry.type] ?? ['children'];
+
+    let bestNode: UiElement | undefined;
+    let bestScore = -1;
+
+    for (const node of leafNodes) {
+      if (assignedNodes.has(node)) continue;
+
+      const strategy = getContentStrategy(node.component);
+      const strategyIdx = preferredStrategies.indexOf(strategy);
+      if (strategyIdx < 0) continue;
+
+      // Score: higher is better. Strategy match priority (inverted index) + name affinity bonus
+      let score = (preferredStrategies.length - strategyIdx) * 10;
+
+      // Bonus if the component name hints at the field
+      const componentLower = node.component.toLowerCase();
+      const fieldLower = fieldName.toLowerCase();
+      if (componentLower.includes(fieldLower) || fieldLower.includes(componentLower)) {
+        score += 5;
+      }
+
+      // Bonus if the node already has a props.field matching or similar
+      if (node.props?.field === fieldName) {
+        score += 20;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestNode = node;
+      }
+    }
+
+    if (bestNode) {
+      bestNode.props = { ...bestNode.props, field: fieldName };
+      assignedNodes.add(bestNode);
+      assignedFields.add(fieldName);
+      boundCount++;
+    }
+  }
+
+  return boundCount;
 }
 
 /* ------------------------------------------------------------------ */
