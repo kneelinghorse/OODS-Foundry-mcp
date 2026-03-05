@@ -42,6 +42,7 @@ import { collectViewExtensions } from '../compose/view-extension-collector.js';
 /* ------------------------------------------------------------------ */
 
 export interface DesignComposeInput {
+  dslVersion?: string;
   intent?: string;
   object?: string;
   context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';

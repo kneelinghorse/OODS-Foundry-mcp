@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SchemaStore } from '../schema-store/index.js';
 import { ToolError } from '../errors/tool-error.js';
+import { CURRENT_VERSION, getChangelogSince, type ChangelogEntry } from '../versioning/versions.js';
 
 type ManifestArtifact = {
   name?: string;
@@ -15,6 +16,11 @@ type ManifestDoc = {
   artifacts?: ManifestArtifact[];
 };
 
+type HealthInput = {
+  includeChangelog?: boolean;
+  sinceVersion?: string;
+};
+
 type HealthOutput = {
   status: 'ok' | 'degraded';
   server: { version: string; uptime: number };
@@ -22,7 +28,9 @@ type HealthOutput = {
   tokens: { built: boolean; theme: string; brand: string };
   schemas: { savedCount: number; storeDir: string };
   latency: number;
+  dslVersion?: string;
   warnings?: string[];
+  changelog?: ChangelogEntry[];
 };
 
 const CURRENT_DIR = fileURLToPath(new URL('.', import.meta.url));
@@ -141,7 +149,7 @@ async function readSchemaInfo(): Promise<{ savedCount: number; storeDir: string 
   };
 }
 
-export async function handle(): Promise<HealthOutput> {
+export async function handle(input?: HealthInput): Promise<HealthOutput> {
   const started = nowMs();
   const warnings: string[] = [];
   const structuredDataDir = resolveStructuredDataDir();
@@ -175,7 +183,7 @@ export async function handle(): Promise<HealthOutput> {
   const latency = Math.max(0, nowMs() - started);
   const status: HealthOutput['status'] = warnings.length > 0 ? 'degraded' : 'ok';
 
-  return {
+  const result: HealthOutput = {
     status,
     server: {
       version: readServerVersion(),
@@ -185,6 +193,13 @@ export async function handle(): Promise<HealthOutput> {
     tokens: tokenInfo,
     schemas: schemaInfo,
     latency,
+    dslVersion: CURRENT_VERSION,
     ...(warnings.length > 0 ? { warnings } : {}),
   };
+
+  if (input?.includeChangelog) {
+    result.changelog = getChangelogSince(input.sinceVersion);
+  }
+
+  return result;
 }

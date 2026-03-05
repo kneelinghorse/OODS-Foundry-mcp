@@ -196,6 +196,7 @@ export type ComponentCatalogSummary = {
   traits: string[];
   status: ComponentStatus;
   maturity?: string;
+  deprecated_since?: string;
 };
 
 export type ComponentCatalogEntry = ComponentCatalogSummary & {

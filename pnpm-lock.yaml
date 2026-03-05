@@ -360,6 +360,19 @@ importers:
         specifier: ^4.20.6
         version: 4.20.6
 
+  packages/sdk:
+    dependencies:
+      '@oods/mcp-server':
+        specifier: workspace:*
+        version: link:../mcp-server
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.21
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
+
   packages/tokens:
     devDependencies:
       rimraf:

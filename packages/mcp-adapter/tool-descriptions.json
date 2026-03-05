@@ -12,6 +12,8 @@
   "map.create": "Create a component-to-trait mapping between an external design system and OODS. Includes property translations and coercion rules.",
   "map.list": "List all component-to-trait mappings. Optionally filter by external design system name.",
   "map.resolve": "Resolve an external component to its OODS trait mapping with property translations.",
+  "map.update": "Update an existing component-to-trait mapping by ID. Supports changing traits, property mappings, confidence, and notes.",
+  "map.delete": "Delete a component-to-trait mapping by ID.",
   "object.list": "List OODS objects from the registry with optional filtering by domain, maturity, or trait.",
   "object.show": "Show a full OODS object definition, including composed trait schema and view extensions.",
   "schema.delete": "Delete a saved schema by name and remove it from schema index metadata.",

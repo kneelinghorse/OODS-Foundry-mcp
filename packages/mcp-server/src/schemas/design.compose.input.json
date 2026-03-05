@@ -9,6 +9,10 @@
     { "required": ["object"] }
   ],
   "properties": {
+    "dslVersion": {
+      "type": "string",
+      "description": "DSL version to use for this request. Defaults to the current version (1.0). Controls feature availability and deprecation behavior."
+    },
     "intent": {
       "type": "string",
       "minLength": 1,

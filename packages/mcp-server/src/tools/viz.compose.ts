@@ -38,6 +38,7 @@ export interface DataBindings {
 }
 
 export interface VizComposeInput {
+  dslVersion?: string;
   object?: string;
   traits?: string[];
   chartType?: ChartType;
