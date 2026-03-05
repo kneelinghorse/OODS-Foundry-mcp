@@ -613,6 +613,14 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       }
     }
 
+    const allCategories = new Set<string>();
+    for (const component of catalog) {
+      for (const cat of component.categories) {
+        allCategories.add(cat);
+      }
+    }
+    const availableCategories = Array.from(allCategories).sort();
+
     const hasFilters = Boolean(input.category || input.trait || input.context || input.status);
     const detail: CatalogListDetail = input.detail ?? (hasFilters ? 'full' : 'summary');
     const paginationRequested = input.page !== undefined || input.pageSize !== undefined;
@@ -681,6 +689,7 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
         traitCount: componentsData.stats?.traitCount || 0,
         ...(filteredCount !== undefined ? { filteredCount } : {}),
       },
+      availableCategories,
       ...(suggestions ? { suggestions } : {}),
     };
   } catch (error) {

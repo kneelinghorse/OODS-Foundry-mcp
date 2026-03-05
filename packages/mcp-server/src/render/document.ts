@@ -12,6 +12,7 @@ export type RenderDocumentInput = {
   title?: string;
   componentCss?: string;
   lang?: string;
+  compact?: boolean;
 };
 
 const RENDER_DIR = fileURLToPath(new URL('.', import.meta.url));
@@ -108,22 +109,37 @@ export function renderDocument(input: RenderDocumentInput): string {
   const title = normalizeTitle(input);
   const lang = input.lang?.trim() || 'en';
 
-  const tokensCss = loadTokensCss();
+  const compact = input.compact ?? false;
+  const tokensCss = compact ? '' : loadTokensCss();
   const componentCss = [DEFAULT_COMPONENT_CSS, input.componentCss ?? ''].filter((entry) => entry.trim().length > 0).join('\n');
+
+  const headParts = [
+    '  <meta charset="utf-8" />',
+    '  <meta name="viewport" content="width=device-width, initial-scale=1" />',
+    `  <title>${escapeHtml(title)}</title>`,
+  ];
+
+  if (!compact) {
+    headParts.push(
+      '  <style data-source="tokens">',
+      tokensCss,
+      '  </style>',
+    );
+  } else {
+    headParts.push('  <!-- tokens.css omitted (compact mode) — use tokens.build to obtain -->');
+  }
+
+  headParts.push(
+    '  <style data-source="components">',
+    componentCss,
+    '  </style>',
+  );
 
   return [
     '<!DOCTYPE html>',
     `<html lang="${escapeHtml(lang)}" data-theme="${escapeHtml(theme)}" data-brand="${escapeHtml(brand)}">`,
     '<head>',
-    '  <meta charset="utf-8" />',
-    '  <meta name="viewport" content="width=device-width, initial-scale=1" />',
-    `  <title>${escapeHtml(title)}</title>`,
-    '  <style data-source="tokens">',
-    tokensCss,
-    '  </style>',
-    '  <style data-source="components">',
-    componentCss,
-    '  </style>',
+    ...headParts,
     '</head>',
     `<body data-theme="${escapeHtml(theme)}" data-brand="${escapeHtml(brand)}">`,
     `  <main id="oods-preview-root">${input.screenHtml}</main>`,

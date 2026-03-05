@@ -1513,6 +1513,10 @@ export namespace ReplRenderInputSchema {
       strict?: boolean;
       includeCss?: boolean;
       /**
+       * When true, omit the full token CSS from the response and return a tokenCssRef instead.
+       */
+      compact?: boolean;
+      /**
        * Reserved for v2 fragment-depth controls; currently ignored.
        */
       depth?: number;
@@ -1631,6 +1635,10 @@ export namespace ReplRenderOutputSchema {
      */
     html?: string;
     /**
+     * Reference to the token CSS artifact when compact mode is enabled.
+     */
+    tokenCssRef?: string;
+    /**
      * Fragment payload keyed by canonical node id when output.format=fragments.
      */
     fragments?: {
@@ -1653,6 +1661,7 @@ export namespace ReplRenderOutputSchema {
     output?: {
       format: 'document' | 'fragments';
       strict: boolean;
+      compact?: boolean;
     };
     meta?: {
       screenCount?: number;

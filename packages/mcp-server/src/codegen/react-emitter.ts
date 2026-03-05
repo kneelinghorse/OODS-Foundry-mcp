@@ -13,6 +13,7 @@ import {
   collectBindings,
   generateHandlerStubs,
   collectPropDefaults,
+  resolveChildContent,
 } from './binding-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -195,6 +196,7 @@ function emitNode(
   warnings: CodegenIssue[],
   options: CodegenOptions,
   tailwindVariants: Map<string, TailwindVariantDefinition>,
+  objectSchema?: Record<string, FieldSchemaEntry>,
 ): string {
   const tag = node.component;
   const computedStyle = mergeStyleObjects(
@@ -253,8 +255,8 @@ function emitNode(
   // Sidebar layout needs wrapper elements
   if (node.layout?.type === 'sidebar' && children.length > 0) {
     const [mainChild, ...asideChildren] = children;
-    const mainJsx = mainChild ? emitNode(mainChild, depth + 2, warnings, options, tailwindVariants) : '';
-    const asideJsxParts = asideChildren.map((c) => emitNode(c, depth + 2, warnings, options, tailwindVariants));
+    const mainJsx = mainChild ? emitNode(mainChild, depth + 2, warnings, options, tailwindVariants, objectSchema) : '';
+    const asideJsxParts = asideChildren.map((c) => emitNode(c, depth + 2, warnings, options, tailwindVariants, objectSchema));
 
     const inner = [
       `<div data-sidebar-main>`,
@@ -272,7 +274,7 @@ function emitNode(
 
   // Section layout wraps in a section element
   if (node.layout?.type === 'section') {
-    const innerJsx = children.map((c) => emitNode(c, depth + 2, warnings, options, tailwindVariants)).join('\n');
+    const innerJsx = children.map((c) => emitNode(c, depth + 2, warnings, options, tailwindVariants, objectSchema)).join('\n');
     let sectionClassOrStyle = '';
     if (options.styling === 'tailwind') {
       const sectionClasses = buildTailwindStaticClasses(node, computedStyle, {
@@ -320,12 +322,21 @@ function emitNode(
     ].join('\n');
   }
 
-  // Self-closing if no children
+  // Self-closing if no children — but inject field content if bound
   if (children.length === 0) {
+    const fieldContent = resolveChildContent(node, objectSchema);
+    if (fieldContent) {
+      if (fieldContent.isChildren) {
+        return `<${tag}${attrs}>{${fieldContent.fieldName}}</${tag}>`;
+      }
+      // Prop-based injection: add prop to attrs
+      const propAttr = `${fieldContent.propName}={${fieldContent.fieldName}}`;
+      return `<${tag}${attrs} ${propAttr} />`;
+    }
     return `<${tag}${attrs} />`;
   }
 
-  const childrenJsx = children.map((c) => emitNode(c, depth + 1, warnings, options, tailwindVariants)).join('\n');
+  const childrenJsx = children.map((c) => emitNode(c, depth + 1, warnings, options, tailwindVariants, objectSchema)).join('\n');
   return `<${tag}${attrs}>\n${indent(childrenJsx, depth + 1)}\n${'  '.repeat(depth)}</${tag}>`;
 }
 
@@ -417,7 +428,7 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
 
   // Generate JSX for each screen
   const screenJsx = schema.screens
-    .map((screen) => emitNode(screen, 2, warnings, options, tailwindVariants))
+    .map((screen) => emitNode(screen, 2, warnings, options, tailwindVariants, schema.objectSchema))
     .join('\n');
 
   // Build the complete file

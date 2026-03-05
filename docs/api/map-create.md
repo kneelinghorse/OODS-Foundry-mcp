@@ -1,6 +1,6 @@
 # map.create
 
-> Create a component-to-trait mapping between an external design system and OODS. Includes property translations and coercion rules.
+> Create a component-to-trait mapping between an external design system and OODS. Parameters: externalSystem, externalComponent, oodsTraits, propMappings, confidence, notes. Use apply=true to persist (default: dry-run, returns preview only).
 
 **Registration:** auto
 

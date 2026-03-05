@@ -1,18 +1,48 @@
 import { renderTree } from '../render/tree-renderer.js';
 import { renderDocument } from '../render/document.js';
-import type { UiSchema } from '../schemas/generated.js';
+import type { UiElement, UiSchema } from '../schemas/generated.js';
 import type { CodegenOptions, CodegenResult } from './types.js';
+import { resolveChildContent } from './binding-utils.js';
+
+/**
+ * Inject {{fieldName}} placeholder text into leaf nodes with field bindings.
+ * Mutates a cloned schema so the tree renderer picks up placeholder content.
+ */
+function injectFieldPlaceholders(schema: UiSchema): UiSchema {
+  const objectSchema = schema.objectSchema;
+  if (!objectSchema || Object.keys(objectSchema).length === 0) return schema;
+
+  const cloned = structuredClone(schema);
+  const walk = (node: UiElement): void => {
+    const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+    if (!hasChildren) {
+      const content = resolveChildContent(node, objectSchema);
+      if (content) {
+        if (content.isChildren) {
+          node.props = { ...node.props, text: `{{${content.fieldName}}}` };
+        } else if (content.propName) {
+          node.props = { ...node.props, [content.propName]: `{{${content.fieldName}}}` };
+        }
+      }
+    }
+    node.children?.forEach(walk);
+  };
+  cloned.screens.forEach(walk);
+  return cloned;
+}
 
 /**
  * HTML emitter — delegates to the existing repl.render document pipeline.
  * Produces a self-contained HTML document from the UiSchema.
+ * Injects {{fieldName}} placeholders for field-bound components.
  */
 export function emit(schema: UiSchema, _options: CodegenOptions): CodegenResult {
   const warnings: CodegenResult['warnings'] = [];
 
   try {
-    const screenHtml = renderTree(schema);
-    const html = renderDocument({ screenHtml, schema });
+    const processedSchema = injectFieldPlaceholders(schema);
+    const screenHtml = renderTree(processedSchema);
+    const html = renderDocument({ screenHtml, schema: processedSchema });
 
     return {
       status: 'ok',

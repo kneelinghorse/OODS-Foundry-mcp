@@ -34,7 +34,7 @@ import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 import { loadObject } from '../objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
-import { populateObjectSchema, populateBindings, fillSlotsWithObject } from '../compose/object-slot-filler.js';
+import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldProps } from '../compose/object-slot-filler.js';
 import { collectViewExtensions } from '../compose/view-extension-collector.js';
 
 /* ------------------------------------------------------------------ */
@@ -560,9 +560,10 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     warnings,
   );
 
-  // 3b. Populate object schema and bindings for codegen
+  // 3b. Populate object schema, field→component wiring, and bindings for codegen
   if (composed) {
     populateObjectSchema(schema, composed.schema, composed.semantics);
+    wireFieldProps(schema);
 
     if (effectiveContext) {
       populateBindings(

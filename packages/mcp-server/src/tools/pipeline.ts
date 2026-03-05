@@ -22,11 +22,14 @@ export type PipelineInput = {
     skipRender?: boolean;
     checkA11y?: boolean;
     renderApply?: boolean;
+    compact?: boolean;
   };
 };
 
 export type PipelineOutput = {
   schemaRef?: string;
+  schemaRefCreatedAt?: string;
+  schemaRefExpiresAt?: string;
   compose: {
     object?: string;
     context?: string;
@@ -40,6 +43,7 @@ export type PipelineOutput = {
   };
   render?: {
     html?: string;
+    tokenCssRef?: string;
     meta: Record<string, unknown>;
   };
   code?: {
@@ -50,6 +54,13 @@ export type PipelineOutput = {
   saved?: {
     name: string;
     version: number;
+  };
+  summary?: string;
+  metrics?: {
+    totalNodes: number;
+    componentsUsed: number;
+    fieldsBound: number;
+    responseBytes: number;
   };
   pipeline: {
     steps: string[];
@@ -80,6 +91,48 @@ function countComponents(schema: UiSchema | undefined): number {
   return names.size;
 }
 
+function countNodes(schema: UiSchema | undefined): number {
+  if (!schema) return 0;
+  let count = 0;
+  const stack = [...schema.screens];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node) continue;
+    count++;
+    if (Array.isArray(node.children) && node.children.length > 0) {
+      stack.push(...node.children);
+    }
+  }
+  return count;
+}
+
+function countFieldsBound(schema: UiSchema | undefined): number {
+  if (!schema?.objectSchema) return 0;
+  let count = 0;
+  const stack = [...schema.screens];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node) continue;
+    if (typeof node.props?.field === 'string' && schema.objectSchema[node.props.field]) {
+      count++;
+    }
+    if (Array.isArray(node.children) && node.children.length > 0) {
+      stack.push(...node.children);
+    }
+  }
+  return count;
+}
+
+function buildSummary(input: PipelineInput, componentCount: number, fieldsBound: number, framework: string, styling: string): string {
+  const parts: string[] = [];
+  if (input.object) parts.push(`${input.object}`);
+  if (input.context) parts.push(`${input.context} view`);
+  else parts.push('view');
+  if (fieldsBound > 0) parts.push(`with ${fieldsBound} fields`);
+  parts.push(`${framework}/${styling}`);
+  return `${parts.join(', ')}, ${componentCount} components`;
+}
+
 function firstIssueMessage(issues: ReplIssue[] | CodegenIssue[] | undefined): { code: string; message: string } {
   const issue = issues?.[0];
   if (!issue) {
@@ -108,6 +161,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   const skipRender = input.options?.skipRender === true;
   const checkA11y = input.options?.checkA11y === true;
   const renderApply = input.options?.renderApply ?? true;
+  const renderCompact = input.options?.compact ?? true;
 
   const output: PipelineOutput = {
     compose: {
@@ -124,10 +178,29 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
 
   const stepLatency: Record<string, number> = {};
 
+  let composedSchema: UiSchema | undefined;
+
   const finish = (): PipelineOutput => {
     output.pipeline.steps = [...steps];
     output.pipeline.stepLatency = stepLatency;
     output.pipeline.duration = Math.max(1, Date.now() - startedAt);
+
+    // Compute metrics and summary if compose succeeded
+    if (composedSchema && !output.error) {
+      const totalNodes = countNodes(composedSchema);
+      const componentsUsed = countComponents(composedSchema);
+      const fieldsBound = countFieldsBound(composedSchema);
+      output.summary = buildSummary(input, componentsUsed, fieldsBound, framework, styling);
+
+      const responseJson = JSON.stringify(output);
+      output.metrics = {
+        totalNodes,
+        componentsUsed,
+        fieldsBound,
+        responseBytes: Buffer.byteLength(responseJson, 'utf8'),
+      };
+    }
+
     return output;
   };
 
@@ -156,6 +229,8 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
     return fail('compose', 'OODS-S010', `compose step threw: ${errorMessage(error)}`);
   }
 
+  composedSchema = composeResult.schema;
+
   output.compose = {
     ...(composeResult.objectUsed?.name ? { object: composeResult.objectUsed.name } : output.compose.object ? { object: output.compose.object } : {}),
     ...(input.context ? { context: input.context } : {}),
@@ -165,6 +240,12 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
 
   if (composeResult.schemaRef) {
     output.schemaRef = composeResult.schemaRef;
+    if (composeResult.schemaRefCreatedAt) {
+      output.schemaRefCreatedAt = composeResult.schemaRefCreatedAt;
+    }
+    if (composeResult.schemaRefExpiresAt) {
+      output.schemaRefExpiresAt = composeResult.schemaRefExpiresAt;
+    }
   }
 
   if (composeResult.status !== 'ok') {
@@ -222,6 +303,9 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
         options: {
           includeTree: false,
         },
+        output: {
+          compact: renderCompact,
+        },
       });
       stepLatency.render = Date.now() - stepStart;
     } catch (error) {
@@ -231,6 +315,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
 
     output.render = {
       ...(renderApply && renderResult.html ? { html: renderResult.html } : {}),
+      ...(renderResult.tokenCssRef ? { tokenCssRef: renderResult.tokenCssRef } : {}),
       meta: {
         status: renderResult.status,
         warnings: renderResult.warnings.length,

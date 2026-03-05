@@ -226,6 +226,7 @@ export type CatalogListOutput = {
     traitCount: number;
     filteredCount?: number;
   };
+  availableCategories: string[];
   suggestions?: {
     traits?: string[];
   };

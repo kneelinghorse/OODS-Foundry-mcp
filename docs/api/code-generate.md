@@ -1,6 +1,6 @@
 # code.generate
 
-> Generate framework-specific code (React, Vue, or HTML) from a validated UiSchema tree. Accepts schemaRef from design.compose. Supports TypeScript and token-based styling.
+> Generate framework-specific code (React, Vue, or HTML) from a validated UiSchema tree. Accepts schemaRef from design.compose. Supports TypeScript and token-based styling. Note: schemaRef expires after 30 minutes — use schema.save to persist.
 
 **Registration:** auto
 

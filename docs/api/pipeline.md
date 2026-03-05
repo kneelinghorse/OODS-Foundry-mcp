@@ -1,6 +1,6 @@
 # pipeline
 
-> Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call. Supports optional validation/render skipping, accessibility checks, and schema persistence.
+> Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call. Defaults to compact render mode (token CSS omitted, ~40% smaller). Supports optional validation/render skipping, accessibility checks, and schema persistence via save parameter. Returns schemaRefCreatedAt/schemaRefExpiresAt (default TTL: 30 minutes). Use save to persist the schema.
 
 **Registration:** auto
 
@@ -21,17 +21,22 @@
 | `options.skipRender` | boolean | No |  | Skip the render step (default false). |
 | `options.checkA11y` | boolean | No |  | Enable a11y contrast checks in validate (default false). |
 | `options.renderApply` | boolean | No |  | Render with apply=true to include HTML output (default true). |
+| `options.compact` | boolean | No |  | When true (default), omit token CSS from render output and return tokenCssRef instead. Reduces response size by ~40%. |
 
 ## Output Shape
 
 | Field | Type | Always Present | Description |
 |-------|------|----------------|-------------|
 | `schemaRef` | string | No | Schema reference returned by compose, reusable across tools. |
+| `schemaRefCreatedAt` | string | No | ISO timestamp when the schemaRef was created. |
+| `schemaRefExpiresAt` | string | No | ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry. |
 | `compose` | object | Yes |  |
 | `validation` | object | No |  |
 | `render` | object | No |  |
 | `code` | object | No |  |
 | `saved` | object | No |  |
+| `summary` | string | No | One-line natural language description of what was generated. |
+| `metrics` | object | No | Quality metrics for the pipeline output. |
 | `pipeline` | object | Yes |  |
 | `error` | object | No |  |
 

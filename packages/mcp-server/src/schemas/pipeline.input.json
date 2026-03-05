@@ -86,6 +86,10 @@
         "renderApply": {
           "type": "boolean",
           "description": "Render with apply=true to include HTML output (default true)."
+        },
+        "compact": {
+          "type": "boolean",
+          "description": "When true (default), omit token CSS from render output and return tokenCssRef instead. Reduces response size by ~40%."
         }
       }
     }

@@ -1,15 +1,15 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-05T03:43:57.112Z",
+  "updatedAt": "2026-03-05T16:45:22.933Z",
   "schemas": [
     {
       "name": "tier1-acceptance-sub-detail",
       "schemaRef": "compose-7d860337",
-      "object": "Subscription",
       "version": 1,
       "createdAt": "2026-03-05T03:43:57.111Z",
       "updatedAt": "2026-03-05T03:43:57.111Z",
-      "tags": []
+      "tags": [],
+      "object": "Subscription"
     }
   ]
 }

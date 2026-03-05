@@ -7,6 +7,7 @@
  * HandlerSignatureMap parameter.
  */
 import type { UiElement, FieldSchemaEntry } from '../schemas/generated.js';
+import { getContentStrategy, type ContentStrategy } from './content-strategy.js';
 
 // ---------------------------------------------------------------------------
 // Field type mapping (object schema → TypeScript types)
@@ -168,4 +169,50 @@ export function collectPropDefaults(
   }
 
   return defaults;
+}
+
+// ---------------------------------------------------------------------------
+// Field → component content resolution for codegen prop binding
+// ---------------------------------------------------------------------------
+
+export type FieldContentResolution = {
+  /** The content strategy used */
+  strategy: ContentStrategy;
+  /** The camelCase field name for code injection */
+  fieldName: string;
+  /** The prop name to inject on (for value-prop, label-prop, status-prop) */
+  propName?: string;
+  /** Whether this field should be injected as children content */
+  isChildren: boolean;
+};
+
+/**
+ * Resolve how a field should be injected into a component's codegen output.
+ * Returns null if the component has no field binding or uses strategy 'none'.
+ */
+export function resolveChildContent(
+  node: UiElement,
+  objectSchema?: Record<string, FieldSchemaEntry>,
+): FieldContentResolution | null {
+  const fieldProp = node.props?.field;
+  if (typeof fieldProp !== 'string' || !fieldProp) return null;
+  if (!objectSchema || !objectSchema[fieldProp]) return null;
+
+  const strategy = getContentStrategy(node.component);
+  if (strategy === 'none') return null;
+
+  const fieldName = snakeToCamel(fieldProp);
+
+  switch (strategy) {
+    case 'children':
+      return { strategy, fieldName, isChildren: true };
+    case 'value-prop':
+      return { strategy, fieldName, propName: 'value', isChildren: false };
+    case 'label-prop':
+      return { strategy, fieldName, propName: 'label', isChildren: false };
+    case 'status-prop':
+      return { strategy, fieldName, propName: 'status', isChildren: false };
+    default:
+      return null;
+  }
 }

@@ -11,6 +11,16 @@
       "type": "string",
       "description": "Schema reference returned by compose, reusable across tools."
     },
+    "schemaRefCreatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when the schemaRef was created."
+    },
+    "schemaRefExpiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry."
+    },
     "compose": {
       "type": "object",
       "additionalProperties": false,
@@ -50,6 +60,10 @@
           "type": "string",
           "description": "Rendered HTML when renderApply=true."
         },
+        "tokenCssRef": {
+          "type": "string",
+          "description": "Reference to token CSS artifact when compact mode is enabled."
+        },
         "meta": {
           "type": "object",
           "additionalProperties": true,
@@ -88,6 +102,21 @@
           "minimum": 1
         }
       }
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line natural language description of what was generated."
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "totalNodes": { "type": "integer", "minimum": 0 },
+        "componentsUsed": { "type": "integer", "minimum": 0 },
+        "fieldsBound": { "type": "integer", "minimum": 0 },
+        "responseBytes": { "type": "integer", "minimum": 0 }
+      },
+      "description": "Quality metrics for the pipeline output."
     },
     "pipeline": {
       "type": "object",

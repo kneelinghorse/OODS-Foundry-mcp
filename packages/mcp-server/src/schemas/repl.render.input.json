@@ -65,6 +65,11 @@
           "type": "boolean",
           "default": true
         },
+        "compact": {
+          "type": "boolean",
+          "description": "When true, omit the full token CSS from the response and return a tokenCssRef instead. Reduces response size by ~40%. Default false for repl.render, true for pipeline.",
+          "default": false
+        },
         "depth": {
           "type": "number",
           "description": "Reserved for v2 fragment-depth controls; currently ignored."

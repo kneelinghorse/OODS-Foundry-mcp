@@ -97,6 +97,10 @@
       "type": "string",
       "description": "Standalone HTML5 document generated when apply=true, output.format=document (or omitted), and render validation passes."
     },
+    "tokenCssRef": {
+      "type": "string",
+      "description": "Reference to the token CSS artifact when compact mode is enabled. Use tokens.build to obtain the full CSS."
+    },
     "fragments": {
       "type": "object",
       "description": "Fragment payload keyed by canonical node id when output.format=fragments.",
@@ -151,6 +155,9 @@
           ]
         },
         "strict": {
+          "type": "boolean"
+        },
+        "compact": {
           "type": "boolean"
         }
       },

@@ -1,6 +1,6 @@
 # schema.save
 
-> Persist a composed UiSchema by name from schemaRef. Stores schema metadata (name, version, object/context, tags, timestamps) for reuse across sessions.
+> Persist a composed UiSchema by name from schemaRef. Stores schema metadata (name, version, object/context, tags, timestamps) for reuse across sessions. Use this to persist schemas beyond the 30-minute schemaRef TTL.
 
 **Registration:** auto
 
