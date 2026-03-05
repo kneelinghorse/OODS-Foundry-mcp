@@ -54,7 +54,7 @@ describe('Canonical object registry integration', () => {
     {
       name: 'Product',
       expectedFields: ['product_id', 'sku', 'inventory_status'],
-      expectedTraits: ['Labelled', 'Stateful', 'Timestampable', 'Priceable', 'Classifiable'],
+      expectedTraits: ['Labelled', 'Stateful', 'Timestampable', 'Priceable', 'Classifiable', 'Searchable', 'Filterable', 'Pageable'],
       unionSnippet: "inventory_status: 'in_stock' | 'low_stock' | 'backorder' | 'discontinued';",
     },
     {
