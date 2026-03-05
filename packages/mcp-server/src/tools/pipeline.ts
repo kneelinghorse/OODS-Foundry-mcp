@@ -27,6 +27,8 @@ export type PipelineInput = {
 
 export type PipelineOutput = {
   schemaRef?: string;
+  schemaRefCreatedAt?: string;
+  schemaRefExpiresAt?: string;
   compose: {
     object?: string;
     context?: string;
@@ -165,6 +167,12 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
 
   if (composeResult.schemaRef) {
     output.schemaRef = composeResult.schemaRef;
+    if (composeResult.schemaRefCreatedAt) {
+      output.schemaRefCreatedAt = composeResult.schemaRefCreatedAt;
+    }
+    if (composeResult.schemaRefExpiresAt) {
+      output.schemaRefExpiresAt = composeResult.schemaRefExpiresAt;
+    }
   }
 
   if (composeResult.status !== 'ok') {

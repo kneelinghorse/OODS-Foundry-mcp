@@ -1,6 +1,6 @@
 # tokens.build
 
-> Build design tokens for a brand and theme. Returns compiled CSS variables and token artifacts. Use apply=true to write output files.
+> Build design tokens for a brand and theme. Returns compiled CSS variables and token artifacts. Use apply=true to write output files (default: dry-run, returns preview only).
 
 **Registration:** auto
 

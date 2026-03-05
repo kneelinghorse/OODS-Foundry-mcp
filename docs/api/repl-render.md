@@ -1,6 +1,6 @@
 # repl.render
 
-> Render a validated UiSchema into HTML/CSS preview output. Accepts schemaRef from design.compose. Supports document and fragment formats; HTML/fragments are returned only when apply=true (apply=false returns metadata-only preview).
+> Render a validated UiSchema into HTML/CSS preview output. Accepts schemaRef from design.compose. Supports document and fragment formats; HTML/fragments are returned only when apply=true (apply=false returns metadata-only preview). Note: schemaRef expires after 30 minutes — use schema.save to persist.
 
 **Registration:** auto
 

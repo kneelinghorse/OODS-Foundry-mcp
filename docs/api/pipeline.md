@@ -1,6 +1,6 @@
 # pipeline
 
-> Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call. Supports optional validation/render skipping, accessibility checks, and schema persistence.
+> Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call. Supports optional validation/render skipping, accessibility checks, and schema persistence via save parameter. Returns schemaRefCreatedAt/schemaRefExpiresAt (default TTL: 30 minutes). Use save to persist the schema.
 
 **Registration:** auto
 
@@ -27,6 +27,8 @@
 | Field | Type | Always Present | Description |
 |-------|------|----------------|-------------|
 | `schemaRef` | string | No | Schema reference returned by compose, reusable across tools. |
+| `schemaRefCreatedAt` | string | No | ISO timestamp when the schemaRef was created. |
+| `schemaRefExpiresAt` | string | No | ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry. |
 | `compose` | object | Yes |  |
 | `validation` | object | No |  |
 | `render` | object | No |  |

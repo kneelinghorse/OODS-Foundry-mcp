@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["components", "totalCount", "returnedCount", "page", "pageSize", "hasMore", "detail", "generatedAt", "stats"],
+  "required": ["components", "totalCount", "returnedCount", "page", "pageSize", "hasMore", "detail", "generatedAt", "stats", "availableCategories"],
   "properties": {
     "components": {
       "type": "array",
@@ -167,6 +167,11 @@
         }
       },
       "additionalProperties": false
+    },
+    "availableCategories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "All available category values that can be used for filtering. Sorted alphabetically."
     },
     "suggestions": {
       "type": "object",

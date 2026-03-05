@@ -1,6 +1,6 @@
 # catalog.list
 
-> List available OODS components from the design system catalog. Filter by category, trait, or rendering context.
+> List available OODS components from the design system catalog. Filter by category, trait, or rendering context. Response includes availableCategories array showing all valid category values for filtering.
 
 **Registration:** auto
 
@@ -29,6 +29,7 @@
 | `detail` | `summary` \| `full` | Yes | Detail level applied to component entries. |
 | `generatedAt` | string | Yes | ISO timestamp when catalog was generated |
 | `stats` | object | Yes |  |
+| `availableCategories` | string[] | Yes | All available category values that can be used for filtering. Sorted alphabetically. |
 | `suggestions` | object | No | Suggested filter values when a query returns zero results. |
 
 ## Error Codes

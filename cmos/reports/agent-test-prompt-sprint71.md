@@ -27,7 +27,7 @@ Call `health` with no arguments. Report: Is the server ready? What subsystems ar
 Call `object.list` with no arguments. How many objects are returned? Pick one that looks interesting and call `object.show` on it. What traits does it have? Is the output understandable?
 
 **Task 1.3 — Explore the catalog**
-Call `catalog.list` with no arguments. How many components are in the catalog? Try filtering by category (e.g., `category: "form"` or `category: "badge"`). Did filtering work as expected?
+Call `catalog.list` with no arguments. How many components are in the catalog? Check the `availableCategories` array in the response — what categories exist? Try filtering by category (e.g., `category: "core"` or `category: "behavioral"`). Did filtering work as expected?
 
 ---
 
@@ -41,7 +41,7 @@ Call `design.compose` with:
   "object": "Product"
 }
 ```
-Did you get a `schemaRef` back? Examine the UiSchema tree — does it make sense for the intent? Note any components that seem wrong or missing.
+Did you get a `schemaRef` back? Check `schemaRefCreatedAt` and `schemaRefExpiresAt` — are TTL fields present? Examine the UiSchema tree — does it make sense for the intent? Note any components that seem wrong or missing.
 
 **Task 2.2 — Compose a list view**
 Call `design.compose` with:
@@ -75,6 +75,8 @@ Take the `schemaRef` from Task 2.1 and call `repl.validate` with it:
 ```
 Does validation pass? Are there warnings? Is the output clear?
 
+> Note: `mode` defaults to `"full"` when using schemaRef. You can also pass `mode: "patch"` with `patch` and `baseTree` for incremental validation.
+
 **Task 3.2 — Render to HTML**
 Take the same `schemaRef` and call `repl.render`:
 ```json
@@ -84,6 +86,8 @@ Take the same `schemaRef` and call `repl.render`:
 }
 ```
 Did you get HTML back? Does it look like a reasonable Product detail view?
+
+> Note: `apply` defaults to false (metadata-only preview). Set `apply: true` to get actual HTML output.
 
 ---
 
@@ -104,6 +108,7 @@ Is the generated React/TypeScript code usable? Are imports correct? Does it use 
 Same schemaRef, but:
 ```json
 {
+  "schemaRef": "<your-schemaRef-from-2.1>",
   "framework": "vue",
   "options": { "typescript": true, "styling": "tailwind" }
 }
@@ -114,6 +119,7 @@ Does it produce a valid Vue SFC? Does Tailwind styling look correct?
 Same schemaRef, but:
 ```json
 {
+  "schemaRef": "<your-schemaRef-from-2.1>",
   "framework": "html",
   "options": { "styling": "inline" }
 }
@@ -131,10 +137,12 @@ Call `pipeline`:
   "intent": "A dashboard card showing an Organization's plan tier, billing status, and member count",
   "object": "Organization",
   "framework": "react",
-  "options": { "typescript": true, "styling": "tokens" }
+  "styling": "tokens"
 }
 ```
-Does it run compose → validate → render → codegen in one call? What does the response structure look like? Is it clear which phase produced which output?
+Does it run compose → validate → render → codegen in one call? What does the response structure look like? Is it clear which phase produced which output? Are `schemaRefCreatedAt`/`schemaRefExpiresAt` present?
+
+> Note: `framework` and `styling` are top-level params on pipeline (not nested in options). Pipeline `options` controls skip flags: `{ skipValidation, skipRender, checkA11y, renderApply }`.
 
 **Task 5.2 — Pipeline with schema save**
 Call `pipeline` again but add `save`:
@@ -143,11 +151,13 @@ Call `pipeline` again but add `save`:
   "intent": "A transaction receipt showing amount, payment method, and status",
   "object": "Transaction",
   "framework": "react",
-  "options": { "typescript": true, "styling": "tokens" },
-  "save": { "name": "transaction-receipt-v1", "tags": ["receipt", "transaction"] }
+  "styling": "tokens",
+  "save": "transaction-receipt-v1"
 }
 ```
 Did the schema persist? Check with `schema.list` — is your saved schema there?
+
+> Note: `save` accepts a schema name string. The schema will be persisted for reuse across sessions.
 
 ---
 
@@ -189,14 +199,15 @@ Call `viz.compose`:
 ```json
 {
   "chartType": "bar",
-  "data": {
-    "x": { "field": "category", "type": "nominal" },
-    "y": { "field": "revenue", "type": "quantitative" }
-  },
-  "title": "Revenue by Category"
+  "dataBindings": {
+    "x": "category",
+    "y": "revenue"
+  }
 }
 ```
 Does it return a visualization schema? Is the structure clear?
+
+> Note: `dataBindings` maps encoding channels (`x`, `y`, `color`, `size`) to field name strings — not objects with type metadata.
 
 **Task 7.2 — Compose from object traits**
 Call `viz.compose`:
@@ -218,17 +229,22 @@ Call `map.create`:
 {
   "externalSystem": "material-ui",
   "externalComponent": "MuiDataGrid",
-  "traits": ["Searchable", "Filterable", "Pageable", "Sortable"],
-  "propertyMappings": {
-    "rows": "data",
-    "columns": "fields",
-    "pageSize": "defaultPageSize"
+  "oodsTraits": ["Searchable", "Filterable", "Pageable", "Sortable"],
+  "propMappings": [
+    { "externalProp": "rows", "oodsProp": "data" },
+    { "externalProp": "columns", "oodsProp": "fields" },
+    { "externalProp": "pageSize", "oodsProp": "defaultPageSize" }
+  ],
+  "confidence": "manual",
+  "metadata": {
+    "notes": "MUI DataGrid maps to behavioral list traits"
   },
-  "confidence": 0.85,
-  "notes": "MUI DataGrid maps to behavioral list traits"
+  "apply": true
 }
 ```
 Did it create successfully? What ID was returned?
+
+> Note: `apply` defaults to false (dry-run preview). Set `apply: true` to persist the mapping. `confidence` is `"auto"` or `"manual"` (not a number). `propMappings` is an array of `{ externalProp, oodsProp, coercion? }` objects.
 
 **Task 8.2 — Resolve the mapping**
 Call `map.resolve`:
@@ -241,7 +257,12 @@ Call `map.resolve`:
 Does it return the mapping with property translations?
 
 **Task 8.3 — Delete the mapping**
-Clean up with `map.delete` using the ID from 8.1.
+Clean up with `map.delete` using the ID from 8.1:
+```json
+{
+  "id": "<mapping-id-from-8.1>"
+}
+```
 
 ---
 

@@ -1,6 +1,6 @@
 # brand.apply
 
-> Apply brand token overlays using alias or RFC 6902 patch strategy. Requires a delta object. Use apply=true to write changes to disk.
+> Apply brand token overlays using alias or RFC 6902 patch strategy. Requires a delta object. Use apply=true to write changes to disk (default: dry-run, returns preview only).
 
 **Registration:** auto
 

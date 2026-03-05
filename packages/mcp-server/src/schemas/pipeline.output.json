@@ -11,6 +11,16 @@
       "type": "string",
       "description": "Schema reference returned by compose, reusable across tools."
     },
+    "schemaRefCreatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when the schemaRef was created."
+    },
+    "schemaRefExpiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry."
+    },
     "compose": {
       "type": "object",
       "additionalProperties": false,

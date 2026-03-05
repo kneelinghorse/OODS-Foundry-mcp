@@ -1,6 +1,6 @@
 # viz.compose
 
-> Compose a visualization schema from chart type, data bindings, and/or object viz traits. Returns schemaRef for pipeline reuse. Supports bar, line, area, and point chart types with axis, color, and size encodings.
+> Compose a visualization schema from chart type, data bindings, and/or object viz traits. Returns schemaRef for pipeline reuse. schemaRef includes createdAt/expiresAt (default TTL: 30 minutes). Supports bar, line, area, and point chart types with axis, color, and size encodings.
 
 **Registration:** auto
 

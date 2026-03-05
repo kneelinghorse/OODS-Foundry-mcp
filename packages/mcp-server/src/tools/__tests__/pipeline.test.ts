@@ -176,6 +176,30 @@ describe('pipeline orchestration', () => {
     });
   });
 
+  // ── schemaRef TTL propagation ───────────────────────────────────
+
+  describe('schemaRef TTL propagation', () => {
+    it('propagates schemaRefCreatedAt and schemaRefExpiresAt from compose', async () => {
+      mockComposeHandle.mockResolvedValue({
+        ...composeOk(),
+        schemaRefCreatedAt: '2026-03-05T10:00:00.000Z',
+        schemaRefExpiresAt: '2026-03-05T10:30:00.000Z',
+      });
+
+      const result = await handle({ object: 'Subscription', framework: 'react' });
+
+      expect(result.schemaRefCreatedAt).toBe('2026-03-05T10:00:00.000Z');
+      expect(result.schemaRefExpiresAt).toBe('2026-03-05T10:30:00.000Z');
+    });
+
+    it('omits TTL fields when compose does not return them', async () => {
+      const result = await handle({ object: 'Subscription', framework: 'react' });
+
+      expect(result.schemaRefCreatedAt).toBeUndefined();
+      expect(result.schemaRefExpiresAt).toBeUndefined();
+    });
+  });
+
   // ── Skip options ──────────────────────────────────────────────────
 
   describe('skip options', () => {

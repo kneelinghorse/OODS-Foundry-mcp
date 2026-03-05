@@ -1,6 +1,6 @@
 # billing.switchFixtures
 
-> Switch the active billing fixture provider for Storybook scenarios. Use apply=true to record the switch.
+> Switch the active billing fixture provider for Storybook scenarios. Use apply=true to record the switch (default: dry-run).
 
 **Registration:** on-demand
 
