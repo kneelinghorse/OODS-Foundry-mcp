@@ -16,7 +16,7 @@ export type PipelineInput = {
   layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
   framework?: CodegenFramework;
   styling?: CodegenStyling;
-  save?: string;
+  save?: string | { name: string; tags?: string[] };
   options?: {
     skipValidation?: boolean;
     skipRender?: boolean;
@@ -278,15 +278,22 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
     return fail('codegen', issue.code, issue.message);
   }
 
-  const saveName = input.save?.trim();
-  if (saveName) {
+  const saveConfig = typeof input.save === 'string'
+    ? { name: input.save.trim(), tags: undefined }
+    : input.save
+      ? { name: input.save.name.trim(), tags: input.save.tags }
+      : undefined;
+
+  if (saveConfig?.name) {
     steps.push('save');
 
     stepStart = Date.now();
     try {
       const saved = await schemaSaveHandle({
-        name: saveName,
+        name: saveConfig.name,
         schemaRef: composeResult.schemaRef,
+        ...(saveConfig.tags ? { tags: saveConfig.tags } : {}),
+        ...(composeResult.objectUsed?.name ? { object: composeResult.objectUsed.name } : {}),
       });
       stepLatency.save = Date.now() - stepStart;
       output.saved = {

@@ -15,7 +15,7 @@
 | `layout` | `dashboard` \| `form` \| `detail` \| `list` \| `auto` | No |  | Layout template to use. |
 | `framework` | `react` \| `vue` \| `html` | No |  | Target framework for code generation. |
 | `styling` | `inline` \| `tokens` \| `tailwind` | No |  | Styling strategy for code generation. |
-| `save` | string | No |  | Optional schema name to persist via schema.save. |
+| `save` | any | No |  | Optional schema save config. String for name-only, or { name, tags } for full control. |
 | `options` | object | No |  |  |
 | `options.skipValidation` | boolean | No |  | Skip the validate step (default false). |
 | `options.skipRender` | boolean | No |  | Skip the render step (default false). |

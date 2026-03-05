@@ -607,6 +607,21 @@ describe('Agentic REPL validate handler', () => {
     expect(result.meta?.missingComponents).toBeUndefined();
     expect(validateValidateOutput(result)).toBe(true);
   });
+
+  it('defaults mode to full when schemaRef provided without mode', async () => {
+    const schemaRef = createSchemaRef(baseTree, 'compose').ref;
+
+    const result = await validateHandle({ schemaRef } as any);
+
+    expect(result.status).toBe('ok');
+    expect(result.meta?.screenCount).toBe(1);
+  });
+
+  it('defaults mode to full when schema provided without mode', async () => {
+    const result = await validateHandle({ schema: baseTree } as any);
+
+    expect(result.status).toBe('ok');
+  });
 });
 
 describe('Agentic REPL render handler', () => {
@@ -863,5 +878,21 @@ describe('Agentic REPL render handler', () => {
     expect(result.html).toContain('data-viz-preview-type=');
     expect(result.html).not.toContain('data-oods-fallback="true"');
     expect(validateRenderOutput(result)).toBe(true);
+  });
+
+  it('defaults mode to full when schemaRef provided without mode', async () => {
+    const schemaRef = createSchemaRef(baseTree, 'compose').ref;
+
+    const result = await renderHandle({ schemaRef, apply: true } as any);
+
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<!DOCTYPE html>');
+  });
+
+  it('defaults mode to full when schema provided without mode', async () => {
+    const result = await renderHandle({ schema: baseTree, apply: true } as any);
+
+    expect(result.status).toBe('ok');
+    expect(result.html).toContain('<!DOCTYPE html>');
   });
 });

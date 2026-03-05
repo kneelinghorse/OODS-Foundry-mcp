@@ -1488,7 +1488,7 @@ export namespace ReplRenderInputSchema {
   export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
 
   export interface ReplRenderInput2 {
-    mode: 'full' | 'patch';
+    mode?: 'full' | 'patch';
     schema?: AgenticREPLUISchema;
     /**
      * Reference to a cached UiSchema returned by design.compose.
@@ -1833,7 +1833,7 @@ export namespace ReplValidateInputSchema {
   export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
 
   export interface ReplValidateInput2 {
-    mode: 'full' | 'patch';
+    mode?: 'full' | 'patch';
     schema?: AgenticREPLUISchema;
     /**
      * Reference to a cached UiSchema returned by design.compose.

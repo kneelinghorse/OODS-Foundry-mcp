@@ -354,6 +354,22 @@ function countNodes(schema: UiSchema): number {
 export async function handle(input: DesignComposeInput): Promise<DesignComposeOutput> {
   const warnings: ComposeIssue[] = [];
 
+  // Reject empty or whitespace-only intent when no object is provided
+  if (input.intent !== undefined && !input.intent.trim() && !input.object) {
+    return {
+      status: 'error',
+      layout: '',
+      schema: { version: '2026.02', screens: [{ id: 'err-0', component: 'Box' }] },
+      selections: [],
+      warnings: [],
+      errors: [{
+        code: 'OODS-V003',
+        message: 'intent must not be empty or whitespace-only when no object is provided.',
+        hint: 'Provide a descriptive intent (e.g., "A detail view for a Product") or specify an object.',
+      }],
+    };
+  }
+
   // Resolve intent/object/context via hybrid resolver
   const resolved = resolveIntentObject(input.intent, input.object, input.context);
 

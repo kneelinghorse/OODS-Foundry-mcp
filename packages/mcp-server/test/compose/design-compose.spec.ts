@@ -375,3 +375,26 @@ describe('design.compose — theme', () => {
     expect(result.schema.theme).toBe('dark');
   });
 });
+
+/* ------------------------------------------------------------------ */
+/*  Whitespace intent validation                                       */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — whitespace intent validation', () => {
+  it('rejects whitespace-only intent with no object', async () => {
+    const result = await handle({ intent: '   ' });
+    expect(result.status).toBe('error');
+    expect(result.errors[0]?.code).toBe('OODS-V003');
+  });
+
+  it('rejects empty intent with no object', async () => {
+    const result = await handle({ intent: '' });
+    expect(result.status).toBe('error');
+    expect(result.errors[0]?.code).toBe('OODS-V003');
+  });
+
+  it('allows whitespace intent when object is provided', async () => {
+    const result = await handle({ intent: '  ', object: 'User' });
+    expect(result.status).toBe('ok');
+  });
+});

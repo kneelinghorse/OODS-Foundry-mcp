@@ -24,7 +24,6 @@ const INTERACTIVE_COMPONENTS = new Set<string>([
   'Switch',
   'Checkbox',
   'Radio',
-  'Tabs',
 ]);
 
 const INTENT_CLASS_MAP: Record<string, string> = {
@@ -178,6 +177,17 @@ function interactiveStateClasses(node: UiElement, props: NodeProps | null): stri
   return classes;
 }
 
+const INTERACTIVE_PREFIXES = ['hover:', 'focus:', 'disabled:', 'active:'];
+
+function isInteractiveClass(cls: string): boolean {
+  return INTERACTIVE_PREFIXES.some((prefix) => cls.startsWith(prefix));
+}
+
+function isInteractiveElement(node: UiElement): boolean {
+  return INTERACTIVE_COMPONENTS.has(node.component) ||
+    !!(node.bindings && Object.keys(node.bindings).length > 0);
+}
+
 export interface TailwindStaticClassOptions {
   includeUserClass?: boolean;
   includeInteractiveStates?: boolean;
@@ -197,11 +207,18 @@ export function buildTailwindStaticClasses(
   const classes: string[] = [];
   classes.push(inlineStyleToTailwind(styleObj));
 
+  const interactive = isInteractiveElement(node);
+
   if (includeVariantFallback && props) {
     for (const key of VARIANT_PROP_KEYS) {
       const value = props[key];
       if (typeof value !== 'string' || !value.trim()) continue;
-      const variantClasses = variantClassesForValue(key, value);
+      let variantClasses = variantClassesForValue(key, value);
+      if (variantClasses && !interactive) {
+        variantClasses = splitClasses(variantClasses)
+          .filter((cls) => !isInteractiveClass(cls))
+          .join(' ');
+      }
       if (variantClasses) classes.push(variantClasses);
     }
   }

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { SchemaStore } from '../schema-store/index.js';
 import { ToolError } from '../errors/tool-error.js';
 import { CURRENT_VERSION, getChangelogSince, type ChangelogEntry } from '../versioning/versions.js';
+import { listObjects } from '../objects/object-loader.js';
 
 type ManifestArtifact = {
   name?: string;
@@ -158,10 +159,16 @@ export async function handle(input?: HealthInput): Promise<HealthOutput> {
   let tokenInfo = { built: false, theme: process.env.MCP_THEME ?? 'light', brand: process.env.MCP_BRAND ?? 'A' };
   try {
     const registryInfo = readRegistryInfo(structuredDataDir);
+    let objectCount = registryInfo.objects;
+    try {
+      objectCount = listObjects().length;
+    } catch {
+      // Fall back to structured data stats if object loader unavailable
+    }
     registry = {
       components: registryInfo.components,
       traits: registryInfo.traits,
-      objects: registryInfo.objects,
+      objects: objectCount,
       lastSync: registryInfo.lastSync,
     };
     tokenInfo = readTokenInfo(structuredDataDir, registryInfo.manifest);

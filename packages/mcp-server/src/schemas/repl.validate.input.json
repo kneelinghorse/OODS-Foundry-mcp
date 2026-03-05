@@ -33,10 +33,13 @@
       "default": {}
     }
   },
-  "required": ["mode"],
   "allOf": [
     {
-      "if": { "properties": { "mode": { "const": "full" } } },
+      "if": { "properties": { "mode": { "const": "full" } }, "required": ["mode"] },
+      "then": { "anyOf": [{ "required": ["schema"] }, { "required": ["schemaRef"] }] }
+    },
+    {
+      "if": { "not": { "required": ["mode"] } },
       "then": { "anyOf": [{ "required": ["schema"] }, { "required": ["schemaRef"] }] }
     },
     { "if": { "properties": { "mode": { "const": "patch" } } }, "then": { "required": ["patch"] } }
