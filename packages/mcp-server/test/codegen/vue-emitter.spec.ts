@@ -1,0 +1,397 @@
+/**
+ * Contract tests for the Vue SFC emitter (s63-m03).
+ *
+ * Validates:
+ * 1. Basic SFC output structure (template + script + optional style)
+ * 2. Typed defineProps from objectSchema when present
+ * 3. Field type mapping consistent with React emitter
+ * 4. Required vs optional field handling
+ * 5. Enum fields generate union literal types
+ * 6. Backward compatibility — no objectSchema = empty defineProps skeleton
+ */
+import { describe, it, expect } from 'vitest';
+import { emit } from '../../src/codegen/vue-emitter.js';
+import type { UiSchema, UiElement, FieldSchemaEntry } from '../../src/schemas/generated.js';
+import type { CodegenOptions } from '../../src/codegen/types.js';
+
+const defaultOpts: CodegenOptions = { typescript: true, styling: 'tokens' };
+
+function makeSchema(...screens: UiElement[]): UiSchema {
+  return { version: '1.0', screens };
+}
+
+function makeSchemaWithObjectSchema(
+  objectSchema: Record<string, FieldSchemaEntry>,
+  ...screens: UiElement[]
+): UiSchema {
+  return { version: '1.0', screens, objectSchema };
+}
+
+describe('vue-emitter — basic output', () => {
+  it('generates valid Vue 3 SFC structure', () => {
+    const schema = makeSchema({ id: 'root', component: 'Box' });
+    const result = emit(schema, defaultOpts);
+    expect(result.status).toBe('ok');
+    expect(result.framework).toBe('vue');
+    expect(result.fileExtension).toBe('.vue');
+    expect(result.code).toContain('<template>');
+    expect(result.code).toContain('</template>');
+    expect(result.code).toContain('<script setup lang="ts">');
+    expect(result.code).toContain('</script>');
+  });
+
+  it('includes component imports', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Card',
+      children: [{ id: 'btn', component: 'Button' }],
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain("import { Button, Card } from '@oods/components';");
+  });
+});
+
+describe('vue-emitter — typed defineProps (s63-m03)', () => {
+  it('generates typed Props interface and defineProps when objectSchema present', () => {
+    const schema = makeSchemaWithObjectSchema(
+      {
+        name: { type: 'string', required: true, description: 'User name' },
+        age: { type: 'integer', required: false, description: 'User age' },
+      },
+      { id: 'root', component: 'Box' },
+    );
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('interface Props');
+    expect(result.code).toContain('name: string;');
+    expect(result.code).toContain('age?: number;');
+    expect(result.code).toContain('defineProps<Props>();');
+  });
+
+  it('maps field types to TypeScript types correctly', () => {
+    const schema = makeSchemaWithObjectSchema(
+      {
+        id: { type: 'string', required: true },
+        count: { type: 'integer', required: true },
+        price: { type: 'number', required: true },
+        active: { type: 'boolean', required: true },
+        created_at: { type: 'datetime', required: true },
+        email: { type: 'email', required: false },
+      },
+      { id: 'root', component: 'Box' },
+    );
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('id: string;');
+    expect(result.code).toContain('count: number;');
+    expect(result.code).toContain('price: number;');
+    expect(result.code).toContain('active: boolean;');
+    expect(result.code).toContain('createdAt: string;');
+    expect(result.code).toContain('email?: string;');
+  });
+
+  it('generates union literal type for enum fields', () => {
+    const schema = makeSchemaWithObjectSchema(
+      {
+        status: {
+          type: 'string',
+          required: true,
+          enum: ['active', 'paused', 'terminated'],
+        },
+      },
+      { id: 'root', component: 'Box' },
+    );
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain("status: 'active' | 'paused' | 'terminated';");
+  });
+
+  it('marks required fields as non-optional and optional fields with ?', () => {
+    const schema = makeSchemaWithObjectSchema(
+      {
+        required_field: { type: 'string', required: true },
+        optional_field: { type: 'string', required: false },
+      },
+      { id: 'root', component: 'Box' },
+    );
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('requiredField: string;');
+    expect(result.code).toContain('optionalField?: string;');
+  });
+
+  it('includes JSDoc comments for fields with descriptions', () => {
+    const schema = makeSchemaWithObjectSchema(
+      {
+        name: { type: 'string', required: true, description: 'User display name' },
+      },
+      { id: 'root', component: 'Box' },
+    );
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('/** User display name */');
+  });
+
+  it('converts snake_case field names to camelCase', () => {
+    const schema = makeSchemaWithObjectSchema(
+      {
+        first_name: { type: 'string', required: true },
+        last_login_at: { type: 'datetime', required: false },
+      },
+      { id: 'root', component: 'Box' },
+    );
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('firstName: string;');
+    expect(result.code).toContain('lastLoginAt?: string;');
+  });
+
+  it('without objectSchema, defineProps remains empty skeleton', () => {
+    const schema = makeSchema({ id: 'root', component: 'Box' });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('defineProps<{');
+    expect(result.code).toContain('// Props can be extended here');
+    expect(result.code).not.toContain('interface Props');
+  });
+
+  it('does not generate typed Props when typescript=false', () => {
+    const schema = makeSchemaWithObjectSchema(
+      { name: { type: 'string', required: true } },
+      { id: 'root', component: 'Box' },
+    );
+    const result = emit(schema, { typescript: false, styling: 'tokens' });
+    expect(result.code).not.toContain('interface Props');
+    expect(result.code).not.toContain('defineProps');
+  });
+
+  it('valid Vue 3 Composition API output structure', () => {
+    const schema = makeSchemaWithObjectSchema(
+      {
+        name: { type: 'string', required: true },
+        status: { type: 'string', required: true, enum: ['active', 'inactive'] },
+      },
+      { id: 'root', component: 'Card' },
+    );
+    const result = emit(schema, defaultOpts);
+    // Verify SFC block ordering: template → script → style
+    const templateIdx = result.code.indexOf('<template>');
+    const scriptIdx = result.code.indexOf('<script setup');
+    expect(templateIdx).toBeLessThan(scriptIdx);
+    // Script block should have Props interface before defineProps
+    const propsIdx = result.code.indexOf('interface Props');
+    const defineIdx = result.code.indexOf('defineProps<Props>()');
+    expect(propsIdx).toBeLessThan(defineIdx);
+  });
+});
+
+describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
+  it('emits const declarations for prop defaults from element props matching objectSchema fields', () => {
+    const schema: UiSchema = {
+      version: '1.0',
+      screens: [
+        {
+          id: 'root',
+          component: 'StatusBadge',
+          props: { status: 'active', priority: 3 },
+        },
+      ],
+      objectSchema: {
+        status: { type: 'string', required: true, enum: ['active', 'paused', 'terminated'] },
+        priority: { type: 'integer', required: false },
+      },
+    };
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain("const status = 'active';");
+    expect(result.code).toContain('const priority = 3;');
+  });
+
+  it('emits boolean prop defaults as bare values', () => {
+    const schema: UiSchema = {
+      version: '1.0',
+      screens: [
+        {
+          id: 'root',
+          component: 'Toggle',
+          props: { active: true },
+        },
+      ],
+      objectSchema: {
+        active: { type: 'boolean', required: true },
+      },
+    };
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('const active = true;');
+  });
+
+  it('prop defaults appear inside script setup block', () => {
+    const schema: UiSchema = {
+      version: '1.0',
+      screens: [
+        {
+          id: 'root',
+          component: 'Card',
+          props: { name: 'Default' },
+        },
+      ],
+      objectSchema: {
+        name: { type: 'string', required: true },
+      },
+    };
+    const result = emit(schema, defaultOpts);
+    const scriptStart = result.code.indexOf('<script setup');
+    const defaultIdx = result.code.indexOf("const name = 'Default';");
+    const scriptEnd = result.code.indexOf('</script>');
+    expect(defaultIdx).toBeGreaterThan(scriptStart);
+    expect(defaultIdx).toBeLessThan(scriptEnd);
+  });
+
+  it('does not emit prop defaults without objectSchema', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Card',
+      props: { name: 'Default' },
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).not.toContain("const name = 'Default';");
+  });
+
+  it('collects prop defaults from nested children', () => {
+    const schema: UiSchema = {
+      version: '1.0',
+      screens: [
+        {
+          id: 'root',
+          component: 'Page',
+          children: [
+            {
+              id: 'badge',
+              component: 'StatusBadge',
+              props: { status: 'paused' },
+            },
+          ],
+        },
+      ],
+      objectSchema: {
+        status: { type: 'string', required: true, enum: ['active', 'paused'] },
+      },
+    };
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain("const status = 'paused';");
+  });
+
+  it('ignores element props that do not match objectSchema fields', () => {
+    const schema: UiSchema = {
+      version: '1.0',
+      screens: [
+        {
+          id: 'root',
+          component: 'Card',
+          props: { label: 'Hello', status: 'active' },
+        },
+      ],
+      objectSchema: {
+        status: { type: 'string', required: true },
+      },
+    };
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain("const status = 'active';");
+    expect(result.code).not.toContain("const label = 'Hello';");
+  });
+});
+
+describe('vue-emitter — event handler stubs (s63-m04)', () => {
+  it('generates handler stubs from bindings in script setup', () => {
+    const schema = makeSchema({
+      id: 'form-root',
+      component: 'Form',
+      bindings: { onSubmit: 'handleSubmit', onChange: 'handleChange' },
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('const handleSubmit = (e: Event) => { /* TODO: implement handleSubmit */ };');
+    expect(result.code).toContain('const handleChange = (value: unknown) => { /* TODO: implement handleChange */ };');
+  });
+
+  it('emits Vue @event binding attributes in template', () => {
+    const schema = makeSchema({
+      id: 'form-root',
+      component: 'Form',
+      bindings: { onSubmit: 'handleSubmit' },
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('@submit="handleSubmit"');
+  });
+
+  it('converts onXxx to @xxx format for Vue events', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'ListView',
+      bindings: { onRowClick: 'handleRowClick', onSort: 'handleSort' },
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('@rowClick="handleRowClick"');
+    expect(result.code).toContain('@sort="handleSort"');
+  });
+
+  it('generates stubs for detail context bindings', () => {
+    const schema = makeSchema({
+      id: 'detail-root',
+      component: 'DetailView',
+      bindings: { onEdit: 'handleEdit', onDelete: 'handleDelete' },
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('const handleEdit = () => { /* TODO: implement handleEdit */ };');
+    expect(result.code).toContain('const handleDelete = () => { /* TODO: implement handleDelete */ };');
+  });
+
+  it('handler stubs are inside script setup block', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Form',
+      bindings: { onSubmit: 'handleSubmit' },
+    });
+    const result = emit(schema, defaultOpts);
+    const scriptStart = result.code.indexOf('<script setup');
+    const stubIdx = result.code.indexOf('const handleSubmit');
+    const scriptEnd = result.code.indexOf('</script>');
+    expect(stubIdx).toBeGreaterThan(scriptStart);
+    expect(stubIdx).toBeLessThan(scriptEnd);
+  });
+
+  it('collects bindings from nested children', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Page',
+      children: [
+        {
+          id: 'form',
+          component: 'Form',
+          bindings: { onSubmit: 'handleSubmit' },
+          children: [
+            {
+              id: 'field',
+              component: 'Input',
+              bindings: { onChange: 'handleFieldChange' },
+            },
+          ],
+        },
+      ],
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).toContain('const handleSubmit');
+    expect(result.code).toContain('const handleFieldChange');
+  });
+
+  it('no handler stubs when no bindings present', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Box',
+    });
+    const result = emit(schema, defaultOpts);
+    expect(result.code).not.toContain('const handle');
+  });
+
+  it('omits typed params when typescript=false', () => {
+    const schema = makeSchema({
+      id: 'root',
+      component: 'Form',
+      bindings: { onSubmit: 'handleSubmit' },
+    });
+    const result = emit(schema, { typescript: false, styling: 'tokens' });
+    expect(result.code).toContain('const handleSubmit = (e) => {');
+    expect(result.code).not.toContain(': Event');
+  });
+});

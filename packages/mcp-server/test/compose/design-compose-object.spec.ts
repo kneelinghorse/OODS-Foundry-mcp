@@ -229,3 +229,78 @@ describe('design.compose — backward compatibility', () => {
     expect(result.validation?.status).toBe('skipped');
   });
 });
+
+/* ------------------------------------------------------------------ */
+/*  objectSchema bridge (s63-m01)                                      */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — objectSchema bridge', () => {
+  it('object-aware compose populates objectSchema on the UiSchema', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'detail',
+    });
+    expect(result.status).toBe('ok');
+    expect(result.schema.objectSchema).toBeDefined();
+    expect(Object.keys(result.schema.objectSchema!).length).toBeGreaterThan(5);
+  });
+
+  it('each objectSchema entry has type and required', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'detail',
+    });
+    for (const [, entry] of Object.entries(result.schema.objectSchema!)) {
+      expect(entry.type).toBeTruthy();
+      expect(typeof entry.required).toBe('boolean');
+    }
+  });
+
+  it('intent-only path has no objectSchema (backward compatible)', async () => {
+    const result = await handle({ intent: 'dashboard with metrics' });
+    expect(result.schema.objectSchema).toBeUndefined();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  context bindings (s63-m01)                                         */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — context bindings', () => {
+  it('detail context adds onEdit and onDelete bindings', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'detail',
+    });
+    const rootBindings = result.schema.screens[0].bindings;
+    expect(rootBindings).toBeDefined();
+    expect(rootBindings!.onEdit).toBe('handleEdit');
+    expect(rootBindings!.onDelete).toBe('handleDelete');
+  });
+
+  it('list context adds onRowClick, onSort, onFilter', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'list',
+    });
+    const rootBindings = result.schema.screens[0].bindings;
+    expect(rootBindings!.onRowClick).toBe('handleRowClick');
+    expect(rootBindings!.onSort).toBe('handleSort');
+    expect(rootBindings!.onFilter).toBe('handleFilter');
+  });
+
+  it('form context adds onSubmit and onChange', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'form',
+    });
+    const rootBindings = result.schema.screens[0].bindings;
+    expect(rootBindings!.onSubmit).toBe('handleSubmit');
+    expect(rootBindings!.onChange).toBe('handleChange');
+  });
+
+  it('intent-only path has no bindings (backward compatible)', async () => {
+    const result = await handle({ intent: 'dashboard with metrics' });
+    expect(result.schema.screens[0].bindings).toBeUndefined();
+  });
+});

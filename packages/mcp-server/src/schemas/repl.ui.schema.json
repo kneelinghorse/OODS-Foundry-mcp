@@ -18,10 +18,31 @@
       "type": "object",
       "additionalProperties": { "type": "string" },
       "description": "Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)')."
+    },
+    "objectSchema": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/fieldSchemaEntry" },
+      "description": "Object field schema for codegen. Maps field names to type metadata from composed object traits."
     }
   },
   "additionalProperties": false,
   "$defs": {
+    "fieldSchemaEntry": {
+      "type": "object",
+      "required": ["type", "required"],
+      "properties": {
+        "type": { "type": "string", "description": "Field data type (string, integer, number, boolean, datetime, email, etc.)." },
+        "required": { "type": "boolean", "description": "Whether the field is required." },
+        "description": { "type": "string", "description": "Human-readable field description." },
+        "enum": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Allowed values for enum-constrained fields."
+        },
+        "semanticType": { "type": "string", "description": "Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status')." }
+      },
+      "additionalProperties": false
+    },
     "layout": {
       "type": "object",
       "properties": {

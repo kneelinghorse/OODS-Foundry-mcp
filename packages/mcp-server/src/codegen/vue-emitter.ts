@@ -1,5 +1,13 @@
-import type { UiElement, UiLayout, UiSchema, UiStyle } from '../schemas/generated.js';
+import type { UiElement, UiLayout, UiSchema, UiStyle, FieldSchemaEntry } from '../schemas/generated.js';
 import type { CodegenIssue, CodegenOptions, CodegenResult } from './types.js';
+import type { HandlerSignatureMap } from './binding-utils.js';
+import {
+  mapFieldType,
+  snakeToCamel,
+  collectBindings,
+  generateHandlerStubs,
+  collectPropDefaults,
+} from './binding-utils.js';
 
 // ---------------------------------------------------------------------------
 // Token + layout helpers (shared logic with tree-renderer.ts / react-emitter.ts)
@@ -163,6 +171,15 @@ function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue
     if (propsStr) attrParts.push(propsStr);
   }
 
+  // Event bindings (e.g., @submit="handleSubmit")
+  if (node.bindings && typeof node.bindings === 'object') {
+    for (const [eventKey, handlerName] of Object.entries(node.bindings)) {
+      // Convert React-style onXxx to Vue @xxx
+      const vueEvent = eventKey.replace(/^on([A-Z])/, (_, c: string) => c.toLowerCase());
+      attrParts.push(`@${vueEvent}="${handlerName}"`);
+    }
+  }
+
   const inlineStyle = declToInlineStyle(computedStyle);
   if (inlineStyle) {
     attrParts.push(`style="${inlineStyle}"`);
@@ -226,12 +243,32 @@ function emitTemplateNode(node: UiElement, depth: number, warnings: CodegenIssue
 }
 
 // ---------------------------------------------------------------------------
+// Vue-specific handler signatures (delegates to shared binding-utils)
+// ---------------------------------------------------------------------------
+
+const VUE_HANDLER_SIGNATURES: HandlerSignatureMap = {
+  onSubmit:   { params: '(e)',        tsParams: '(e: Event)' },
+  onChange:   { params: '(value)',     tsParams: '(value: unknown)' },
+  onRowClick: { params: '(row)',      tsParams: '(row: Record<string, unknown>)' },
+  onSort:     { params: '(column)',   tsParams: '(column: string)' },
+  onFilter:   { params: '(criteria)', tsParams: '(criteria: Record<string, unknown>)' },
+  onEdit:     { params: '()',         tsParams: '()' },
+  onDelete:   { params: '()',         tsParams: '()' },
+};
+
+// ---------------------------------------------------------------------------
 // Script setup block
 // ---------------------------------------------------------------------------
 
-function buildScriptSetup(components: Set<string>, options: CodegenOptions): string {
+function buildScriptSetup(
+  components: Set<string>,
+  options: CodegenOptions,
+  objectSchema?: Record<string, FieldSchemaEntry>,
+  screens?: UiElement[],
+): string {
   const sorted = Array.from(components).sort();
   const lines: string[] = [];
+  const hasObjectSchema = objectSchema && Object.keys(objectSchema).length > 0;
 
   if (options.typescript) {
     lines.push(`<script setup lang="ts">`);
@@ -241,11 +278,49 @@ function buildScriptSetup(components: Set<string>, options: CodegenOptions): str
 
   lines.push(`import { ${sorted.join(', ')} } from '@oods/components';`);
 
-  if (options.typescript) {
+  if (options.typescript && hasObjectSchema) {
+    // Generate typed Props alias and populated defineProps
+    lines.push('');
+    lines.push('interface Props {');
+    for (const [fieldName, entry] of Object.entries(objectSchema!)) {
+      const tsType = mapFieldType(entry);
+      const optional = entry.required ? '' : '?';
+      const camelName = snakeToCamel(fieldName);
+      if (entry.description) {
+        lines.push(`  /** ${entry.description} */`);
+      }
+      lines.push(`  ${camelName}${optional}: ${tsType};`);
+    }
+    lines.push('}');
+    lines.push('');
+    lines.push(`defineProps<Props>();`);
+  } else if (options.typescript) {
     lines.push('');
     lines.push(`defineProps<{`);
     lines.push(`  // Props can be extended here`);
     lines.push(`}>();`);
+  }
+
+  // Handler stubs from bindings
+  if (screens) {
+    const handlers = collectBindings(screens);
+    const stubs = generateHandlerStubs(handlers, options.typescript, VUE_HANDLER_SIGNATURES);
+    if (stubs) {
+      lines.push('');
+      lines.push(stubs);
+    }
+  }
+
+  // Prop default declarations from objectSchema field values on elements
+  if (hasObjectSchema && screens) {
+    const propDefaults = collectPropDefaults(screens, objectSchema!);
+    if (propDefaults.size > 0) {
+      lines.push('');
+      for (const [propName, { formatted, isExpression }] of propDefaults) {
+        const rhs = isExpression ? formatted : `'${formatted.replace(/'/g, "\\'")}'`;
+        lines.push(`const ${propName} = ${rhs};`);
+      }
+    }
   }
 
   lines.push(`</script>`);
@@ -313,7 +388,7 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   ].join('\n');
 
   // Build script setup block
-  const scriptBlock = buildScriptSetup(components, options);
+  const scriptBlock = buildScriptSetup(components, options, schema.objectSchema, schema.screens);
 
   // Build optional scoped style block
   const styleBlock = buildScopedStyle(schema.screens, options);
