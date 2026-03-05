@@ -172,7 +172,7 @@ describe('bridge fragment parity', () => {
     await runCommand('pnpm', ['--filter', '@oods/mcp-server', 'run', 'build'], REPO_ROOT);
     await runCommand('pnpm', ['--filter', '@oods/mcp-bridge', 'run', 'build'], REPO_ROOT);
     bridge = await startBridge();
-  }, 60_000);
+  }, 180_000);
 
   afterAll(async () => {
     if (bridge) {

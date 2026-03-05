@@ -161,6 +161,46 @@
       "timeoutMs": 30000,
       "ratePerMinute": 60,
       "concurrency": 4
+    },
+    {
+      "tool": "schema.save",
+      "allow": ["designer", "maintainer"],
+      "writes": [".oods/schemas/**"],
+      "timeoutMs": 30000,
+      "ratePerMinute": 30,
+      "concurrency": 1
+    },
+    {
+      "tool": "schema.load",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
+      "tool": "schema.list",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
+      "tool": "schema.delete",
+      "allow": ["designer", "maintainer"],
+      "writes": [".oods/schemas/**"],
+      "timeoutMs": 30000,
+      "ratePerMinute": 30,
+      "concurrency": 1
+    },
+    {
+      "tool": "health",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
     }
   ],
   "limits": {

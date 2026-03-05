@@ -2,11 +2,12 @@
  * Stdio adapter smoke test
  *
  * Spawns the adapter as a child process and sends a MCP list_tools request
- * via stdin/stdout JSON-RPC. Verifies all 20 tools are returned with
+ * via stdin/stdout JSON-RPC. Verifies all registry tools are returned with
  * descriptions, typed input schemas, and annotations.
  */
 
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -14,6 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ADAPTER_ENTRY = path.join(__dirname, 'index.js');
+const REGISTRY_PATH = path.join(__dirname, '..', 'mcp-server', 'dist', 'tools', 'registry.json');
 const TIMEOUT_MS = 15000;
 
 function jsonRpcRequest(method, params = {}, id = 1) {
@@ -99,6 +101,8 @@ async function runSmoke() {
   }
 
   const tools = response.result.tools;
+  const registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+  const expectedToolCount = (registry.auto?.length ?? 0) + (registry.onDemand?.length ?? 0);
   console.log(`Received ${tools.length} tools from list_tools\n`);
 
   let passed = 0;
@@ -115,7 +119,11 @@ async function runSmoke() {
     }
   }
 
-  check('Returns 20 tools with MCP_TOOLSET=all', tools.length === 20, `Got ${tools.length}`);
+  check(
+    'Returns all registry tools with MCP_TOOLSET=all',
+    tools.length === expectedToolCount,
+    `Expected ${expectedToolCount}, got ${tools.length}`,
+  );
 
   // Check each tool has required fields
   const missingDesc = tools.filter(t => !t.description || t.description.includes('Proxy to'));
