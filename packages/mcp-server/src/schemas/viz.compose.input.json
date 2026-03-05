@@ -10,6 +10,10 @@
     { "required": ["traits"] }
   ],
   "properties": {
+    "dslVersion": {
+      "type": "string",
+      "description": "DSL version to use for this request. Defaults to the current version (1.0)."
+    },
     "object": {
       "type": "string",
       "minLength": 1,

@@ -4,6 +4,10 @@
   "title": "Agentic REPL render input",
   "type": "object",
   "properties": {
+    "dslVersion": {
+      "type": "string",
+      "description": "DSL version to use for this request. Defaults to the current version (1.0)."
+    },
     "mode": {
       "type": "string",
       "enum": [

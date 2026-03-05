@@ -52,6 +52,10 @@
             "type": "string",
             "description": "Maturity indicator derived from the source trait (e.g., 'stable', 'beta', 'draft')."
           },
+          "deprecated_since": {
+            "type": "string",
+            "description": "DSL version since which this component is deprecated. When set, tools surface deprecation warnings in meta.warnings."
+          },
           "propSchema": {
             "type": "object",
             "description": "Component prop schema with types and defaults (detail=full only).",

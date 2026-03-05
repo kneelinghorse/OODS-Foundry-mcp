@@ -6,6 +6,10 @@
   "type": "object",
   "required": ["framework"],
   "properties": {
+    "dslVersion": {
+      "type": "string",
+      "description": "DSL version to use for this request. Defaults to the current version (1.0)."
+    },
     "schema": {
       "$ref": "./repl.ui.schema.json",
       "description": "A validated UiSchema tree to generate code from."

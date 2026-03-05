@@ -27,6 +27,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "docs:api": "tsx scripts/docs/generate-api-reference.ts",
     "refresh:data": "node scripts/refresh-data.mjs",
     "pkg:build": "tsx scripts/pkg/build.ts",
     "pkg:version": "tsx scripts/pkg/version.ts",
