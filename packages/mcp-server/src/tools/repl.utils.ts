@@ -117,7 +117,7 @@ function isNodePatch(entry: unknown): entry is ReplNodePatch {
 
 function pointerSegments(pointer: string, issues: ReplIssue[]): string[] | null {
   if (!pointer.startsWith('/')) {
-    issues.push(issue('PATCH_POINTER_INVALID', `Invalid JSON pointer: ${pointer}`, pointer));
+    issues.push(issue('OODS-V100', `Invalid JSON pointer: ${pointer}`, pointer));
     return null;
   }
   const segments = pointer
@@ -128,7 +128,7 @@ function pointerSegments(pointer: string, issues: ReplIssue[]): string[] | null 
     if (isUnsafeKey(segment)) {
       issues.push(
         issue(
-          'PATCH_UNSAFE_PATH',
+          'OODS-V101',
           `Unsafe JSON pointer segment '${segment}' is not allowed`,
           pointer,
           'Prototype access segments are blocked for safety.'
@@ -163,7 +163,7 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
 
   for (const [index, op] of operations.entries()) {
     if (!op || typeof op.path !== 'string' || typeof op.op !== 'string') {
-      issues.push(issue('PATCH_INVALID', 'Patch operation is malformed', `/patch/${index}`, patchExampleHint()));
+      issues.push(issue('OODS-V102', 'Patch operation is malformed', `/patch/${index}`, patchExampleHint()));
       continue;
     }
     try {
@@ -172,12 +172,12 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
         continue;
       }
       if (!segments.length) {
-        issues.push(issue('PATCH_ROOT_UNSUPPORTED', 'Root-level patch operations are not supported', op.path));
+        issues.push(issue('OODS-V103', 'Root-level patch operations are not supported', op.path));
         continue;
       }
       const resolved = resolveParent(clone as any, segments);
       if (!resolved) {
-        issues.push(issue('PATCH_PATH_MISSING', `Cannot resolve patch path ${op.path}`, op.path));
+        issues.push(issue('OODS-V104', `Cannot resolve patch path ${op.path}`, op.path));
         continue;
       }
       const { parent, key } = resolved;
@@ -186,14 +186,14 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
         if (Array.isArray(parent)) {
           const idx = Number(key);
           if (Number.isNaN(idx) || idx < 0 || idx >= parent.length) {
-            issues.push(issue('PATCH_INDEX_INVALID', `Invalid array index ${key} for ${op.path}`, op.path));
+            issues.push(issue('OODS-V105', `Invalid array index ${key} for ${op.path}`, op.path));
             continue;
           }
           parent.splice(idx, 1);
         } else if (Object.prototype.hasOwnProperty.call(parent, key)) {
           delete parent[key];
         } else {
-          issues.push(issue('PATCH_PATH_MISSING', `Nothing to remove at ${op.path}`, op.path));
+          issues.push(issue('OODS-V104', `Nothing to remove at ${op.path}`, op.path));
         }
         continue;
       }
@@ -202,7 +202,7 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
       if (Array.isArray(parent)) {
         const idx = Number(key);
         if (Number.isNaN(idx) || idx < 0 || idx > parent.length) {
-          issues.push(issue('PATCH_INDEX_INVALID', `Invalid array index ${key} for ${op.path}`, op.path));
+          issues.push(issue('OODS-V105', `Invalid array index ${key} for ${op.path}`, op.path));
           continue;
         }
         parent[idx] = value as any;
@@ -210,7 +210,7 @@ function applyJsonPatch(target: UiSchema, operations: ReplJsonPatchOperation[]):
         parent[key] = value as any;
       }
     } catch (err: any) {
-      issues.push(issue('PATCH_APPLY_FAILED', String(err?.message || err), op.path));
+      issues.push(issue('OODS-V106', String(err?.message || err), op.path));
     }
   }
 
@@ -224,25 +224,25 @@ function normalizeNodePatch(
 ): { operations: ReplJsonPatchOperation[]; issues: ReplIssue[] } {
   const issues: ReplIssue[] = [];
   if (!patch || typeof patch !== 'object') {
-    issues.push(issue('PATCH_ENTRY_INVALID', 'Node patch must be an object', pointerBase, patchExampleHint()));
+    issues.push(issue('OODS-V107', 'Node patch must be an object', pointerBase, patchExampleHint()));
     return { operations: [], issues };
   }
   if (!patch.nodeId || typeof patch.nodeId !== 'string') {
     issues.push(
-      issue('PATCH_NODE_ID_MISSING', 'nodeId is required for node patches', `${pointerBase}/nodeId`, patchExampleHint())
+      issue('OODS-V108', 'nodeId is required for node patches', `${pointerBase}/nodeId`, patchExampleHint())
     );
     return { operations: [], issues };
   }
   if (!patch.path || typeof patch.path !== 'string') {
     issues.push(
-      issue('PATCH_PATH_MISSING', 'path is required for node patches', `${pointerBase}/path`, patchExampleHint())
+      issue('OODS-V104', 'path is required for node patches', `${pointerBase}/path`, patchExampleHint())
     );
     return { operations: [], issues };
   }
   const { index } = collectNodeIndex(baseTree);
   const ref = index.get(patch.nodeId);
   if (!ref) {
-    issues.push(issue('PATCH_NODE_NOT_FOUND', `Node ${patch.nodeId} not found in base tree`));
+    issues.push(issue('OODS-N006', `Node ${patch.nodeId} not found in base tree`));
     return { operations: [], issues };
   }
 
@@ -254,7 +254,7 @@ function normalizeNodePatch(
 
   for (const segment of segmentsRaw) {
     if (isUnsafeKey(segment)) {
-      issues.push(issue('PATCH_UNSAFE_PATH', `Unsafe patch path segment '${segment}' is not allowed`, patch.path));
+      issues.push(issue('OODS-V101', `Unsafe patch path segment '${segment}' is not allowed`, patch.path));
       return { operations: [], issues };
     }
   }
@@ -272,13 +272,13 @@ function normalizeNodePatch(
 export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch): { operations: ReplJsonPatchOperation[]; issues: ReplIssue[] } {
   const issues: ReplIssue[] = [];
   if (!patch) {
-    issues.push(issue('PATCH_MISSING', 'patch is required when mode=patch', '/patch', patchExampleHint()));
+    issues.push(issue('OODS-V011', 'patch is required when mode=patch', '/patch', patchExampleHint()));
     return { operations: [], issues };
   }
 
   if (Array.isArray(patch)) {
     if (patch.length === 0) {
-      issues.push(issue('PATCH_EMPTY', 'Patch payload is empty', '/patch', patchExampleHint()));
+      issues.push(issue('OODS-V109', 'Patch payload is empty', '/patch', patchExampleHint()));
       return { operations: [], issues };
     }
 
@@ -290,7 +290,7 @@ export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch)
     patch.forEach((entry, index) => {
       const pointerBase = `/patch/${index}`;
       if (!isPlainObject(entry)) {
-        issues.push(issue('PATCH_ENTRY_INVALID', 'Patch entry must be an object', pointerBase, patchExampleHint()));
+        issues.push(issue('OODS-V107', 'Patch entry must be an object', pointerBase, patchExampleHint()));
         return;
       }
       if (isJsonPatchOp(entry) && (entry as any).nodeId === undefined) {
@@ -301,7 +301,7 @@ export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch)
       if (isNodePatch(entry)) {
         hasNodePatch = true;
         if (!baseTree) {
-          issues.push(issue('MISSING_BASE_TREE', 'baseTree is required when applying node-targeted patches', '/baseTree', patchExampleHint()));
+          issues.push(issue('OODS-V010', 'baseTree is required when applying node-targeted patches', '/baseTree', patchExampleHint()));
           return;
         }
         const normalized = normalizeNodePatch(baseTree, entry, pointerBase);
@@ -311,7 +311,7 @@ export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch)
       }
       issues.push(
         issue(
-          'PATCH_ENTRY_INVALID',
+          'OODS-V107',
           'Patch entry must include op/path (JSON Patch) or nodeId/path (node patch)',
           pointerBase,
           patchExampleHint()
@@ -322,7 +322,7 @@ export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch)
     if (hasJsonPatch && hasNodePatch) {
       issues.push(
         issue(
-          'PATCH_MIXED_FORMATS',
+          'OODS-V114',
           'Patch array mixes JSON Patch ops and node patches. Use one format per request.',
           '/patch',
           patchExampleHint()
@@ -341,14 +341,14 @@ export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch)
   }
 
   if (!isPlainObject(patch)) {
-    issues.push(issue('PATCH_INVALID_TYPE', 'patch must be an array or object', '/patch', patchExampleHint()));
+    issues.push(issue('OODS-V110', 'patch must be an array or object', '/patch', patchExampleHint()));
     return { operations: [], issues };
   }
 
   if (isJsonPatchOp(patch) && (patch as any).nodeId === undefined) {
     issues.push(
       issue(
-        'PATCH_JSON_ARRAY_REQUIRED',
+        'OODS-V115',
         'JSON Patch operations must be provided as an array',
         '/patch',
         patchExampleHint()
@@ -358,13 +358,13 @@ export function normalizePatch(baseTree: UiSchema | undefined, patch: ReplPatch)
   }
 
   if (!baseTree) {
-    issues.push(issue('MISSING_BASE_TREE', 'baseTree is required when applying node-targeted patches', '/baseTree', patchExampleHint()));
+    issues.push(issue('OODS-V010', 'baseTree is required when applying node-targeted patches', '/baseTree', patchExampleHint()));
     return { operations: [], issues };
   }
   if (!isNodePatch(patch)) {
     issues.push(
       issue(
-        'PATCH_INVALID',
+        'OODS-V102',
         'Patch must be a JSON Patch array or a node patch object',
         '/patch',
         patchExampleHint()
@@ -388,7 +388,7 @@ export function validateSchema(tree: UiSchema): ReplIssue[] {
   return (validateUiSchema.errors || []).map((err: { message?: string; instancePath?: string; schemaPath?: string }) => {
     const message = err.message || 'Schema validation failed';
     const pathValue = normalizePointer(err.instancePath || err.schemaPath || '/');
-    return issue('DSL_SCHEMA', message, pathValue);
+    return issue('OODS-V007', message, pathValue);
   });
 }
 
@@ -397,12 +397,12 @@ export function validateComponents(tree: UiSchema, registry: RegistryInfo): Repl
   const { index, duplicateIds } = collectNodeIndex(tree);
 
   for (const dup of duplicateIds) {
-    problems.push(issue('DUPLICATE_ID', `Duplicate id '${dup}' found in UI tree`, '/', 'IDs must be unique for patching and analytics'));
+    problems.push(issue('OODS-V008', `Duplicate id '${dup}' found in UI tree`, '/', 'IDs must be unique for patching and analytics'));
   }
 
   for (const { node, pointer } of index.values()) {
     if (registry.names.size > 0 && !registry.names.has(node.component)) {
-      problems.push(issue('UNKNOWN_COMPONENT', `Component '${node.component}' is not in the OODS registry`, `${pointer}/component`));
+      problems.push(issue('OODS-V006', `Component '${node.component}' is not in the OODS registry`, `${pointer}/component`));
     }
   }
   return problems;
@@ -468,7 +468,7 @@ export function loadComponentRegistry(): RegistryInfo {
     }
   } catch {
     warnings.push(
-      issue('REGISTRY_MANIFEST_MISSING', 'Structured-data manifest missing or unreadable', relativeToRepo(COMPONENT_MANIFEST))
+      issue('OODS-N009', 'Structured-data manifest missing or unreadable', relativeToRepo(COMPONENT_MANIFEST))
     );
   }
 
@@ -482,7 +482,7 @@ export function loadComponentRegistry(): RegistryInfo {
           if (entry?.id) names.add(String(entry.id));
         }
         warnings.push(
-          issue('REGISTRY_FALLBACK', 'Used fallback component export from cmos/planning', relativeToRepo(fallback))
+          issue('OODS-N013', 'Used fallback component export from cmos/planning', relativeToRepo(fallback))
         );
       } catch {
         warnings.push(
@@ -494,7 +494,7 @@ export function loadComponentRegistry(): RegistryInfo {
         );
       }
     } else {
-      warnings.push(issue('REGISTRY_UNAVAILABLE', 'No component registry available for validation'));
+      warnings.push(issue('OODS-N010', 'No component registry available for validation'));
     }
   }
 

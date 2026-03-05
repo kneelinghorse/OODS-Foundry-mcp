@@ -5,6 +5,7 @@ import { writeTranscript, writeBundleIndex } from '../lib/transcript.js';
 import { createRunDirectory, loadPolicy } from '../lib/security.js';
 import { runCommand } from '@oods/release-utils';
 import type { ReleaseTagInput, ReleaseTagResult } from './types.js';
+import { ToolError } from '../errors/tool-error.js';
 
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(CURRENT_DIR, '../../../..');
@@ -12,11 +13,11 @@ const TAG_PATTERN = /^v\d+\.\d+\.\d+-internal\.\d{8}$/i;
 
 export async function handle(input: ReleaseTagInput): Promise<ReleaseTagResult> {
   if (!input || !input.tag || typeof input.tag !== 'string') {
-    throw new Error('Tag is required.');
+    throw new ToolError('OODS-V003', 'Tag is required.', { field: 'tag' });
   }
   const tag = input.tag.trim();
   if (!TAG_PATTERN.test(tag)) {
-    throw new Error(`Tag must follow pattern vX.Y.Z-internal.YYYYMMDD (received: ${tag}).`);
+    throw new ToolError('OODS-V004', `Tag must follow pattern vX.Y.Z-internal.YYYYMMDD (received: ${tag}).`, { field: 'tag', value: tag });
   }
 
   const policy = loadPolicy();
@@ -26,7 +27,7 @@ export async function handle(input: ReleaseTagInput): Promise<ReleaseTagResult> 
   const existing = await runCommand('git', ['tag', '--list', tag], { cwd: PROJECT_ROOT });
   const alreadyExists = existing.stdout.trim().length > 0;
   if (alreadyExists && input.apply) {
-    throw new Error(`Tag ${tag} already exists.`);
+    throw new ToolError('OODS-C002', `Tag ${tag} already exists.`, { tag });
   }
 
   const head = (await runCommand('git', ['rev-parse', 'HEAD'], { cwd: PROJECT_ROOT })).stdout.trim();

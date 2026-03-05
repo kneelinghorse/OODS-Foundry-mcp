@@ -108,7 +108,7 @@ describe('per-node unknown component isolation', () => {
     expect(fragmentKeys).not.toContain('unknown-1');
 
     // Unknown component should appear as per-node error
-    const unknownErrors = result.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    const unknownErrors = result.errors.filter((e) => e.code === 'OODS-V006');
     expect(unknownErrors).toHaveLength(1);
     expect(unknownErrors[0]?.nodeId).toBe('unknown-1');
     expect(unknownErrors[0]?.component).toBe('FancyWidget');
@@ -126,7 +126,7 @@ describe('per-node unknown component isolation', () => {
     expect(result.status).toBe('error');
     expect(result.fragments).toBeUndefined();
 
-    const unknownErrors = result.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    const unknownErrors = result.errors.filter((e) => e.code === 'OODS-V006');
     expect(unknownErrors.length).toBeGreaterThan(0);
   });
 
@@ -141,7 +141,7 @@ describe('per-node unknown component isolation', () => {
     expect(result.status).toBe('error');
     expect(result.html).toBeUndefined();
 
-    const unknownErrors = result.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    const unknownErrors = result.errors.filter((e) => e.code === 'OODS-V006');
     expect(unknownErrors.length).toBeGreaterThan(0);
   });
 
@@ -157,7 +157,7 @@ describe('per-node unknown component isolation', () => {
     expect(result.status).toBe('error');
     expect(result.fragments).toBeUndefined();
 
-    const unknownErrors = result.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    const unknownErrors = result.errors.filter((e) => e.code === 'OODS-V006');
     expect(unknownErrors).toHaveLength(2);
   });
 
@@ -185,7 +185,7 @@ describe('per-node unknown component isolation', () => {
 
     expect(result.status).toBe('ok');
     expect(Object.keys(result.fragments ?? {})).toHaveLength(2);
-    expect(result.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT')).toHaveLength(0);
+    expect(result.errors.filter((e) => e.code === 'OODS-V006')).toHaveLength(0);
   });
 });
 

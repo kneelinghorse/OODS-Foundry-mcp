@@ -173,7 +173,7 @@ describe('design.compose — object error handling', () => {
     });
     expect(result.status).toBe('error');
     expect(result.errors).toBeDefined();
-    expect(result.errors!.some(e => e.code === 'OBJECT_LOAD_FAILED')).toBe(true);
+    expect(result.errors!.some(e => e.code === 'OODS-S004')).toBe(true);
     expect(result.errors![0].message).toContain('NonExistentObject');
   });
 

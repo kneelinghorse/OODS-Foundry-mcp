@@ -2,15 +2,15 @@
   <Stack id="form-page-screen" data-oods-component="Stack">
       <Card id="form-contact-card" data-oods-component="Card">
             <CardHeader id="form-contact-header" data-oods-component="CardHeader" title="Contact Details" />
-            <FormLabelGroup id="form-contact-label" data-oods-component="FormLabelGroup" label="Email" placeholder="owner@company.com" htmlFor="contact-email-input" />
-            <Input id="form-contact-input" data-oods-component="Input" id="contact-email-input" name="email" type="email" placeholder="owner@company.com" />
-            <Select id="form-contact-select" data-oods-component="Select" name="locale" value="en-US" :options="[{'value':'en-US','label':'English (US)'},{'value':'fr-FR','label':'French (FR)'}]" />
+            <FormLabelGroup id="form-contact-label" data-oods-component="FormLabelGroup" htmlFor="contact-email-input" label="Email" placeholder="owner@company.com" />
+            <Input id="form-contact-input" data-oods-component="Input" id="contact-email-input" name="email" placeholder="owner@company.com" type="email" />
+            <Select id="form-contact-select" data-oods-component="Select" name="locale" :options="[{'value':'en-US','label':'English (US)'},{'value':'fr-FR','label':'French (FR)'}]" value="en-US" />
           </Card>
       <Card id="form-preferences-card" data-oods-component="Card">
             <CardHeader id="form-preferences-header" data-oods-component="CardHeader" title="Preferences" />
             <Text id="form-preferences-text" data-oods-component="Text" text="Configure delivery and billing preferences." />
             <Input id="form-preferences-input" data-oods-component="Input" name="projectName" placeholder="Project Name" />
-            <Select id="form-preferences-select" data-oods-component="Select" name="plan" value="pro" :options="[{'value':'starter','label':'Starter'},{'value':'pro','label':'Pro'}]" />
+            <Select id="form-preferences-select" data-oods-component="Select" name="plan" :options="[{'value':'starter','label':'Starter'},{'value':'pro','label':'Pro'}]" value="pro" />
           </Card>
       <Card id="form-actions-card" data-oods-component="Card">
             <CardHeader id="form-actions-header" data-oods-component="CardHeader" title="Actions" />

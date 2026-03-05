@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ToolError } from '../errors/tool-error.js';
 import type {
   CatalogListDetail,
   CatalogListInput,
@@ -564,6 +565,9 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       filteredCatalog = filteredCatalog.filter((c) => c.contexts.includes(input.context!));
     }
 
+    // Stable sort: alphabetical by name
+    filteredCatalog.sort((a, b) => a.name.localeCompare(b.name));
+
     let suggestions: CatalogListOutput['suggestions'] | undefined;
     if (input.trait && filteredCatalog.length === 0) {
       const allTraits = new Set<string>();
@@ -649,6 +653,6 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       ...(suggestions ? { suggestions } : {}),
     };
   } catch (error) {
-    throw new Error(`Failed to list component catalog: ${(error as Error).message}`);
+    throw new ToolError('OODS-S005', `Failed to list component catalog: ${(error as Error).message}`);
   }
 }

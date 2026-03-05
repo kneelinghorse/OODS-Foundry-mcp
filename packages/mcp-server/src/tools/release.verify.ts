@@ -8,6 +8,7 @@ import {
   type DiagnosticsWriteInput,
 } from '../lib/transcript.js';
 import { createRunDirectory, loadPolicy } from '../lib/security.js';
+import { ToolError } from '../errors/tool-error.js';
 import {
   packTwiceCompare,
   analyzePackageSanity,
@@ -61,7 +62,7 @@ function buildSummary(results: VerificationRecord[], warnings: string[]): string
 export async function handle(input: ReleaseVerifyInput = {}): Promise<ReleaseVerifyResult> {
   const packages = resolvePackages(input.packages);
   if (!packages.length) {
-    throw new Error('No packages resolved for release verification.');
+    throw new ToolError('OODS-V015', 'No packages resolved for release verification.');
   }
 
   const policy = loadPolicy();

@@ -1,0 +1,427 @@
+{
+  "name": "tier1-acceptance-sub-detail",
+  "schemaRef": "compose-7d860337",
+  "schema": {
+    "version": "2026.02",
+    "screens": [
+      {
+        "id": "screen-detail-13",
+        "component": "Stack",
+        "layout": {
+          "type": "stack",
+          "gapToken": "cluster-default"
+        },
+        "children": [
+          {
+            "id": "detail-header-1",
+            "component": "Stack",
+            "layout": {
+              "type": "inline",
+              "align": "space-between"
+            },
+            "style": {
+              "spacingToken": "inset-default"
+            },
+            "children": [
+              {
+                "id": "slot-header-2",
+                "component": "Text",
+                "meta": {
+                  "intent": "slot:header",
+                  "label": "header"
+                }
+              }
+            ]
+          },
+          {
+            "id": "detail-body-10",
+            "component": "Card",
+            "layout": {
+              "type": "sidebar",
+              "gapToken": "cluster-default"
+            },
+            "children": [
+              {
+                "id": "detail-tabs-9",
+                "component": "Tabs",
+                "children": [
+                  {
+                    "id": "detail-tab-panel-3",
+                    "component": "Stack",
+                    "layout": {
+                      "type": "stack",
+                      "gapToken": "cluster-default"
+                    },
+                    "props": {
+                      "label": "Tab 1"
+                    },
+                    "children": [
+                      {
+                        "id": "slot-tab-0-4",
+                        "component": "Stack",
+                        "meta": {
+                          "intent": "slot:tab-0",
+                          "label": "tab-0"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "detail-tab-panel-5",
+                    "component": "Stack",
+                    "layout": {
+                      "type": "stack",
+                      "gapToken": "cluster-default"
+                    },
+                    "props": {
+                      "label": "Tab 2"
+                    },
+                    "children": [
+                      {
+                        "id": "slot-tab-1-6",
+                        "component": "Stack",
+                        "meta": {
+                          "intent": "slot:tab-1",
+                          "label": "tab-1"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "detail-tab-panel-7",
+                    "component": "Stack",
+                    "layout": {
+                      "type": "stack",
+                      "gapToken": "cluster-default"
+                    },
+                    "props": {
+                      "label": "Tab 3"
+                    },
+                    "children": [
+                      {
+                        "id": "slot-tab-2-8",
+                        "component": "Stack",
+                        "meta": {
+                          "intent": "slot:tab-2",
+                          "label": "tab-2"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "detail-meta-11",
+                "component": "Stack",
+                "layout": {
+                  "type": "stack",
+                  "gapToken": "cluster-tight"
+                },
+                "style": {
+                  "spacingToken": "inset-default"
+                },
+                "children": [
+                  {
+                    "id": "slot-metadata-12",
+                    "component": "Stack",
+                    "meta": {
+                      "intent": "slot:metadata",
+                      "label": "metadata"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "bindings": {
+          "onEdit": "handleEdit",
+          "onDelete": "handleDelete"
+        }
+      }
+    ],
+    "objectSchema": {
+      "status": {
+        "type": "string",
+        "required": true,
+        "description": "Canonical lifecycle state derived from the states parameter. This is the single source\nof truth for the entity's current lifecycle position. Consumed by Colorized to resolve\nvisual tokens, and by view extensions to render StatusBadge and StatusTimeline.\n",
+        "semanticType": "status.state"
+      },
+      "state_history": {
+        "type": "StateTransition[]",
+        "required": false,
+        "description": "Chronological log of state transitions. Each entry records the before/after states,\ntimestamp, and (when governance is enabled) the actor, reason, and transition metadata.\nRendered by StatusTimeline in the detail and timeline views.\n\nEntry structure:\n  - from: string (previous state)\n  - to: string (new state)\n  - timestamp: ISO 8601 datetime\n  - actor_id: string (user/system who triggered the transition, optional)\n  - reason: string (human-readable justification, required when requireTransitionReason is true)\n  - transition_metadata: Record<string, unknown> (arbitrary context, optional)\n",
+        "semanticType": "timeline.state_transition"
+      },
+      "allowed_transitions": {
+        "type": "string[]",
+        "required": false,
+        "description": "Materialized list of valid next states from the current status, computed from the\ntransitionRules parameter. When transitionRules is null (open model), this contains\nall states except the current one. Used by StatusSelector to disable invalid options\nand by StatusBadge to indicate available paths.\n",
+        "semanticType": "status.navigation"
+      },
+      "plan_code": {
+        "type": "string",
+        "required": true,
+        "description": "Provider specific identifier for the plan or price.",
+        "semanticType": "billing.plan.code"
+      },
+      "plan_name": {
+        "type": "string",
+        "required": true,
+        "description": "Human readable plan label rendered in list and detail contexts.",
+        "semanticType": "billing.plan.name"
+      },
+      "billing_interval": {
+        "type": "string",
+        "required": true,
+        "description": "Billing cadence name selected from supportedIntervals.",
+        "semanticType": "billing.plan.interval"
+      },
+      "interval_count": {
+        "type": "integer",
+        "required": false,
+        "description": "Multiplier for interval (ex: 12 with monthly => yearly cadence).",
+        "semanticType": "billing.plan.interval_count"
+      },
+      "amount_minor": {
+        "type": "integer",
+        "required": true,
+        "description": "Contract value expressed in minor currency units.",
+        "semanticType": "billing.plan.amount_minor"
+      },
+      "currency": {
+        "type": "string",
+        "required": true,
+        "description": "ISO 4217 currency for the plan price.",
+        "semanticType": "billing.plan.currency"
+      },
+      "trial_period_days": {
+        "type": "integer",
+        "required": false,
+        "description": "Length of introductory trial period in days.",
+        "semanticType": "billing.plan.trial_period_days"
+      },
+      "collection_method": {
+        "type": "string",
+        "required": false,
+        "description": "How billing is collected (charge_automatically, send_invoice).",
+        "semanticType": "billing.plan.collection_method"
+      },
+      "billing_anchor_day": {
+        "type": "integer",
+        "required": false,
+        "description": "Day of month used to anchor renewals when prorating.",
+        "semanticType": "billing.plan.billing_anchor_day"
+      },
+      "pricing_model": {
+        "type": "string",
+        "required": false,
+        "description": "Price strategy (flat, per_unit, tiered, package).",
+        "semanticType": "billing.plan.pricing_model"
+      },
+      "meter_name": {
+        "type": "string",
+        "required": true,
+        "description": "Friendly metered feature name shown in UI (ex: Analytics Seats).",
+        "semanticType": "billing.usage.meter_name"
+      },
+      "included_quantity": {
+        "type": "integer",
+        "required": true,
+        "description": "Quantity included in base plan before overages.",
+        "semanticType": "billing.usage.included_quantity"
+      },
+      "consumed_quantity": {
+        "type": "integer",
+        "required": true,
+        "description": "Actual quantity consumed in the active period.",
+        "semanticType": "billing.usage.consumed_quantity"
+      },
+      "unit_label": {
+        "type": "string",
+        "required": true,
+        "description": "Label for display, defaults to the unit parameter.",
+        "semanticType": "billing.usage.unit_label"
+      },
+      "period_start": {
+        "type": "date",
+        "required": true,
+        "description": "Date the usage accumulation window began.",
+        "semanticType": "billing.usage.period_start"
+      },
+      "period_end": {
+        "type": "date",
+        "required": true,
+        "description": "Date the usage accumulation window ends.",
+        "semanticType": "billing.usage.period_end"
+      },
+      "rollover_strategy": {
+        "type": "string",
+        "required": false,
+        "description": "Strategy for unused units (inherits rolloverStrategy parameter).",
+        "semanticType": "billing.usage.rollover_strategy"
+      },
+      "overage_rate_minor": {
+        "type": "integer",
+        "required": false,
+        "description": "Cost per additional unit expressed in minor currency units.",
+        "semanticType": "billing.usage.overage_rate_minor"
+      },
+      "projected_overage_minor": {
+        "type": "integer",
+        "required": false,
+        "description": "Forecasted overage spend derived from consumption trends.",
+        "semanticType": "billing.usage.projected_overage_minor"
+      },
+      "samples": {
+        "type": "UsageSample[]",
+        "required": false,
+        "description": "Rolling usage measurements for charts or anomaly detection.",
+        "semanticType": "billing.usage.samples"
+      },
+      "refundable_until": {
+        "type": "datetime",
+        "required": false,
+        "description": "Date when refund eligibility window ends for this record.",
+        "semanticType": "billing.refund.window_end"
+      },
+      "refund_policy_url": {
+        "type": "string",
+        "required": false,
+        "description": "Link to customer facing refund or cancellation policy.",
+        "semanticType": "billing.refund.policy_link"
+      },
+      "total_refunded_minor": {
+        "type": "integer",
+        "required": false,
+        "description": "Cumulative amount refunded in minor currency units.",
+        "semanticType": "billing.refund.total_minor"
+      },
+      "credit_memo_balance_minor": {
+        "type": "integer",
+        "required": false,
+        "description": "Remaining credit memo balance that can be applied to invoices.",
+        "semanticType": "billing.refund.credit_memo_balance_minor"
+      },
+      "credit_memo_type": {
+        "type": "string",
+        "required": false,
+        "description": "Category of credit memo tied to business justification.",
+        "semanticType": "billing.refund.credit_memo_type"
+      },
+      "last_refund_at": {
+        "type": "datetime",
+        "required": false,
+        "description": "Timestamp when the most recent refund was issued.",
+        "semanticType": "billing.refund.last_refund_at"
+      },
+      "requires_manager_approval": {
+        "type": "boolean",
+        "required": false,
+        "description": "Indicates if finance manager approval is required before issuing refund.",
+        "semanticType": "billing.refund.requires_manager_approval"
+      },
+      "notes": {
+        "type": "string",
+        "required": false,
+        "description": "Free form account summary for success and finance teams.",
+        "semanticType": "billing.subscription.notes"
+      },
+      "subscription_id": {
+        "type": "string",
+        "required": true,
+        "description": "Stable identifier shared across billing surfaces.",
+        "semanticType": "billing.subscription.id"
+      },
+      "provider": {
+        "type": "string",
+        "required": true,
+        "description": "Source system providing subscription data (ex: stripe, chargebee).",
+        "semanticType": "billing.subscription.provider"
+      },
+      "provider_subscription_id": {
+        "type": "string",
+        "required": false,
+        "description": "Provider specific identifier used during reconciliation.",
+        "semanticType": "billing.subscription.provider_id"
+      },
+      "account_name": {
+        "type": "string",
+        "required": true,
+        "description": "Customer or workspace name tied to the subscription.",
+        "semanticType": "billing.subscription.account_name"
+      },
+      "account_key": {
+        "type": "string",
+        "required": false,
+        "description": "Immutable customer identifier for linking CRM and billing.",
+        "semanticType": "billing.subscription.account_key"
+      },
+      "account_owner": {
+        "type": "string",
+        "required": false,
+        "description": "Customer success owner assigned to the account.",
+        "semanticType": "billing.subscription.account_owner"
+      },
+      "account_owner_email": {
+        "type": "email",
+        "required": false,
+        "description": "Contact email for the assigned customer owner.",
+        "semanticType": "billing.subscription.account_owner_email"
+      },
+      "status_note": {
+        "type": "string",
+        "required": false,
+        "description": "Short context on the current lifecycle status (ex: payment retrying).",
+        "semanticType": "billing.subscription.status_note"
+      },
+      "current_period_start": {
+        "type": "datetime",
+        "required": true,
+        "description": "Timestamp when the active billing period began.",
+        "semanticType": "billing.subscription.current_period_start"
+      },
+      "current_period_end": {
+        "type": "datetime",
+        "required": true,
+        "description": "Timestamp when the active billing period ends.",
+        "semanticType": "billing.subscription.current_period_end"
+      },
+      "trial_end_at": {
+        "type": "datetime",
+        "required": false,
+        "description": "Date when trialing subscriptions will convert or expire.",
+        "semanticType": "billing.subscription.trial_end_at"
+      },
+      "cancellation_effective_at": {
+        "type": "datetime",
+        "required": false,
+        "description": "When the subscription will cancel if pending.",
+        "semanticType": "billing.subscription.cancellation_effective_at"
+      },
+      "renewal_rate_minor": {
+        "type": "integer",
+        "required": false,
+        "description": "Expected renewal price in minor currency units including discounts.",
+        "semanticType": "billing.subscription.renewal_rate_minor"
+      },
+      "health_score": {
+        "type": "number",
+        "required": false,
+        "description": "Derived account health indicator (0-100).",
+        "semanticType": "billing.subscription.health_score"
+      },
+      "risk_segment": {
+        "type": "string",
+        "required": false,
+        "description": "Customer stratification label (ex: at_risk, stable, expansion).",
+        "semanticType": "billing.subscription.risk_segment"
+      }
+    }
+  },
+  "object": "Subscription",
+  "version": 1,
+  "createdAt": "2026-03-05T03:43:57.111Z",
+  "updatedAt": "2026-03-05T03:43:57.111Z",
+  "tags": []
+}

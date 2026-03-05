@@ -15,6 +15,7 @@ import type {
   PreviewVerbosity,
   ToolPreview,
 } from './types.js';
+import { ToolError } from '../errors/tool-error.js';
 
 const THEMES = ['base', 'dark', 'hc'] as const;
 type Theme = (typeof THEMES)[number];
@@ -53,7 +54,7 @@ function normalizeKey(key: string): string {
   if (key === 'description') return '$description';
   if (key === 'type') return '$type';
   if (isUnsafeKey(key)) {
-    throw new Error(`Unsafe key "${key}" is not allowed in token deltas.`);
+    throw new ToolError('OODS-V113', `Unsafe key "${key}" is not allowed in token deltas.`, { key });
   }
   return key;
 }
@@ -79,7 +80,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 function deepMerge(target: TokenDocument, source: TokenDocument): void {
   for (const [key, value] of Object.entries(source)) {
     if (isUnsafeKey(key)) {
-      throw new Error(`Unsafe key "${key}" is not allowed in token deltas.`);
+      throw new ToolError('OODS-V113', `Unsafe key "${key}" is not allowed in token deltas.`, { key });
     }
     if (isPlainObject(value)) {
       if (!isPlainObject(target[key])) {
@@ -100,7 +101,7 @@ function decodePointerSegment(segment: string): string {
 
 function pointerSegments(pointer: string): string[] {
   if (!pointer.startsWith('/')) {
-    throw new Error(`Invalid JSON pointer: ${pointer}`);
+    throw new ToolError('OODS-V100', `Invalid JSON pointer: ${pointer}`, { pointer });
   }
   return pointer
     .split('/')
@@ -118,11 +119,11 @@ function ensureContainer(parent: any, key: string): TokenDocument {
 function applyPatchDocument(doc: TokenDocument, operations: PatchOperation[]): void {
   for (const op of operations) {
     if (!op || typeof op.path !== 'string' || typeof op.op !== 'string') {
-      throw new Error('Invalid patch operation');
+      throw new ToolError('OODS-V102', 'Invalid patch operation');
     }
     const segments = pointerSegments(op.path);
     if (!segments.length) {
-      throw new Error('Patch path cannot target document root');
+      throw new ToolError('OODS-V103', 'Patch path cannot target document root');
     }
     const lastKey = segments[segments.length - 1];
     let cursor: any = doc;
@@ -133,7 +134,7 @@ function applyPatchDocument(doc: TokenDocument, operations: PatchOperation[]): v
     if (op.op === 'remove') {
       if (Array.isArray(cursor)) {
         const index = Number(lastKey);
-        if (Number.isNaN(index)) throw new Error(`Cannot remove non-index path ${op.path}`);
+        if (Number.isNaN(index)) throw new ToolError('OODS-V112', `Cannot remove non-index path ${op.path}`, { path: op.path });
         cursor.splice(index, 1);
       } else {
         delete cursor[lastKey];
@@ -144,14 +145,14 @@ function applyPatchDocument(doc: TokenDocument, operations: PatchOperation[]): v
     if (op.op === 'add' || op.op === 'replace') {
       if (Array.isArray(cursor)) {
         const index = Number(lastKey);
-        if (Number.isNaN(index)) throw new Error(`Cannot ${op.op} non-index path ${op.path}`);
+        if (Number.isNaN(index)) throw new ToolError('OODS-V105', `Cannot ${op.op} non-index path ${op.path}`, { path: op.path, op: op.op });
         cursor[index] = value;
       } else {
         cursor[lastKey] = value;
       }
       continue;
     }
-    throw new Error(`Unsupported patch op: ${op.op}`);
+    throw new ToolError('OODS-V111', `Unsupported patch op: ${op.op}`, { op: op.op });
   }
 }
 
@@ -423,7 +424,7 @@ function buildPreview(
 function allowWriteFactory(policy: Policy): (candidate: string) => void {
   return (candidate: string) => {
     if (!withinAllowed(policy.artifactsBase, candidate)) {
-      throw new Error(`Path not allowed: ${candidate}`);
+      throw new ToolError('OODS-S015', `Path not allowed: ${candidate}`);
     }
     fs.mkdirSync(path.dirname(candidate), { recursive: true });
   };
@@ -431,10 +432,10 @@ function allowWriteFactory(policy: Policy): (candidate: string) => void {
 
 export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
   if (!input || typeof input !== 'object') {
-    throw new Error('Input is required.');
+    throw new ToolError('OODS-V003', 'Input is required.');
   }
   if (input.delta === undefined || input.delta === null) {
-    throw new Error('delta is required.');
+    throw new ToolError('OODS-V003', 'delta is required.', { field: 'delta' });
   }
 
   const brand = input.brand ?? 'A';
@@ -450,7 +451,7 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
 
   if (requestedStrategy === 'alias') {
     if (Array.isArray(input.delta)) {
-      throw new Error('Alias strategy expects an object delta.');
+      throw new ToolError('OODS-V001', 'Alias strategy expects an object delta.', { strategy: 'alias' });
     }
     const themeDelta = buildAliasDelta(input.delta as Record<string, unknown>);
     for (const theme of THEMES) {
@@ -460,14 +461,14 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
     }
   } else if (requestedStrategy === 'patch') {
     if (!Array.isArray(input.delta)) {
-      throw new Error('Patch strategy requires an array of RFC 6902 operations.');
+      throw new ToolError('OODS-V001', 'Patch strategy requires an array of RFC 6902 operations.', { strategy: 'patch' });
     }
     const operations = (input.delta as unknown[]).map((entry) => entry as PatchOperation);
     for (const theme of THEMES) {
       applyPatchDocument(updated[theme], operations);
     }
   } else {
-    throw new Error(`Unsupported strategy: ${requestedStrategy}`);
+    throw new ToolError('OODS-V001', `Unsupported strategy: ${requestedStrategy}`, { strategy: requestedStrategy });
   }
 
   const changeRecords: ChangeRecord[] = [];
@@ -494,7 +495,7 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
   const runStamp = new Date().toISOString().replace(/[:.]/g, '-');
   const runDir = path.join(reviewDir, runStamp);
   if (!withinAllowed(policy.artifactsBase, runDir)) {
-    throw new Error(`Path not allowed: ${runDir}`);
+    throw new ToolError('OODS-S015', `Path not allowed: ${runDir}`, { path: runDir });
   }
   fs.mkdirSync(runDir, { recursive: true });
   const ensureAllowed = allowWriteFactory(policy);

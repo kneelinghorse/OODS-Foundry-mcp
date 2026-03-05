@@ -68,17 +68,17 @@ describe('schemaRef workflow', () => {
 
     const validation = await validateHandle({ mode: 'full', schemaRef: missingRef });
     expect(validation.status).toBe('invalid');
-    expect(validation.errors[0].code).toMatch(/SCHEMA_REF/);
+    expect(validation.errors[0].code).toMatch(/OODS-N00[34]/);
     expect(validation.errors[0].hint).toContain('design.compose');
 
     const render = await renderHandle({ mode: 'full', schemaRef: missingRef });
     expect(render.status).toBe('error');
-    expect(render.errors[0].code).toMatch(/SCHEMA_REF/);
+    expect(render.errors[0].code).toMatch(/OODS-N00[34]/);
     expect(render.errors[0].hint).toContain('design.compose');
 
     const codegen = await codegenHandle({ schemaRef: missingRef, framework: 'react' });
     expect(codegen.status).toBe('error');
-    expect(codegen.errors?.[0].code).toMatch(/SCHEMA_REF/);
+    expect(codegen.errors?.[0].code).toMatch(/OODS-N00[34]/);
     expect(codegen.errors?.[0].message).toContain('design.compose');
   });
 });

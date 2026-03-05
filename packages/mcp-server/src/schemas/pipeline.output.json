@@ -101,6 +101,14 @@
             "enum": ["compose", "validate", "render", "codegen", "save"]
           }
         },
+        "stepLatency": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          },
+          "description": "Per-step latency in milliseconds."
+        },
         "duration": {
           "type": "number",
           "minimum": 0

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRunDirectory, loadPolicy } from '../lib/security.js';
 import { writeTranscript, writeBundleIndex, sha256File } from '../lib/transcript.js';
+import { ToolError } from '../errors/tool-error.js';
 import type {
   ArtifactDetail,
   BillingSwitchFixturesInput,
@@ -38,7 +39,7 @@ function normalizeProvider(value: string | undefined): BillingProvider {
   if (sanitized === 'stripe' || sanitized === 'chargebee') {
     return sanitized;
   }
-  throw new Error(`Unsupported provider "${value}". Select stripe or chargebee.`);
+  throw new ToolError('OODS-V013', `Unsupported provider "${value}". Select stripe or chargebee.`, { provider: value });
 }
 
 async function loadFixture(provider: BillingProvider): Promise<BillingFixture> {
@@ -47,13 +48,13 @@ async function loadFixture(provider: BillingProvider): Promise<BillingFixture> {
     const raw = await fs.readFile(filePath, 'utf8');
     return JSON.parse(raw) as BillingFixture;
   } catch (error) {
-    throw new Error(`Failed to load fixture for provider "${provider}": ${(error as Error).message}`);
+    throw new ToolError('OODS-S008', `Failed to load fixture for provider "${provider}": ${(error as Error).message}`, { provider });
   }
 }
 
 function assertObject(value: unknown, provider: BillingProvider, domain: 'subscription' | 'invoice'): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`Fixture "${provider}" does not define ${domain} data.`);
+    throw new ToolError('OODS-N008', `Fixture "${provider}" does not define ${domain} data.`, { provider, domain });
   }
   return value as Record<string, unknown>;
 }

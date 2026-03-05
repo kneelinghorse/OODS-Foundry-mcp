@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { getAjv } from '../lib/ajv.js';
 import { withinAllowed } from '../lib/security.js';
 import type { StructuredDataFetchInput, StructuredDataFetchOutput, StructuredDataset } from './types.js';
+import { ToolError } from '../errors/tool-error.js';
 
 type ManifestArtifact = {
   name?: string;
@@ -269,7 +270,7 @@ export async function handle(input: StructuredDataFetchInput): Promise<Structure
   if (input.version && dataset !== 'manifest') {
     const versionResult = resolveVersionedPath(dataset, input.version);
     if (!versionResult) {
-      throw new Error(`No versioned artifact found for "${dataset}" near version "${input.version}".`);
+      throw new ToolError('OODS-N007', `No versioned artifact found for "${dataset}" near version "${input.version}".`, { dataset, version: input.version });
     }
     dataPath = versionResult.path;
     resolvedVersion = versionResult.resolvedVersion;
@@ -289,7 +290,7 @@ export async function handle(input: StructuredDataFetchInput): Promise<Structure
   }
 
   if (!fs.existsSync(dataPath)) {
-    throw new Error(`Dataset not found for "${dataset}".`);
+    throw new ToolError('OODS-N007', `Dataset not found for "${dataset}".`, { dataset });
   }
 
   const payload = dataset === 'manifest' && manifestInfo.manifest ? manifestInfo.manifest : readJson(dataPath);

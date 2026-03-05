@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRunDirectory, loadPolicy } from '../lib/security.js';
 import { writeTranscript, writeBundleIndex, sha256File } from '../lib/transcript.js';
+import { ToolError } from '../errors/tool-error.js';
 import type {
   ArtifactDetail,
   BillingReviewKitInput,
@@ -57,7 +58,7 @@ function normalizeObjectName(value: string | undefined): { key: BillingObjectKey
   if (sanitized === 'invoice') return { key: 'invoice', label: OBJECT_LABELS.invoice };
   if (sanitized === 'plan') return { key: 'plan', label: OBJECT_LABELS.plan };
   if (sanitized === 'usage') return { key: 'usage', label: OBJECT_LABELS.usage };
-  throw new Error(`Unsupported billing object "${value}". Expected Subscription, Invoice, Plan, or Usage.`);
+  throw new ToolError('OODS-V012', `Unsupported billing object "${value}". Expected Subscription, Invoice, Plan, or Usage.`, { value });
 }
 
 function normalizeFixtures(fixtures: BillingProvider[] | undefined): BillingProvider[] {
@@ -68,7 +69,7 @@ function normalizeFixtures(fixtures: BillingProvider[] | undefined): BillingProv
     if (typeof entry !== 'string') continue;
     const lower = entry.toLowerCase() as BillingProvider;
     if (!VALID_PROVIDERS.includes(lower)) {
-      throw new Error(`Unknown fixture provider "${entry}". Supported fixtures: ${VALID_PROVIDERS.join(', ')}`);
+      throw new ToolError('OODS-V013', `Unknown fixture provider "${entry}". Supported fixtures: ${VALID_PROVIDERS.join(', ')}`, { provider: entry });
     }
     if (!seen.has(lower)) {
       seen.add(lower);
@@ -76,7 +77,7 @@ function normalizeFixtures(fixtures: BillingProvider[] | undefined): BillingProv
     }
   }
   if (!normalized.length) {
-    throw new Error('At least one fixture provider must be selected.');
+    throw new ToolError('OODS-V014', 'At least one fixture provider must be selected.');
   }
   return normalized;
 }
@@ -88,13 +89,13 @@ async function loadFixture(provider: BillingProvider): Promise<BillingFixture> {
     const parsed = JSON.parse(raw) as BillingFixture;
     return parsed;
   } catch (error) {
-    throw new Error(`Failed to load fixture for provider "${provider}": ${(error as Error).message}`);
+    throw new ToolError('OODS-S008', `Failed to load fixture for provider "${provider}": ${(error as Error).message}`, { provider });
   }
 }
 
 function assertObject(value: unknown, provider: BillingProvider, objectKey: BillingObjectKey): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`Fixture "${provider}" does not define object "${objectKey}".`);
+    throw new ToolError('OODS-N008', `Fixture "${provider}" does not define object "${objectKey}".`, { provider, objectKey });
   }
   return value as Record<string, unknown>;
 }
@@ -274,7 +275,7 @@ export async function handle(input: BillingReviewKitInput = { apply: false, obje
   const specimens: Specimen[] = loaded.map((fixture) => {
     const provider = fixture.provider?.toString().toLowerCase() as BillingProvider | undefined;
     if (!provider || !VALID_PROVIDERS.includes(provider)) {
-      throw new Error(`Fixture file declared unsupported provider "${fixture.provider ?? '<missing>'}".`);
+      throw new ToolError('OODS-S018', `Fixture file declared unsupported provider "${fixture.provider ?? '<missing>'}".`, { provider: fixture.provider });
     }
     const data = assertObject(fixture[objectKey], provider, objectKey);
     return {

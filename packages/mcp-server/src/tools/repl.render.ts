@@ -46,7 +46,7 @@ function toComponentCssRef(componentName: string): string {
 
 function toFragmentRenderIssue(nodeId: string, component: string, message: string): ReplIssue {
   return {
-    code: 'FRAGMENT_RENDER_FAILED',
+    code: 'OODS-S007',
     message: `Fragment render failed for node '${nodeId}': ${message}`,
     path: `/fragments/${nodeId}`,
     component,
@@ -72,7 +72,7 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
       if (resolved.ok) {
         workingTree = resolved.schema;
       } else {
-        const code = resolved.reason === 'expired' ? 'SCHEMA_REF_EXPIRED' : 'SCHEMA_REF_NOT_FOUND';
+        const code = resolved.reason === 'expired' ? 'OODS-N004' : 'OODS-N003';
         errors.push({
           code,
           message: `schemaRef '${input.schemaRef}' is ${resolved.reason}.`,
@@ -80,12 +80,12 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
         });
       }
     } else {
-      errors.push({ code: 'MISSING_SCHEMA', message: 'schema is required when mode=full' });
+      errors.push({ code: 'OODS-V009', message: 'schema is required when mode=full' });
     }
   } else {
     workingTree = cloneTree(input.baseTree);
     if (!workingTree) {
-      errors.push({ code: 'MISSING_BASE_TREE', message: 'baseTree is required when mode=patch' });
+      errors.push({ code: 'OODS-V010', message: 'baseTree is required when mode=patch' });
     }
     if (workingTree && input.patch) {
       const patchResult = applyPatch(workingTree, input.patch);
@@ -110,9 +110,9 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   // rendering, so known components still produce fragments.
   let deferredUnknownErrors: ReplIssue[] = [];
   if (input.apply === true && format === 'fragments' && !strict) {
-    deferredUnknownErrors = errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    deferredUnknownErrors = errors.filter((e) => e.code === 'OODS-V006');
     if (deferredUnknownErrors.length > 0) {
-      const remaining = errors.filter((e) => e.code !== 'UNKNOWN_COMPONENT');
+      const remaining = errors.filter((e) => e.code !== 'OODS-V006');
       errors.length = 0;
       errors.push(...remaining);
     }
@@ -165,7 +165,7 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
             if (registry.names.size > 0 && !registry.names.has(node.component)) {
               fragmentMap.delete(node.id);
               output.errors.push({
-                code: 'UNKNOWN_COMPONENT',
+                code: 'OODS-V006',
                 message: `Component '${node.component}' is not in the OODS registry`,
                 path: `/fragments/${node.id}`,
                 component: node.component,

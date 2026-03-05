@@ -111,6 +111,7 @@ function indent(code: string, depth: number): string {
 function styleObjToJsx(style: StyleObj): string {
   if (Object.keys(style).length === 0) return '';
   const entries = Object.entries(style)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => `${key}: '${value}'`)
     .join(', ');
   return `{ ${entries} }`;
@@ -139,7 +140,7 @@ function boolAttr(key: string, value: unknown): string {
 
 function propsToJsxAttrs(props: Record<string, unknown>, omitClassProps = false): string {
   const parts: string[] = [];
-  for (const [key, value] of Object.entries(props)) {
+  for (const [key, value] of Object.entries(props).sort(([a], [b]) => a.localeCompare(b))) {
     if (isReservedProp(key, omitClassProps) || value === undefined) continue;
     if (typeof value === 'boolean') {
       parts.push(boolAttr(key, value));
@@ -227,7 +228,7 @@ function emitNode(
 
   // Event bindings (e.g., onSubmit={handleSubmit})
   if (node.bindings && typeof node.bindings === 'object') {
-    for (const [eventKey, handlerName] of Object.entries(node.bindings)) {
+    for (const [eventKey, handlerName] of Object.entries(node.bindings).sort(([a], [b]) => a.localeCompare(b))) {
       attrParts.push(`${eventKey}={${handlerName}}`);
     }
   }
@@ -353,7 +354,7 @@ function generatePagePropsInterface(
 ): string {
   const lines: string[] = ['export interface PageProps {'];
 
-  for (const [fieldName, entry] of Object.entries(objectSchema)) {
+  for (const [fieldName, entry] of Object.entries(objectSchema).sort(([a], [b]) => a.localeCompare(b))) {
     const tsType = mapFieldType(entry);
     const optional = entry.required ? '' : '?';
     const camelName = snakeToCamel(fieldName);
@@ -441,7 +442,7 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   if (schema.tokenOverrides && Object.keys(schema.tokenOverrides).length > 0) {
     lines.push('/**');
     lines.push(' * Object-level token overrides (apply via CSS custom properties):');
-    for (const [key, value] of Object.entries(schema.tokenOverrides)) {
+    for (const [key, value] of Object.entries(schema.tokenOverrides).sort(([a], [b]) => a.localeCompare(b))) {
       const varName = `--token-${key.replace(/[.\s_]+/g, '-')}`;
       lines.push(` *   ${varName}: ${value};`);
     }

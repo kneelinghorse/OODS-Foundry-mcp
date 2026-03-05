@@ -47,7 +47,7 @@ describe('repl.render fragment error isolation', () => {
 
     expect(result.status).toBe('ok');
     expect(Object.keys(result.fragments ?? {})).toEqual(['fragment-ok-button', 'fragment-failing-card', 'fragment-ok-badge']);
-    expect(result.errors.some((entry) => entry.code === 'FRAGMENT_RENDER_FAILED')).toBe(false);
+    expect(result.errors.some((entry) => entry.code === 'OODS-S007')).toBe(false);
   });
 
   it('isolates one failing fragment in non-strict mode and keeps successful fragments', async () => {
@@ -62,7 +62,7 @@ describe('repl.render fragment error isolation', () => {
       expect(result.status).toBe('ok');
       expect(Object.keys(result.fragments ?? {})).toEqual(['fragment-ok-button', 'fragment-ok-badge']);
 
-      const failures = result.errors.filter((entry) => entry.code === 'FRAGMENT_RENDER_FAILED');
+      const failures = result.errors.filter((entry) => entry.code === 'OODS-S007');
       expect(failures).toHaveLength(1);
       expect(failures[0]?.path).toBe('/fragments/fragment-failing-card');
       expect(failures[0]?.component).toBe('Card');
@@ -81,7 +81,7 @@ describe('repl.render fragment error isolation', () => {
 
       expect(result.status).toBe('error');
       expect(result.fragments).toBeUndefined();
-      expect(result.errors.some((entry) => entry.code === 'FRAGMENT_RENDER_FAILED')).toBe(true);
+      expect(result.errors.some((entry) => entry.code === 'OODS-S007')).toBe(true);
     });
   });
 
@@ -96,7 +96,7 @@ describe('repl.render fragment error isolation', () => {
 
       expect(result.status).toBe('error');
       expect(result.fragments).toBeUndefined();
-      const failures = result.errors.filter((entry) => entry.code === 'FRAGMENT_RENDER_FAILED');
+      const failures = result.errors.filter((entry) => entry.code === 'OODS-S007');
       expect(failures).toHaveLength(3);
     });
   });
@@ -112,7 +112,7 @@ describe('repl.render fragment error isolation', () => {
 
       expect(result.status).toBe('error');
       expect(result.fragments).toBeUndefined();
-      const failures = result.errors.filter((entry) => entry.code === 'FRAGMENT_RENDER_FAILED');
+      const failures = result.errors.filter((entry) => entry.code === 'OODS-S007');
       expect(failures).toHaveLength(3);
     });
   });

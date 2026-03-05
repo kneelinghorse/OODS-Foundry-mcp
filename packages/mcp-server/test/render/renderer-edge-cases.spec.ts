@@ -349,6 +349,6 @@ describe('renderer edge cases: registry completeness', () => {
     ]);
     const result = await renderFull(schema);
     expect(result.status).toBe('error');
-    expect(result.errors.some((e: { code: string }) => e.code === 'UNKNOWN_COMPONENT')).toBe(true);
+    expect(result.errors.some((e: { code: string }) => e.code === 'OODS-V006')).toBe(true);
   });
 });

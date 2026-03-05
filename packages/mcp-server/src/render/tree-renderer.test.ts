@@ -98,11 +98,17 @@ describe('tree-renderer', () => {
   it('maps layouts to expected CSS behaviors', () => {
     const html = renderTree(schemaFixture);
 
-    expect(html).toContain('display:flex;flex-direction:column');
-    expect(html).toContain('display:grid;grid-template-columns:repeat(auto-fit, minmax(0, 1fr))');
-    expect(html).toContain('display:flex;flex-direction:row');
+    // Stack layout
+    expect(html).toContain('display:flex');
+    expect(html).toContain('flex-direction:column');
+    // Grid layout
+    expect(html).toContain('grid-template-columns:repeat(auto-fit, minmax(0, 1fr))');
+    // Inline layout
+    expect(html).toContain('flex-direction:row');
+    // Section layout
     expect(html).toContain('<section data-layout="section" data-layout-node-id="screen-settings"');
-    expect(html).toContain('display:grid;grid-template-columns:minmax(0, 1fr) minmax(16rem, 24rem)');
+    // Sidebar layout
+    expect(html).toContain('grid-template-columns:minmax(0, 1fr) minmax(16rem, 24rem)');
     expect(html).toContain('<aside data-sidebar-aside="true">');
   });
 

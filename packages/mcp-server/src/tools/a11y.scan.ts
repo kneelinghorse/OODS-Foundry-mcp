@@ -8,6 +8,7 @@ import { flattenDTCGLayers, toFlatTokenMap } from '../a11y/token-color-resolver.
 import { loadTokenData } from '../a11y/validate-contrast.js';
 import type { GenericOutput } from './types.js';
 import type { UiSchema, UiElement } from '../schemas/generated.js';
+import { ToolError } from '../errors/tool-error.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -125,7 +126,7 @@ export async function handle(input: A11yScanInput = {}): Promise<GenericOutput> 
   // Load token data
   const tokenData = loadTokenData();
   if (!tokenData) {
-    throw new Error('Token data could not be loaded from artifacts/structured-data/. Run pnpm refresh:data first.');
+    throw new ToolError('OODS-N011', 'Token data could not be loaded from artifacts/structured-data/. Run pnpm refresh:data first.');
   }
 
   // Flatten and evaluate contrast rules
@@ -161,7 +162,7 @@ export async function handle(input: A11yScanInput = {}): Promise<GenericOutput> 
   // Write artifact if apply=true
   if (input.apply) {
     const file = path.join(outDir, 'a11y-report.json');
-    if (!withinAllowed(policy.artifactsBase, file)) throw new Error('Path not allowed');
+    if (!withinAllowed(policy.artifactsBase, file)) throw new ToolError('OODS-S015', 'Path not allowed', { path: file });
     fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(file, JSON.stringify(report, null, 2));
     artifacts.push(file);

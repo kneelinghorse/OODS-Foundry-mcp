@@ -78,7 +78,7 @@ describe('fragment API contract invariants', () => {
 
       const errorNodeIds = new Set(
         result.errors
-          .filter((entry) => entry.code === 'FRAGMENT_RENDER_FAILED')
+          .filter((entry) => entry.code === 'OODS-S007')
           .map((entry) => extractNodeIdFromPath(entry.path))
           .filter((value): value is string => value !== null)
       );
@@ -98,7 +98,7 @@ describe('fragment API contract invariants', () => {
 
       expect(result.status).toBe('ok');
       expect(Object.keys(result.fragments ?? {})).toEqual(['contract-button', 'contract-badge']);
-      const failures = result.errors.filter((entry) => entry.code === 'FRAGMENT_RENDER_FAILED');
+      const failures = result.errors.filter((entry) => entry.code === 'OODS-S007');
       expect(failures).toHaveLength(1);
       expect(failures[0]?.path).toBe('/fragments/contract-card');
     });
@@ -115,7 +115,7 @@ describe('fragment API contract invariants', () => {
 
       expect(result.status).toBe('error');
       expect(result.fragments).toBeUndefined();
-      const failures = result.errors.filter((entry) => entry.code === 'FRAGMENT_RENDER_FAILED');
+      const failures = result.errors.filter((entry) => entry.code === 'OODS-S007');
       expect(failures).toHaveLength(1);
       expect(failures[0]?.path).toBe('/fragments/contract-card');
     });

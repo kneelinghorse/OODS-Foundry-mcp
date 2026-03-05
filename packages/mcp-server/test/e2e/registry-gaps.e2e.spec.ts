@@ -162,7 +162,7 @@ describe('registry gaps e2e verification', () => {
     expect(gridFragment!.html).toContain('data-oods-component="Tabs"');
 
     // No errors
-    expect(bridgeResult.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT')).toHaveLength(0);
+    expect(bridgeResult.errors.filter((e) => e.code === 'OODS-V006')).toHaveLength(0);
 
     // Bridge parity: fragment IDs match
     expect(Object.keys(bridgeResult.fragments ?? {}).sort()).toEqual(
@@ -199,7 +199,7 @@ describe('registry gaps e2e verification', () => {
     expect(bridgeResult.fragments?.['unknown-widget']).toBeUndefined();
 
     // Unknown component reported as per-node error
-    const unknownErrors = bridgeResult.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    const unknownErrors = bridgeResult.errors.filter((e) => e.code === 'OODS-V006');
     expect(unknownErrors).toHaveLength(1);
     expect(unknownErrors[0]?.nodeId).toBe('unknown-widget');
     expect(unknownErrors[0]?.component).toBe('FancyWidget');
@@ -211,7 +211,7 @@ describe('registry gaps e2e verification', () => {
     expect(bridgeResult.errors).toBeDefined();
 
     // Bridge parity: error isolation behavior is identical
-    const directUnknownErrors = directResult.errors.filter((e) => e.code === 'UNKNOWN_COMPONENT');
+    const directUnknownErrors = directResult.errors.filter((e) => e.code === 'OODS-V006');
     expect(directUnknownErrors).toHaveLength(unknownErrors.length);
     expect(Object.keys(bridgeResult.fragments ?? {}).sort()).toEqual(
       Object.keys(directResult.fragments ?? {}).sort()

@@ -98,6 +98,7 @@ function mergeDecl(layout: CssDecl, tokens: CssDecl): CssDecl {
 
 function declToInlineStyle(decl: CssDecl): string {
   return Object.entries(decl)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([prop, val]) => `${prop}: ${val}`)
     .join('; ');
 }
@@ -131,7 +132,7 @@ function propToVueAttr(key: string, value: unknown): string {
 
 function propsToVueAttrs(props: Record<string, unknown>, omitClassProps = false): string {
   const parts: string[] = [];
-  for (const [key, value] of Object.entries(props)) {
+  for (const [key, value] of Object.entries(props).sort(([a], [b]) => a.localeCompare(b))) {
     if (isReservedProp(key, omitClassProps) || value === undefined) continue;
     const attr = propToVueAttr(key, value);
     if (attr) parts.push(attr);
@@ -214,7 +215,7 @@ function emitTemplateNode(
 
   // Event bindings (e.g., @submit="handleSubmit")
   if (node.bindings && typeof node.bindings === 'object') {
-    for (const [eventKey, handlerName] of Object.entries(node.bindings)) {
+    for (const [eventKey, handlerName] of Object.entries(node.bindings).sort(([a], [b]) => a.localeCompare(b))) {
       // Convert React-style onXxx to Vue @xxx
       const vueEvent = eventKey.replace(/^on([A-Z])/, (_, c: string) => c.toLowerCase());
       attrParts.push(`@${vueEvent}="${handlerName}"`);
@@ -370,7 +371,7 @@ function buildScriptSetup(
     // Generate typed Props alias and populated defineProps
     lines.push('');
     lines.push('interface Props {');
-    for (const [fieldName, entry] of Object.entries(objectSchema!)) {
+    for (const [fieldName, entry] of Object.entries(objectSchema!).sort(([a], [b]) => a.localeCompare(b))) {
       const tsType = mapFieldType(entry);
       const optional = entry.required ? '' : '?';
       const camelName = snakeToCamel(fieldName);
@@ -494,6 +495,7 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   let tokenStyle = '';
   if (schema.tokenOverrides && Object.keys(schema.tokenOverrides).length > 0) {
     const declarations = Object.entries(schema.tokenOverrides)
+      .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `  --token-${key.replace(/[.\s_]+/g, '-')}: ${value};`)
       .join('\n');
     tokenStyle = `<style>\n:root {\n${declarations}\n}\n</style>`;

@@ -19,7 +19,7 @@ describe('security model', () => {
     });
 
     expect(result.status).toBe('error');
-    expect(result.errors.some((err) => err.code === 'PATCH_UNSAFE_PATH')).toBe(true);
+    expect(result.errors.some((err) => err.code === 'OODS-V101')).toBe(true);
     expect(({} as any).polluted).toBeUndefined();
   });
 
@@ -38,7 +38,7 @@ describe('security model', () => {
     });
 
     expect(result.status).toBe('error');
-    expect(result.errors.some((err) => err.code === 'PATCH_UNSAFE_PATH')).toBe(true);
+    expect(result.errors.some((err) => err.code === 'OODS-V101')).toBe(true);
     expect(({} as any).polluted).toBeUndefined();
   });
 

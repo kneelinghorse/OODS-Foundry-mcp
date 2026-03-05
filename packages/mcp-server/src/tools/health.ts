@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SchemaStore } from '../schema-store/index.js';
+import { ToolError } from '../errors/tool-error.js';
 
 type ManifestArtifact = {
   name?: string;
@@ -56,10 +57,10 @@ function readServerVersion(): string {
 function sanitizeFileName(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    throw new Error('artifact filename is empty');
+    throw new ToolError('OODS-S016', 'artifact filename is empty');
   }
   if (path.isAbsolute(trimmed) || trimmed.includes('..') || trimmed.includes('/') || trimmed.includes('\\')) {
-    throw new Error(`artifact filename is unsafe: ${trimmed}`);
+    throw new ToolError('OODS-S017', `artifact filename is unsafe: ${trimmed}`, { filename: trimmed });
   }
   return trimmed;
 }
@@ -68,11 +69,11 @@ function resolveArtifactPath(structuredDataDir: string, manifest: ManifestDoc, a
   const artifact = manifest.artifacts?.find((entry) => entry.name === artifactName);
   const filename = artifact?.file ? sanitizeFileName(artifact.file) : undefined;
   if (!filename) {
-    throw new Error(`artifact "${artifactName}" missing from manifest`);
+    throw new ToolError('OODS-N007', `artifact "${artifactName}" missing from manifest`, { artifact: artifactName });
   }
   const fullPath = path.join(structuredDataDir, filename);
   if (!fs.existsSync(fullPath)) {
-    throw new Error(`artifact "${artifactName}" file not found: ${filename}`);
+    throw new ToolError('OODS-N007', `artifact "${artifactName}" file not found: ${filename}`, { artifact: artifactName, filename });
   }
   return fullPath;
 }

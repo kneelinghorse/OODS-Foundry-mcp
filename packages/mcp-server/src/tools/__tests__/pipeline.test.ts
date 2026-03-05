@@ -300,7 +300,7 @@ describe('pipeline orchestration', () => {
 
       expect(result.error).toBeDefined();
       expect(result.error!.step).toBe('compose');
-      expect(result.error!.code).toBe('COMPOSE_STEP_EXCEPTION');
+      expect(result.error!.code).toBe('OODS-S010');
       expect(result.error!.message).toContain('compose crashed');
     });
 
@@ -333,7 +333,7 @@ describe('pipeline orchestration', () => {
       });
 
       expect(result.error!.step).toBe('validate');
-      expect(result.error!.code).toBe('VALIDATE_STEP_EXCEPTION');
+      expect(result.error!.code).toBe('OODS-S011');
     });
 
     it('returns error when render fails', async () => {
@@ -363,7 +363,7 @@ describe('pipeline orchestration', () => {
       });
 
       expect(result.error!.step).toBe('render');
-      expect(result.error!.code).toBe('RENDER_STEP_EXCEPTION');
+      expect(result.error!.code).toBe('OODS-S012');
     });
 
     it('returns error when codegen fails', async () => {
@@ -395,7 +395,7 @@ describe('pipeline orchestration', () => {
       });
 
       expect(result.error!.step).toBe('codegen');
-      expect(result.error!.code).toBe('CODEGEN_STEP_EXCEPTION');
+      expect(result.error!.code).toBe('OODS-S013');
     });
 
     it('returns error when save throws', async () => {
@@ -408,7 +408,7 @@ describe('pipeline orchestration', () => {
       });
 
       expect(result.error!.step).toBe('save');
-      expect(result.error!.code).toBe('SAVE_STEP_EXCEPTION');
+      expect(result.error!.code).toBe('OODS-S014');
       // Code was generated before save failed
       expect(result.code).toBeDefined();
     });
@@ -425,7 +425,7 @@ describe('pipeline orchestration', () => {
       });
 
       expect(result.error!.step).toBe('compose');
-      expect(result.error!.code).toBe('SCHEMA_REF_MISSING');
+      expect(result.error!.code).toBe('OODS-C001');
     });
 
     it('always includes pipeline duration even on error', async () => {
