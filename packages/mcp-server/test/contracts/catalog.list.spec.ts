@@ -341,4 +341,44 @@ describe('catalog.list', () => {
       }
     }
   });
+
+  // ── Status filter tests ──
+
+  it('every component has a non-empty status field', async () => {
+    const output: CatalogListOutput = await handle({});
+    for (const component of output.components) {
+      expect(component.status).toBeDefined();
+      expect(['stable', 'beta', 'planned']).toContain(component.status);
+    }
+  });
+
+  it('filters by status=stable', async () => {
+    const output: CatalogListOutput = await handle({ status: 'stable' });
+    expect(output.totalCount).toBeGreaterThan(0);
+    for (const component of output.components) {
+      expect(component.status).toBe('stable');
+    }
+  });
+
+  it('all 4 Communicable components have stable status', async () => {
+    const output: CatalogListOutput = await handle({ trait: 'Communicable', detail: 'summary' });
+    const communicableNames = output.components.map((c) => c.name);
+    expect(communicableNames).toContain('CommunicationDetailPanel');
+    expect(communicableNames).toContain('MessageEventTimeline');
+    expect(communicableNames).toContain('MessageStatusBadge');
+    expect(communicableNames).toContain('TemplatePicker');
+
+    for (const component of output.components) {
+      if (['CommunicationDetailPanel', 'MessageEventTimeline', 'MessageStatusBadge', 'TemplatePicker'].includes(component.name)) {
+        expect(component.status).toBe('stable');
+      }
+    }
+  });
+
+  it('status filter validates in input schema', () => {
+    expect(validateInput({ status: 'stable' })).toBe(true);
+    expect(validateInput({ status: 'planned' })).toBe(true);
+    expect(validateInput({ status: 'beta' })).toBe(true);
+    expect(validateInput({ status: 'invalid' })).toBe(false);
+  });
 });

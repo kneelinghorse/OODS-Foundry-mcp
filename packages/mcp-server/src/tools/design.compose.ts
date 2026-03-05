@@ -434,7 +434,8 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   // 3. Load catalog and fill slots
   let catalog: ComponentCatalogSummary[];
   try {
-    catalog = await loadCatalog();
+    const fullCatalog = await loadCatalog();
+    catalog = fullCatalog.filter((c) => c.status !== 'planned');
   } catch (e) {
     return {
       status: 'error',

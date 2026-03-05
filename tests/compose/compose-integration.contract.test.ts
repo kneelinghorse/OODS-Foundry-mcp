@@ -200,7 +200,7 @@ describe('contract: edge cases', () => {
     const result = await composeHandle({ intent: 'zzz unknown xyz' });
     expect(result.status).toBe('ok');
     expect(result.layout).toBeTruthy();
-    expect(result.warnings.some(w => w.code === 'LOW_LAYOUT_CONFIDENCE')).toBe(true);
+    expect(result.warnings.some(w => w.code === 'OODS-V116')).toBe(true);
   });
 
   it('validation can be skipped', async () => {

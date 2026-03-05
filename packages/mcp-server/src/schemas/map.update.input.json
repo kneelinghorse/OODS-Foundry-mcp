@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/map.update.input.json",
+  "title": "map.update input",
+  "description": "Partially update an existing component-to-trait mapping.",
+  "type": "object",
+  "required": ["id", "updates"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Mapping ID to update (e.g., 'material-button')."
+    },
+    "updates": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "Fields to update. Only provided fields are changed.",
+      "properties": {
+        "oodsTraits": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "Replace OODS trait list."
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["auto", "manual"],
+          "description": "Update confidence level."
+        },
+        "propMappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["externalProp", "oodsProp"],
+            "additionalProperties": false,
+            "properties": {
+              "externalProp": { "type": "string", "minLength": 1 },
+              "oodsProp": { "type": "string", "minLength": 1 },
+              "coercion": {
+                "oneOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "required": ["type", "mapping"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "type": { "const": "enum" },
+                      "mapping": { "type": "object", "additionalProperties": { "type": "string" } }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": ["type", "trueValue", "falseValue"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "type": { "const": "boolean_to_string" },
+                      "trueValue": { "type": "string" },
+                      "falseValue": { "type": "string" }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": ["type", "pattern"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "type": { "const": "template" },
+                      "pattern": { "type": "string" }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": ["type"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "type": { "const": "identity" }
+                    }
+                  }
+                ],
+                "default": null
+              }
+            }
+          },
+          "description": "Replace property mappings."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Update notes in metadata."
+        }
+      }
+    }
+  }
+}

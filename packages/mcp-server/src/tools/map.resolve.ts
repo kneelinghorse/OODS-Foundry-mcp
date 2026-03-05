@@ -1,9 +1,11 @@
 /**
  * map.resolve MCP tool handler.
  * Resolves an external component reference to its OODS trait mapping
- * with detailed prop translations.
+ * with detailed prop translations and coercion support.
  */
 import { loadMappings } from './map.shared.js';
+import type { CoercionDef } from './map.shared.js';
+import { coerce, normalizeCoercion } from './coercion.js';
 import type { MapResolveInput, MapResolveOutput, MapPropTranslation } from './types.js';
 
 export async function handle(input: MapResolveInput): Promise<MapResolveOutput> {
@@ -25,12 +27,15 @@ export async function handle(input: MapResolveInput): Promise<MapResolveOutput> 
   }
 
   // Build flattened prop translations with coercion details
-  const propTranslations: MapPropTranslation[] = (mapping.propMappings ?? []).map((pm) => ({
-    externalProp: pm.externalProp,
-    oodsProp: pm.oodsProp,
-    coercionType: pm.coercion?.type ?? null,
-    coercionDetail: pm.coercion ? buildCoercionDetail(pm.coercion) : null,
-  }));
+  const propTranslations: MapPropTranslation[] = (mapping.propMappings ?? []).map((pm) => {
+    const coercionDef = normalizeCoercion(pm.coercion);
+    return {
+      externalProp: pm.externalProp,
+      oodsProp: pm.oodsProp,
+      coercionType: coercionDef.type,
+      coercionDetail: buildCoercionDetail(coercionDef),
+    };
+  });
 
   return {
     status: 'ok',
@@ -39,16 +44,23 @@ export async function handle(input: MapResolveInput): Promise<MapResolveOutput> 
   };
 }
 
-function buildCoercionDetail(coercion: NonNullable<import('./map.shared.js').CoercionHint>): Record<string, unknown> {
-  const detail: Record<string, unknown> = { type: coercion.type };
-  if (coercion.type === 'enum-map' && coercion.values) {
-    detail.values = coercion.values;
+/**
+ * Resolve a single prop value through its coercion.
+ * Used when map_resolve is called with source values to transform.
+ */
+export function resolveValue(value: unknown, coercion: CoercionDef | null | undefined): unknown {
+  return coerce(value, normalizeCoercion(coercion));
+}
+
+function buildCoercionDetail(coercion: CoercionDef): Record<string, unknown> {
+  switch (coercion.type) {
+    case 'identity':
+      return { type: 'identity' };
+    case 'enum':
+      return { type: 'enum', mapping: coercion.mapping };
+    case 'boolean_to_string':
+      return { type: 'boolean_to_string', trueValue: coercion.trueValue, falseValue: coercion.falseValue };
+    case 'template':
+      return { type: 'template', pattern: coercion.pattern };
   }
-  if (coercion.type === 'string-template' && coercion.template) {
-    detail.template = coercion.template;
-  }
-  if (coercion.type === 'type-cast' && coercion.targetType) {
-    detail.targetType = coercion.targetType;
-  }
-  return detail;
 }

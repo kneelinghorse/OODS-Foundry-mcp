@@ -14,6 +14,11 @@
       "type": "string",
       "description": "Filter components by context (e.g., 'detail', 'list')"
     },
+    "status": {
+      "type": "string",
+      "enum": ["stable", "beta", "planned"],
+      "description": "Filter by component status. 'stable' = has renderer, 'planned' = not yet implemented."
+    },
     "detail": {
       "type": "string",
       "enum": ["summary", "full"],

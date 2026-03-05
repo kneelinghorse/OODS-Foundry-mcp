@@ -618,28 +618,13 @@ export namespace ComponentMappingSchemaSchema {
     /**
      * Type coercion hint. null for direct pass-through.
      */
-    coercion?: null | CoercionHint;
+    coercion?: null | CoercionDef;
   }
-  export interface CoercionHint {
-    /**
-     * Coercion strategy: enum-map (value mapping), boolean-invert (negate), string-template (format transform), type-cast (type conversion).
-     */
-    type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-    /**
-     * For enum-map: external value to OODS value mapping.
-     */
-    values?: {
-      [k: string]: string;
-    };
-    /**
-     * For string-template: template string with {value} placeholder.
-     */
-    template?: string;
-    /**
-     * For type-cast: target type to cast to.
-     */
-    targetType?: 'string' | 'number' | 'boolean';
-  }
+  export type CoercionDef =
+    | { type: 'enum'; mapping: { [k: string]: string } }
+    | { type: 'boolean_to_string'; trueValue: string; falseValue: string }
+    | { type: 'template'; pattern: string }
+    | { type: 'identity' };
   export interface MappingMetadata {
     /**
      * When the mapping was first created.
@@ -1126,14 +1111,11 @@ export namespace MapCreateInputSchema {
     propMappings?: {
       externalProp: string;
       oodsProp: string;
-      coercion?: null | {
-        type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-        values?: {
-          [k: string]: string;
-        };
-        template?: string;
-        targetType?: 'string' | 'number' | 'boolean';
-      };
+      coercion?: null
+        | { type: 'enum'; mapping: { [k: string]: string } }
+        | { type: 'boolean_to_string'; trueValue: string; falseValue: string }
+        | { type: 'template'; pattern: string }
+        | { type: 'identity' };
     }[];
     /**
      * 'auto' for machine-generated, 'manual' for human-curated.

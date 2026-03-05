@@ -123,7 +123,7 @@ describe('mapping + versioning bridge E2E', () => {
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
       propMappings: [
-        { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum-map', values: { primary: 'primary' } } },
+        { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum', mapping: { primary: 'primary' } } },
       ],
       confidence: 'auto',
     });
@@ -134,7 +134,7 @@ describe('mapping + versioning bridge E2E', () => {
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
       propMappings: [
-        { externalProp: 'size', oodsProp: 'size', coercion: { type: 'type-cast', targetType: 'string' } },
+        { externalProp: 'size', oodsProp: 'size', coercion: { type: 'template', pattern: '{{value}}' } },
       ],
       confidence: 'manual',
     });
@@ -172,7 +172,7 @@ describe('mapping + versioning bridge E2E', () => {
     expect(resolvedMaterial.mapping.oodsTraits).toEqual(['Stateful']);
     expect(resolvedMaterial.propTranslations).toBeInstanceOf(Array);
     expect(resolvedMaterial.propTranslations.length).toBe(1);
-    expect(resolvedMaterial.propTranslations[0].coercionType).toBe('enum-map');
+    expect(resolvedMaterial.propTranslations[0].coercionType).toBe('enum');
 
     const resolvedChakra = await runBridgeTool(bridge!.port, 'map_resolve', {
       externalSystem: 'chakra',
@@ -183,7 +183,7 @@ describe('mapping + versioning bridge E2E', () => {
     expect(resolvedChakra.mapping.oodsTraits).toEqual(['Stateful']);
     expect(resolvedChakra.propTranslations).toBeInstanceOf(Array);
     expect(resolvedChakra.propTranslations.length).toBe(1);
-    expect(resolvedChakra.propTranslations[0].coercionType).toBe('type-cast');
+    expect(resolvedChakra.propTranslations[0].coercionType).toBe('template');
   });
 
   it('structuredData.fetch listVersions via bridge', async () => {

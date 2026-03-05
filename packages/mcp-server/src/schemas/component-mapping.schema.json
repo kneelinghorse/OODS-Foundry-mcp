@@ -101,38 +101,53 @@
         "coercion": {
           "oneOf": [
             { "type": "null" },
-            { "$ref": "#/$defs/CoercionHint" }
+            { "$ref": "#/$defs/CoercionDef" }
           ],
           "default": null,
           "description": "Type coercion hint. null for direct pass-through."
         }
       }
     },
-    "CoercionHint": {
-      "type": "object",
-      "required": ["type"],
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["enum-map", "boolean-invert", "string-template", "type-cast"],
-          "description": "Coercion strategy: enum-map (value mapping), boolean-invert (negate), string-template (format transform), type-cast (type conversion)."
-        },
-        "values": {
+    "CoercionDef": {
+      "description": "Typed coercion transform. Discriminated union on the 'type' field.",
+      "oneOf": [
+        {
           "type": "object",
-          "additionalProperties": { "type": "string" },
-          "description": "For enum-map: external value to OODS value mapping."
+          "required": ["type", "mapping"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "enum", "description": "Enum value mapping: source value lookup to target value." },
+            "mapping": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Source value to target value mapping." }
+          }
         },
-        "template": {
-          "type": "string",
-          "description": "For string-template: template string with {value} placeholder."
+        {
+          "type": "object",
+          "required": ["type", "trueValue", "falseValue"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "boolean_to_string", "description": "Convert boolean to string representation." },
+            "trueValue": { "type": "string", "description": "String value when source is true." },
+            "falseValue": { "type": "string", "description": "String value when source is false." }
+          }
         },
-        "targetType": {
-          "type": "string",
-          "enum": ["string", "number", "boolean"],
-          "description": "For type-cast: target type to cast to."
+        {
+          "type": "object",
+          "required": ["type", "pattern"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "template", "description": "String interpolation using {{value}} placeholder." },
+            "pattern": { "type": "string", "description": "Template pattern with {{value}} placeholder." }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "identity", "description": "Pass-through, no transformation." }
+          }
         }
-      }
+      ]
     },
     "MappingMetadata": {
       "type": "object",

@@ -13,6 +13,8 @@
     "map.create",
     "map.list",
     "map.resolve",
+    "map.update",
+    "map.delete",
     "schema.delete",
     "schema.list",
     "schema.load",

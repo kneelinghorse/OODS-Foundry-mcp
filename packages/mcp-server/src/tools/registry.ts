@@ -32,6 +32,8 @@ const FALLBACK_REGISTRY: ToolRegistry = {
     'map.create',
     'map.list',
     'map.resolve',
+    'map.update',
+    'map.delete',
     'schema.delete',
     'schema.list',
     'schema.load',
