@@ -9,9 +9,15 @@ import listInputSchema from '../../src/schemas/map.list.input.json' assert { typ
 import listOutputSchema from '../../src/schemas/map.list.output.json' assert { type: 'json' };
 import resolveInputSchema from '../../src/schemas/map.resolve.input.json' assert { type: 'json' };
 import resolveOutputSchema from '../../src/schemas/map.resolve.output.json' assert { type: 'json' };
+import updateInputSchema from '../../src/schemas/map.update.input.json' assert { type: 'json' };
+import updateOutputSchema from '../../src/schemas/map.update.output.json' assert { type: 'json' };
+import deleteInputSchema from '../../src/schemas/map.delete.input.json' assert { type: 'json' };
+import deleteOutputSchema from '../../src/schemas/map.delete.output.json' assert { type: 'json' };
 import { handle as createHandle } from '../../src/tools/map.create.js';
 import { handle as listHandle } from '../../src/tools/map.list.js';
 import { handle as resolveHandle } from '../../src/tools/map.resolve.js';
+import { handle as updateHandle } from '../../src/tools/map.update.js';
+import { handle as deleteHandle } from '../../src/tools/map.delete.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
@@ -24,6 +30,10 @@ const validateListInput = ajv.compile(listInputSchema);
 const validateListOutput = ajv.compile(listOutputSchema);
 const validateResolveInput = ajv.compile(resolveInputSchema);
 const validateResolveOutput = ajv.compile(resolveOutputSchema);
+const validateUpdateInput = ajv.compile(updateInputSchema);
+const validateUpdateOutput = ajv.compile(updateOutputSchema);
+const validateDeleteInput = ajv.compile(deleteInputSchema);
+const validateDeleteOutput = ajv.compile(deleteOutputSchema);
 
 // Preserve original file state for cleanup
 let originalMappings: string | null = null;
@@ -71,7 +81,7 @@ describe('map.create schema validation', () => {
         externalComponent: 'Button',
         oodsTraits: ['Stateful'],
         propMappings: [
-          { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum-map', values: { contained: 'primary' } } },
+          { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum', mapping: { contained: 'primary' } } },
           { externalProp: 'disabled', oodsProp: 'disabled', coercion: null },
         ],
         confidence: 'auto',
@@ -146,7 +156,7 @@ describe('map.create → map.list → map.resolve round-trip', () => {
       externalComponent: 'Button',
       oodsTraits: ['Stateful'],
       propMappings: [
-        { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum-map', values: { contained: 'primary' } } },
+        { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum', mapping: { contained: 'primary' } } },
       ],
       confidence: 'manual',
     });
@@ -178,7 +188,7 @@ describe('map.create → map.list → map.resolve round-trip', () => {
     expect(resolveResult.propTranslations!.length).toBe(1);
     expect(resolveResult.propTranslations![0].externalProp).toBe('variant');
     expect(resolveResult.propTranslations![0].oodsProp).toBe('appearance');
-    expect(resolveResult.propTranslations![0].coercionType).toBe('enum-map');
+    expect(resolveResult.propTranslations![0].coercionType).toBe('enum');
   });
 });
 
@@ -392,10 +402,10 @@ describe('map.create all coercion types', () => {
       externalComponent: 'TestComponent',
       oodsTraits: ['Stateful'],
       propMappings: [
-        { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum-map', values: { a: 'b' } } },
-        { externalProp: 'inverted', oodsProp: 'active', coercion: { type: 'boolean-invert' } },
-        { externalProp: 'width', oodsProp: 'size', coercion: { type: 'string-template', template: '{value}px' } },
-        { externalProp: 'count', oodsProp: 'quantity', coercion: { type: 'type-cast', targetType: 'number' } },
+        { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum', mapping: { a: 'b' } } },
+        { externalProp: 'inverted', oodsProp: 'active', coercion: { type: 'boolean_to_string', trueValue: 'yes', falseValue: 'no' } },
+        { externalProp: 'width', oodsProp: 'size', coercion: { type: 'template', pattern: '{{value}}px' } },
+        { externalProp: 'passthrough', oodsProp: 'passthrough', coercion: { type: 'identity' } },
         { externalProp: 'label', oodsProp: 'text', coercion: null },
       ],
     });
@@ -408,11 +418,12 @@ describe('map.create all coercion types', () => {
     });
 
     expect(resolveResult.propTranslations!.length).toBe(5);
-    expect(resolveResult.propTranslations![0].coercionType).toBe('enum-map');
-    expect(resolveResult.propTranslations![1].coercionType).toBe('boolean-invert');
-    expect(resolveResult.propTranslations![2].coercionType).toBe('string-template');
-    expect(resolveResult.propTranslations![3].coercionType).toBe('type-cast');
-    expect(resolveResult.propTranslations![4].coercionType).toBeNull();
+    expect(resolveResult.propTranslations![0].coercionType).toBe('enum');
+    expect(resolveResult.propTranslations![1].coercionType).toBe('boolean_to_string');
+    expect(resolveResult.propTranslations![2].coercionType).toBe('template');
+    expect(resolveResult.propTranslations![3].coercionType).toBe('identity');
+    // null coercion is normalized to identity
+    expect(resolveResult.propTranslations![4].coercionType).toBe('identity');
   });
 });
 
@@ -466,5 +477,293 @@ describe('map.create defaults', () => {
     });
 
     expect((result.mapping as any).confidence).toBe('manual');
+  });
+});
+
+// ── map.update tests ──
+
+describe('map.update schema validation', () => {
+  it('accepts valid update input', () => {
+    expect(
+      validateUpdateInput({
+        id: 'material-button',
+        updates: { confidence: 'auto' },
+      }),
+    ).toBe(true);
+  });
+
+  it('rejects update with empty updates', () => {
+    expect(
+      validateUpdateInput({
+        id: 'material-button',
+        updates: {},
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('map.update handler', () => {
+  beforeEach(() => {
+    resetMappingsFile();
+  });
+
+  it('updates confidence from manual to auto', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+      confidence: 'manual',
+    });
+
+    const result = await updateHandle({
+      id: 'material-button',
+      updates: { confidence: 'auto' },
+    });
+
+    expect(validateUpdateOutput(result)).toBe(true);
+    expect(result.status).toBe('ok');
+    expect(result.changes).toContain('confidence');
+    expect((result.mapping as any).confidence).toBe('auto');
+    expect((result.mapping as any).metadata.updatedAt).toBeDefined();
+  });
+
+  it('updates oodsTraits', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    const result = await updateHandle({
+      id: 'material-button',
+      updates: { oodsTraits: ['Stateful', 'Taggable'] },
+    });
+
+    expect(result.status).toBe('ok');
+    expect((result.mapping as any).oodsTraits).toEqual(['Stateful', 'Taggable']);
+    expect(result.changes).toContain('oodsTraits');
+  });
+
+  it('updates notes in metadata', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    const result = await updateHandle({
+      id: 'material-button',
+      updates: { notes: 'Verified mapping' },
+    });
+
+    expect(result.status).toBe('ok');
+    expect((result.mapping as any).metadata.notes).toBe('Verified mapping');
+    expect(result.changes).toContain('notes');
+  });
+
+  it('updates propMappings with new coercion', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'variant', oodsProp: 'appearance', coercion: null },
+      ],
+    });
+
+    const result = await updateHandle({
+      id: 'material-button',
+      updates: {
+        propMappings: [
+          { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum', mapping: { primary: 'filled' } } },
+        ],
+      },
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.changes).toContain('propMappings');
+  });
+
+  it('returns error for invalid ID', async () => {
+    const result = await updateHandle({
+      id: 'nonexistent-mapping',
+      updates: { confidence: 'auto' },
+    });
+
+    expect(validateUpdateOutput(result)).toBe(true);
+    expect(result.status).toBe('error');
+    expect(result.message).toContain('nonexistent-mapping');
+  });
+
+  it('persists updates visible to list', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+      confidence: 'auto',
+    });
+
+    await updateHandle({
+      id: 'material-button',
+      updates: { confidence: 'manual' },
+    });
+
+    const listResult = await listHandle({});
+    const mapping = listResult.mappings.find((m: any) => m.id === 'material-button') as any;
+    expect(mapping.confidence).toBe('manual');
+  });
+});
+
+// ── map.delete tests ──
+
+describe('map.delete schema validation', () => {
+  it('accepts valid delete input', () => {
+    expect(validateDeleteInput({ id: 'material-button' })).toBe(true);
+  });
+
+  it('rejects delete without id', () => {
+    expect(validateDeleteInput({})).toBe(false);
+  });
+});
+
+describe('map.delete handler', () => {
+  beforeEach(() => {
+    resetMappingsFile();
+  });
+
+  it('deletes an existing mapping', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    const result = await deleteHandle({ id: 'material-button' });
+
+    expect(validateDeleteOutput(result)).toBe(true);
+    expect(result.status).toBe('ok');
+    expect(result.deleted!.id).toBe('material-button');
+    expect(result.deleted!.externalSystem).toBe('material');
+    expect(result.deleted!.externalComponent).toBe('Button');
+  });
+
+  it('map_list reflects deletion', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    await deleteHandle({ id: 'material-button' });
+
+    const listResult = await listHandle({});
+    expect(listResult.totalCount).toBe(0);
+  });
+
+  it('returns error for double-delete', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    await deleteHandle({ id: 'material-button' });
+    const result = await deleteHandle({ id: 'material-button' });
+
+    expect(validateDeleteOutput(result)).toBe(true);
+    expect(result.status).toBe('error');
+    expect(result.message).toContain('material-button');
+  });
+
+  it('returns error for nonexistent ID', async () => {
+    const result = await deleteHandle({ id: 'nonexistent-mapping' });
+
+    expect(validateDeleteOutput(result)).toBe(true);
+    expect(result.status).toBe('error');
+  });
+});
+
+// ── map_resolve + coercion integration ──
+
+describe('map_resolve coercion integration', () => {
+  beforeEach(() => {
+    resetMappingsFile();
+  });
+
+  it('resolves enum coercion with mapping details', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'test',
+      externalComponent: 'Btn',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'variant', oodsProp: 'appearance', coercion: { type: 'enum', mapping: { primary: 'filled', secondary: 'outlined' } } },
+      ],
+    });
+
+    const result = await resolveHandle({
+      externalSystem: 'test',
+      externalComponent: 'Btn',
+    });
+
+    expect(result.status).toBe('ok');
+    const translation = result.propTranslations![0];
+    expect(translation.coercionType).toBe('enum');
+    expect(translation.coercionDetail).toEqual({
+      type: 'enum',
+      mapping: { primary: 'filled', secondary: 'outlined' },
+    });
+  });
+
+  it('normalizes null coercion to identity in resolution', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'test',
+      externalComponent: 'Input',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'value', oodsProp: 'value', coercion: null },
+      ],
+    });
+
+    const result = await resolveHandle({
+      externalSystem: 'test',
+      externalComponent: 'Input',
+    });
+
+    expect(result.propTranslations![0].coercionType).toBe('identity');
+    expect(result.propTranslations![0].coercionDetail).toEqual({ type: 'identity' });
+  });
+
+  it('resolves boolean_to_string coercion details', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'test',
+      externalComponent: 'Toggle',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'checked', oodsProp: 'active', coercion: { type: 'boolean_to_string', trueValue: 'on', falseValue: 'off' } },
+      ],
+    });
+
+    const result = await resolveHandle({
+      externalSystem: 'test',
+      externalComponent: 'Toggle',
+    });
+
+    expect(result.propTranslations![0].coercionType).toBe('boolean_to_string');
+    expect(result.propTranslations![0].coercionDetail).toEqual({
+      type: 'boolean_to_string',
+      trueValue: 'on',
+      falseValue: 'off',
+    });
   });
 });

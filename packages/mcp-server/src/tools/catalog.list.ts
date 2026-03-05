@@ -9,8 +9,10 @@ import type {
   ComponentCatalogEntry,
   ComponentCatalogSummary,
   ComponentCodeReference,
+  ComponentStatus,
 } from './types.js';
 import { readComponentsDataset, resolveComponentCount } from './catalog.shared.js';
+import { hasMappedRenderer } from '../render/component-map.js';
 import { withinAllowed } from '../lib/security.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -506,6 +508,10 @@ function extractSlotDefinitions(traitUsages: TraitUsage[]): Record<string, { acc
   return slots;
 }
 
+function deriveComponentStatus(componentId: string): ComponentStatus {
+  return hasMappedRenderer(componentId) ? 'stable' : 'planned';
+}
+
 function transformComponentsToSummary(componentsData: ComponentsDataset): ComponentCatalogSummary[] {
   if (!componentsData.components) {
     return [];
@@ -521,6 +527,7 @@ function transformComponentsToSummary(componentsData: ComponentsDataset): Compon
     traits: Array.from(
       new Set(component.traitUsages?.map((usage) => usage.trait) || []),
     ),
+    status: deriveComponentStatus(component.id),
   }));
 }
 
@@ -565,6 +572,10 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       filteredCatalog = filteredCatalog.filter((c) => c.contexts.includes(input.context!));
     }
 
+    if (input.status) {
+      filteredCatalog = filteredCatalog.filter((c) => c.status === input.status);
+    }
+
     // Stable sort: alphabetical by name
     filteredCatalog.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -582,7 +593,7 @@ export async function handle(input: CatalogListInput): Promise<CatalogListOutput
       }
     }
 
-    const hasFilters = Boolean(input.category || input.trait || input.context);
+    const hasFilters = Boolean(input.category || input.trait || input.context || input.status);
     const detail: CatalogListDetail = input.detail ?? (hasFilters ? 'full' : 'summary');
     const paginationRequested = input.page !== undefined || input.pageSize !== undefined;
     const applyDefaultPagination = !input.detail && !hasFilters;

@@ -150,6 +150,10 @@ export type CatalogListInput = {
   trait?: string;
   context?: string;
   /**
+   * Filter by component status: 'stable', 'beta', or 'planned'.
+   */
+  status?: ComponentStatus;
+  /**
    * Response detail level. Defaults to summary for unfiltered calls,
    * full when filters are provided.
    */
@@ -180,6 +184,8 @@ export type ComponentCodeReference = {
   snippet: string;
 };
 
+export type ComponentStatus = 'stable' | 'beta' | 'planned';
+
 export type ComponentCatalogSummary = {
   name: string;
   displayName: string;
@@ -188,6 +194,7 @@ export type ComponentCatalogSummary = {
   contexts: string[];
   regions: string[];
   traits: string[];
+  status: ComponentStatus;
 };
 
 export type ComponentCatalogEntry = ComponentCatalogSummary & {
@@ -268,12 +275,12 @@ export type MapCreateInput = {
   propMappings?: Array<{
     externalProp: string;
     oodsProp: string;
-    coercion?: {
-      type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-      values?: Record<string, string>;
-      template?: string;
-      targetType?: 'string' | 'number' | 'boolean';
-    } | null;
+    coercion?: (
+      | { type: 'enum'; mapping: Record<string, string> }
+      | { type: 'boolean_to_string'; trueValue: string; falseValue: string }
+      | { type: 'template'; pattern: string }
+      | { type: 'identity' }
+    ) | null;
   }>;
   confidence?: 'auto' | 'manual';
   metadata?: {
@@ -332,5 +339,47 @@ export type MapResolveOutput = {
   status: 'ok' | 'not_found';
   mapping?: Record<string, unknown>;
   propTranslations?: MapPropTranslation[];
+  message?: string;
+};
+
+export type MapUpdateInput = {
+  id: string;
+  updates: {
+    oodsTraits?: string[];
+    confidence?: 'auto' | 'manual';
+    propMappings?: Array<{
+      externalProp: string;
+      oodsProp: string;
+      coercion?: (
+        | { type: 'enum'; mapping: Record<string, string> }
+        | { type: 'boolean_to_string'; trueValue: string; falseValue: string }
+        | { type: 'template'; pattern: string }
+        | { type: 'identity' }
+      ) | null;
+    }>;
+    notes?: string;
+  };
+};
+
+export type MapUpdateOutput = {
+  status: 'ok' | 'error';
+  mapping?: Record<string, unknown>;
+  etag?: string;
+  changes?: string[];
+  message?: string;
+};
+
+export type MapDeleteInput = {
+  id: string;
+};
+
+export type MapDeleteOutput = {
+  status: 'ok' | 'error';
+  deleted?: {
+    id: string;
+    externalSystem: string;
+    externalComponent: string;
+  };
+  etag?: string;
   message?: string;
 };

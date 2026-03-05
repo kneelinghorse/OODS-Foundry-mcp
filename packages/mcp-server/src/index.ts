@@ -139,6 +139,16 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/map.resolve.input.json',
     outputSchema: './schemas/map.resolve.output.json',
   },
+  'map.update': {
+    modulePath: './tools/map.update.js',
+    inputSchema: './schemas/map.update.input.json',
+    outputSchema: './schemas/map.update.output.json',
+  },
+  'map.delete': {
+    modulePath: './tools/map.delete.js',
+    inputSchema: './schemas/map.delete.input.json',
+    outputSchema: './schemas/map.delete.output.json',
+  },
   'object.list': {
     modulePath: './tools/object.list.js',
     inputSchema: './schemas/object.list.input.json',

@@ -8,7 +8,7 @@
       "description": "Array of component catalog entries",
       "items": {
         "type": "object",
-        "required": ["name", "displayName", "categories", "tags", "contexts", "regions", "traits"],
+        "required": ["name", "displayName", "categories", "tags", "contexts", "regions", "traits", "status"],
         "properties": {
           "name": {
             "type": "string",
@@ -42,6 +42,11 @@
             "type": "array",
             "items": { "type": "string" },
             "description": "List of trait capabilities (e.g., ['Editable', 'Searchable'])"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["stable", "beta", "planned"],
+            "description": "Component implementation status. 'stable' = has renderer, 'planned' = not yet implemented."
           },
           "propSchema": {
             "type": "object",

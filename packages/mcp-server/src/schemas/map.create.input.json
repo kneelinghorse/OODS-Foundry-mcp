@@ -42,13 +42,38 @@
               { "type": "null" },
               {
                 "type": "object",
+                "required": ["type", "mapping"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "const": "enum" },
+                  "mapping": { "type": "object", "additionalProperties": { "type": "string" } }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["type", "trueValue", "falseValue"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "const": "boolean_to_string" },
+                  "trueValue": { "type": "string" },
+                  "falseValue": { "type": "string" }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["type", "pattern"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "const": "template" },
+                  "pattern": { "type": "string" }
+                }
+              },
+              {
+                "type": "object",
                 "required": ["type"],
                 "additionalProperties": false,
                 "properties": {
-                  "type": { "type": "string", "enum": ["enum-map", "boolean-invert", "string-template", "type-cast"] },
-                  "values": { "type": "object", "additionalProperties": { "type": "string" } },
-                  "template": { "type": "string" },
-                  "targetType": { "type": "string", "enum": ["string", "number", "boolean"] }
+                  "type": { "const": "identity" }
                 }
               }
             ],

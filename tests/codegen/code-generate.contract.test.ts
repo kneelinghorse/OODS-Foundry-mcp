@@ -506,7 +506,7 @@ describe('code.generate contracts — styling options', () => {
       { with: { type: 'json' } }
     );
     const stylingEnum = schema.default.properties.options.properties.styling.enum;
-    expect(stylingEnum).toEqual(['inline', 'tokens']);
+    expect(stylingEnum).toEqual(['inline', 'tokens', 'tailwind']);
     expect(stylingEnum).not.toContain('css-modules');
   });
 });

@@ -14,17 +14,39 @@ const MAPPINGS_PATH = path.join(ARTIFACT_DIR, 'component-mappings.json');
 const MANIFEST_PATH = path.join(ARTIFACT_DIR, 'manifest.json');
 const PLANNING_DIR = path.join(REPO_ROOT, 'cmos', 'planning');
 
-export type CoercionHint = {
-  type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-  values?: Record<string, string>;
-  template?: string;
-  targetType?: 'string' | 'number' | 'boolean';
+export type CoercionEnum = {
+  type: 'enum';
+  mapping: Record<string, string>;
 };
+
+export type CoercionBooleanToString = {
+  type: 'boolean_to_string';
+  trueValue: string;
+  falseValue: string;
+};
+
+export type CoercionTemplate = {
+  type: 'template';
+  pattern: string;
+};
+
+export type CoercionIdentity = {
+  type: 'identity';
+};
+
+export type CoercionDef =
+  | CoercionEnum
+  | CoercionBooleanToString
+  | CoercionTemplate
+  | CoercionIdentity;
+
+/** @deprecated Use CoercionDef instead */
+export type CoercionHint = CoercionDef;
 
 export type PropMapping = {
   externalProp: string;
   oodsProp: string;
-  coercion?: CoercionHint | null;
+  coercion?: CoercionDef | null;
 };
 
 export type MappingMetadata = {
