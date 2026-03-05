@@ -26,5 +26,6 @@
   "purity.audit": "Audit design token purity and detect style drift or non-standard overrides.",
   "vrt.run": "Run visual regression tests against the current component state.",
   "release.verify": "Verify release readiness for specified packages. Checks changelogs, versions, and build artifacts.",
-  "release.tag": "Create a release tag in the repository. Requires a tag name; optionally include a message."
+  "release.tag": "Create a release tag in the repository. Requires a tag name; optionally include a message.",
+  "viz.compose": "Compose a visualization schema from chart type, data bindings, and/or object viz traits. Returns schemaRef for pipeline reuse. Supports bar, line, area, and point chart types with axis, color, and size encodings."
 }

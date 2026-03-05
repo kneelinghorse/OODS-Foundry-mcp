@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/viz.compose.output.json",
+  "title": "Viz compose output",
+  "description": "Visualization schema with component tree, slots, props, and token mappings.",
+  "type": "object",
+  "required": ["status", "chartType", "schema", "slots", "warnings"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "error"],
+      "description": "Whether the composition succeeded."
+    },
+    "chartType": {
+      "type": "string",
+      "description": "Resolved chart type (bar, line, area, point, or empty on error)."
+    },
+    "schema": {
+      "type": "object",
+      "description": "The composed UiSchema tree with viz components."
+    },
+    "schemaRef": {
+      "type": "string",
+      "description": "Temporary schema reference for pipeline reuse in validate/render/codegen."
+    },
+    "schemaRefCreatedAt": {
+      "type": "string",
+      "description": "ISO timestamp when the schemaRef was created."
+    },
+    "schemaRefExpiresAt": {
+      "type": "string",
+      "description": "ISO timestamp when the schemaRef expires."
+    },
+    "slots": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/slotEntry" },
+      "description": "Slot assignments mapping viz components to chart regions."
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" },
+      "description": "Non-fatal issues encountered during composition."
+    },
+    "errors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" },
+      "description": "Fatal errors (present when status is 'error')."
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "traitsResolved": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Viz traits that were resolved during composition."
+        },
+        "encodingsApplied": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Encoding traits applied to axis/scale config."
+        },
+        "componentCount": {
+          "type": "integer",
+          "description": "Number of viz components placed in the schema."
+        },
+        "objectUsed": {
+          "type": "string",
+          "description": "Object name if object-based composition was used."
+        },
+        "layoutStrategy": {
+          "type": "string",
+          "description": "Layout composition strategy: single, layer, facet, or concat."
+        },
+        "scalesResolved": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Scale traits resolved (e.g., scale-linear, scale-temporal)."
+        },
+        "interactionsResolved": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Interaction traits resolved (e.g., interaction-tooltip, interaction-highlight)."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "slotEntry": {
+      "type": "object",
+      "required": ["slotName", "component", "props"],
+      "properties": {
+        "slotName": { "type": "string" },
+        "component": { "type": "string" },
+        "props": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "path": { "type": "string" },
+        "hint": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

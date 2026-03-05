@@ -179,6 +179,11 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/schema.delete.input.json',
     outputSchema: './schemas/schema.delete.output.json',
   },
+  'viz.compose': {
+    modulePath: './tools/viz.compose.js',
+    inputSchema: './schemas/viz.compose.input.json',
+    outputSchema: './schemas/viz.compose.output.json',
+  },
 };
 
 const schemaCache = new Map<string, object>();
