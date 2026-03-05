@@ -436,9 +436,9 @@ export namespace CodeGenerateInputSchema {
        */
       typescript?: boolean;
       /**
-       * Styling strategy: inline style objects or design-token CSS variables.
+       * Styling strategy: inline style objects, design-token CSS variables, or Tailwind utility classes.
        */
-      styling?: 'inline' | 'tokens';
+      styling?: 'inline' | 'tokens' | 'tailwind';
     };
   }
   /**

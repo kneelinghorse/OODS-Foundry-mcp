@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/pipeline.input.json",
+  "title": "Pipeline input",
+  "description": "Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "object": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Object name from the OODS registry (e.g., Subscription, User)."
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Natural-language description of the desired UI."
+    },
+    "context": {
+      "type": "string",
+      "enum": ["detail", "list", "form", "timeline", "card", "inline"],
+      "description": "View context for object-aware composition."
+    },
+    "layout": {
+      "type": "string",
+      "enum": ["dashboard", "form", "detail", "list", "auto"],
+      "description": "Layout template to use."
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["react", "vue", "html"],
+      "description": "Target framework for code generation."
+    },
+    "styling": {
+      "type": "string",
+      "enum": ["inline", "tokens", "tailwind"],
+      "description": "Styling strategy for code generation."
+    },
+    "save": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional schema name to persist via schema.save."
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skipValidation": {
+          "type": "boolean",
+          "description": "Skip the validate step (default false)."
+        },
+        "skipRender": {
+          "type": "boolean",
+          "description": "Skip the render step (default false)."
+        },
+        "checkA11y": {
+          "type": "boolean",
+          "description": "Enable a11y contrast checks in validate (default false)."
+        },
+        "renderApply": {
+          "type": "boolean",
+          "description": "Render with apply=true to include HTML output (default true)."
+        }
+      }
+    }
+  }
+}

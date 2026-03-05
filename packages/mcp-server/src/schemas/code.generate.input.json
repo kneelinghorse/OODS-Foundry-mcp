@@ -29,9 +29,9 @@
         },
         "styling": {
           "type": "string",
-          "enum": ["inline", "tokens"],
+          "enum": ["inline", "tokens", "tailwind"],
           "default": "tokens",
-          "description": "Styling strategy: inline style objects or design-token CSS variables."
+          "description": "Styling strategy: inline style objects, design-token CSS variables, or Tailwind utility classes."
         }
       },
       "additionalProperties": false,

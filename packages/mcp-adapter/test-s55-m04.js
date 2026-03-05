@@ -28,6 +28,7 @@ const REGISTRY = JSON.parse(readFileSync(
   path.join(PROJECT_ROOT, 'packages', 'mcp-server', 'dist', 'tools', 'registry.json'), 'utf8'
 ));
 const ALL_TOOLS = [...REGISTRY.auto, ...REGISTRY.onDemand];
+const EXPECTED_TOOL_COUNT = ALL_TOOLS.length;
 
 let passed = 0;
 let failed = 0;
@@ -81,10 +82,12 @@ test('Annotations object included in list_tools response', () => {
 // ── Criterion 2: Correct classification of read-only vs destructive ──
 
 const READ_ONLY_TOOLS = ['catalog.list', 'structuredData.fetch', 'repl.validate',
-  'code.generate', 'design.compose', 'map.list', 'map.resolve'];
+  'code.generate', 'design.compose', 'health', 'map.list', 'map.resolve',
+  'schema.load', 'schema.list', 'object.list', 'object.show'];
 const WRITE_TOOLS = ['tokens.build', 'brand.apply', 'diag.snapshot', 'repl.render',
   'release.verify', 'release.tag', 'reviewKit.create', 'a11y.scan',
-  'purity.audit', 'vrt.run', 'billing.reviewKit', 'billing.switchFixtures', 'map.create'];
+  'purity.audit', 'vrt.run', 'billing.reviewKit', 'billing.switchFixtures',
+  'map.create', 'schema.save', 'schema.delete', 'pipeline'];
 
 test('Read-only tools have readOnlyHint: true', () => {
   for (const tool of READ_ONLY_TOOLS) {
@@ -109,9 +112,9 @@ test('All tools have openWorldHint: false (local operations only)', () => {
   }
 });
 
-test('Classification covers all 20 tools', () => {
+test('Classification covers all registry tools', () => {
   const classified = new Set([...READ_ONLY_TOOLS, ...WRITE_TOOLS]);
-  assert.equal(classified.size, 20, `Expected 20 classified tools, got ${classified.size}`);
+  assert.equal(classified.size, EXPECTED_TOOL_COUNT, `Expected ${EXPECTED_TOOL_COUNT} classified tools, got ${classified.size}`);
   for (const tool of ALL_TOOLS) {
     assert.ok(classified.has(tool), `${tool} not classified in either read-only or write lists`);
   }

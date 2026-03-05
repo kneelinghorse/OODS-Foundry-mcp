@@ -139,6 +139,14 @@
       "concurrency": 4
     },
     {
+      "tool": "pipeline",
+      "allow": ["designer", "maintainer"],
+      "writes": [".oods/schemas/**"],
+      "timeoutMs": 60000,
+      "ratePerMinute": 40,
+      "concurrency": 2
+    },
+    {
       "tool": "map.create",
       "allow": ["designer", "maintainer"],
       "writes": ["artifacts/structured-data/component-mappings.json"],
@@ -156,6 +164,22 @@
     },
     {
       "tool": "map.resolve",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
+      "tool": "object.list",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
+      "tool": "object.show",
       "allow": ["designer", "maintainer"],
       "readOnly": true,
       "timeoutMs": 30000,

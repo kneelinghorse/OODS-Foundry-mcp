@@ -2,6 +2,12 @@ import type { UiElement, UiLayout, UiSchema, UiStyle, FieldSchemaEntry } from '.
 import type { CodegenIssue, CodegenOptions, CodegenResult } from './types.js';
 import type { HandlerSignatureMap } from './binding-utils.js';
 import {
+  buildTailwindStaticClasses,
+  buildTailwindVariantExpression,
+  collectTailwindVariantDefinitions,
+  type TailwindVariantDefinition,
+} from './tailwind-codegen-utils.js';
+import {
   mapFieldType,
   snakeToCamel,
   collectBindings,
@@ -110,8 +116,10 @@ function styleObjToJsx(style: StyleObj): string {
   return `{ ${entries} }`;
 }
 
-function isReservedProp(key: string): boolean {
-  return key === 'children' || key === 'style';
+function isReservedProp(key: string, omitClassProps = false): boolean {
+  if (key === 'children' || key === 'style') return true;
+  if (omitClassProps && (key === 'className' || key === 'class')) return true;
+  return false;
 }
 
 function jsonValueToJsx(value: unknown): string {
@@ -129,10 +137,10 @@ function boolAttr(key: string, value: unknown): string {
   return `${key}=${jsonValueToJsx(value)}`;
 }
 
-function propsToJsxAttrs(props: Record<string, unknown>): string {
+function propsToJsxAttrs(props: Record<string, unknown>, omitClassProps = false): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(props)) {
-    if (isReservedProp(key) || value === undefined) continue;
+    if (isReservedProp(key, omitClassProps) || value === undefined) continue;
     if (typeof value === 'boolean') {
       parts.push(boolAttr(key, value));
     } else {
@@ -140,6 +148,29 @@ function propsToJsxAttrs(props: Record<string, unknown>): string {
     }
   }
   return parts.join(' ');
+}
+
+function escapeDoubleQuotedAttr(value: string): string {
+  return value.replace(/"/g, '\\"');
+}
+
+function escapeSingleQuotedExpr(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function buildReactClassAttr(staticClasses: string, variantExpression: string | null): string | null {
+  const hasStatic = staticClasses.trim().length > 0;
+
+  if (variantExpression && hasStatic) {
+    return `className={[${variantExpression}, '${escapeSingleQuotedExpr(staticClasses)}'].filter(Boolean).join(' ')}`;
+  }
+  if (variantExpression) {
+    return `className={${variantExpression}}`;
+  }
+  if (hasStatic) {
+    return `className="${escapeDoubleQuotedAttr(staticClasses)}"`;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -157,12 +188,22 @@ function collectComponents(screens: UiElement[]): Set<string> {
   return names;
 }
 
-function emitNode(node: UiElement, depth: number, warnings: CodegenIssue[]): string {
+function emitNode(
+  node: UiElement,
+  depth: number,
+  warnings: CodegenIssue[],
+  options: CodegenOptions,
+  tailwindVariants: Map<string, TailwindVariantDefinition>,
+): string {
   const tag = node.component;
   const computedStyle = mergeStyleObjects(
     resolveLayoutStyles(node.layout),
     resolveStyleTokens(node.style),
   );
+  const propsObject = node.props && typeof node.props === 'object'
+    ? (node.props as Record<string, unknown>)
+    : null;
+  const tailwindVariant = tailwindVariants.get(tag);
 
   // Build attributes list
   const attrParts: string[] = [];
@@ -179,8 +220,8 @@ function emitNode(node: UiElement, depth: number, warnings: CodegenIssue[]): str
   }
 
   // Spread user props (except style and children)
-  if (node.props && typeof node.props === 'object') {
-    const propsStr = propsToJsxAttrs(node.props as Record<string, unknown>);
+  if (propsObject) {
+    const propsStr = propsToJsxAttrs(propsObject, options.styling === 'tailwind');
     if (propsStr) attrParts.push(propsStr);
   }
 
@@ -191,8 +232,15 @@ function emitNode(node: UiElement, depth: number, warnings: CodegenIssue[]): str
     }
   }
 
-  // Merged style attribute
-  if (Object.keys(computedStyle).length > 0) {
+  if (options.styling === 'tailwind') {
+    const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
+    const staticClasses = buildTailwindStaticClasses(node, computedStyle, {
+      includeVariantFallback: !tailwindVariant,
+    });
+    const classAttr = buildReactClassAttr(staticClasses, variantExpression);
+    if (classAttr) attrParts.push(classAttr);
+  } else if (Object.keys(computedStyle).length > 0) {
+    // Merged style attribute
     attrParts.push(`style={${styleObjToJsx(computedStyle)}}`);
   }
 
@@ -204,8 +252,8 @@ function emitNode(node: UiElement, depth: number, warnings: CodegenIssue[]): str
   // Sidebar layout needs wrapper elements
   if (node.layout?.type === 'sidebar' && children.length > 0) {
     const [mainChild, ...asideChildren] = children;
-    const mainJsx = mainChild ? emitNode(mainChild, depth + 2, warnings) : '';
-    const asideJsxParts = asideChildren.map((c) => emitNode(c, depth + 2, warnings));
+    const mainJsx = mainChild ? emitNode(mainChild, depth + 2, warnings, options, tailwindVariants) : '';
+    const asideJsxParts = asideChildren.map((c) => emitNode(c, depth + 2, warnings, options, tailwindVariants));
 
     const inner = [
       `<div data-sidebar-main>`,
@@ -223,18 +271,38 @@ function emitNode(node: UiElement, depth: number, warnings: CodegenIssue[]): str
 
   // Section layout wraps in a section element
   if (node.layout?.type === 'section') {
-    const innerJsx = children.map((c) => emitNode(c, depth + 2, warnings)).join('\n');
-    const sectionStyle = Object.keys(computedStyle).length > 0 ? ` style={${styleObjToJsx(computedStyle)}}` : '';
+    const innerJsx = children.map((c) => emitNode(c, depth + 2, warnings, options, tailwindVariants)).join('\n');
+    let sectionClassOrStyle = '';
+    if (options.styling === 'tailwind') {
+      const sectionClasses = buildTailwindStaticClasses(node, computedStyle, {
+        includeUserClass: false,
+        includeInteractiveStates: false,
+        includeVariantFallback: false,
+      });
+      if (sectionClasses) {
+        sectionClassOrStyle = ` className="${escapeDoubleQuotedAttr(sectionClasses)}"`;
+      }
+    } else if (Object.keys(computedStyle).length > 0) {
+      sectionClassOrStyle = ` style={${styleObjToJsx(computedStyle)}}`;
+    }
 
     // Section wraps the component output
-    const sectionOpen = `<section data-layout="section" data-layout-node-id="${node.id}"${sectionStyle}>`;
+    const sectionOpen = `<section data-layout="section" data-layout-node-id="${node.id}"${sectionClassOrStyle}>`;
     const componentOpen = `<${tag} id="${node.id}" data-oods-component="${tag}"`;
 
     // Props for inner component (without layout style — that's on section)
     const innerAttrParts: string[] = [];
-    if (node.props && typeof node.props === 'object') {
-      const propsStr = propsToJsxAttrs(node.props as Record<string, unknown>);
+    if (propsObject) {
+      const propsStr = propsToJsxAttrs(propsObject, options.styling === 'tailwind');
       if (propsStr) innerAttrParts.push(propsStr);
+    }
+    if (options.styling === 'tailwind') {
+      const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
+      const staticClasses = buildTailwindStaticClasses(node, {}, {
+        includeVariantFallback: !tailwindVariant,
+      });
+      const classAttr = buildReactClassAttr(staticClasses, variantExpression);
+      if (classAttr) innerAttrParts.push(classAttr);
     }
     const innerAttrs = innerAttrParts.length > 0 ? ` ${innerAttrParts.join(' ')}` : '';
 
@@ -256,7 +324,7 @@ function emitNode(node: UiElement, depth: number, warnings: CodegenIssue[]): str
     return `<${tag}${attrs} />`;
   }
 
-  const childrenJsx = children.map((c) => emitNode(c, depth + 1, warnings)).join('\n');
+  const childrenJsx = children.map((c) => emitNode(c, depth + 1, warnings, options, tailwindVariants)).join('\n');
   return `<${tag}${attrs}>\n${indent(childrenJsx, depth + 1)}\n${'  '.repeat(depth)}</${tag}>`;
 }
 
@@ -318,17 +386,22 @@ const REACT_HANDLER_SIGNATURES: HandlerSignatureMap = {
 // Top-level code assembly
 // ---------------------------------------------------------------------------
 
-function buildImportBlock(components: Set<string>): string {
+function buildImportBlock(components: Set<string>, includeCva: boolean): string {
   const sorted = Array.from(components).sort();
   const lines: string[] = [
     `import React from 'react';`,
     `import { ${sorted.join(', ')} } from '@oods/components';`,
   ];
+  if (includeCva) {
+    lines.push(`import { cva } from 'class-variance-authority';`);
+  }
   return lines.join('\n');
 }
 
-function buildImportList(_components: Set<string>): string[] {
-  return ['react', '@oods/components'];
+function buildImportList(_components: Set<string>, includeCva: boolean): string[] {
+  return includeCva
+    ? ['react', '@oods/components', 'class-variance-authority']
+    : ['react', '@oods/components'];
 }
 
 /**
@@ -337,15 +410,18 @@ function buildImportList(_components: Set<string>): string[] {
 export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
   const warnings: CodegenIssue[] = [];
   const components = collectComponents(schema.screens);
+  const tailwindVariants = options.styling === 'tailwind'
+    ? collectTailwindVariantDefinitions(schema.screens)
+    : new Map<string, TailwindVariantDefinition>();
 
   // Generate JSX for each screen
   const screenJsx = schema.screens
-    .map((screen) => emitNode(screen, 2, warnings))
+    .map((screen) => emitNode(screen, 2, warnings, options, tailwindVariants))
     .join('\n');
 
   // Build the complete file
-  const importBlock = buildImportBlock(components);
-  const imports = buildImportList(components);
+  const importBlock = buildImportBlock(components, tailwindVariants.size > 0);
+  const imports = buildImportList(components, tailwindVariants.size > 0);
 
   const typeAnnotations = options.typescript ? generatePropTypes(components) : '';
   const hasObjectSchema = schema.objectSchema && Object.keys(schema.objectSchema).length > 0;
@@ -403,6 +479,15 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
     for (const [propName, { formatted, isExpression }] of propDefaults) {
       const rhs = isExpression ? formatted : `'${formatted.replace(/'/g, "\\'")}'`;
       lines.push(`  const ${propName} = ${rhs};`);
+    }
+    lines.push('');
+  }
+
+  if (tailwindVariants.size > 0) {
+    const sortedDefinitions = Array.from(tailwindVariants.values())
+      .sort((a, b) => a.variableName.localeCompare(b.variableName));
+    for (const { definition } of sortedDefinitions) {
+      lines.push(indent(definition, 1));
     }
     lines.push('');
   }

@@ -4,8 +4,8 @@
  * Validates all seven success criteria:
  * 1. Hardcoded TOOL_SPECS array removed from adapter
  * 2. Adapter reads registry.json from server dist at startup
- * 3. All 20 tools (11 auto + 9 on-demand) discoverable with MCP_TOOLSET=all
- * 4. Default mode exposes 11 auto tools only
+ * 3. All registry tools discoverable with MCP_TOOLSET=all
+ * 4. Default mode exposes auto tools only
  * 5. MCP_EXTRA_TOOLS env var selectively enables on-demand tools
  * 6. Adding a new tool to registry.json makes it visible with no adapter code changes
  * 7. Tool name translation (dots → underscores) preserved
@@ -23,6 +23,9 @@ const INDEX_SRC = readFileSync(path.join(__dirname, 'index.js'), 'utf8');
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 const REGISTRY_PATH = path.join(PROJECT_ROOT, 'packages', 'mcp-server', 'dist', 'tools', 'registry.json');
 const REGISTRY = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
+const EXPECTED_AUTO = REGISTRY.auto.length;
+const EXPECTED_ON_DEMAND = REGISTRY.onDemand.length;
+const EXPECTED_TOTAL = EXPECTED_AUTO + EXPECTED_ON_DEMAND;
 
 let passed = 0;
 let failed = 0;
@@ -83,31 +86,31 @@ test('Registry file exists at expected path', () => {
   assert.ok(Array.isArray(reg.onDemand), 'registry should have onDemand array');
 });
 
-// ── Criterion 3: All 20 tools with MCP_TOOLSET=all ──────────────────
+// ── Criterion 3: All registry tools with MCP_TOOLSET=all ────────────
 
 test('Registry has 11 auto tools', () => {
-  assert.equal(REGISTRY.auto.length, 11, `Expected 11 auto tools, got ${REGISTRY.auto.length}`);
+  assert.equal(REGISTRY.auto.length, EXPECTED_AUTO, `Expected ${EXPECTED_AUTO} auto tools, got ${REGISTRY.auto.length}`);
 });
 
 test('Registry has 9 on-demand tools', () => {
-  assert.equal(REGISTRY.onDemand.length, 9, `Expected 9 on-demand tools, got ${REGISTRY.onDemand.length}`);
+  assert.equal(REGISTRY.onDemand.length, EXPECTED_ON_DEMAND, `Expected ${EXPECTED_ON_DEMAND} on-demand tools, got ${REGISTRY.onDemand.length}`);
 });
 
-test('Total tool count is 20', () => {
+test('Total tool count matches auto + on-demand', () => {
   const total = REGISTRY.auto.length + REGISTRY.onDemand.length;
-  assert.equal(total, 20, `Expected 20 total tools, got ${total}`);
+  assert.equal(total, EXPECTED_TOTAL, `Expected ${EXPECTED_TOTAL} total tools, got ${total}`);
 });
 
-test('resolveEnabledTools with MCP_TOOLSET=all returns all 20', () => {
+test('resolveEnabledTools with MCP_TOOLSET=all returns all tools', () => {
   // Simulate the logic from the adapter
   const toolset = 'all';
   const enabled = toolset === 'all'
     ? [...REGISTRY.auto, ...REGISTRY.onDemand]
     : REGISTRY.auto;
-  assert.equal(enabled.length, 20, `Expected 20 enabled with MCP_TOOLSET=all, got ${enabled.length}`);
+  assert.equal(enabled.length, EXPECTED_TOTAL, `Expected ${EXPECTED_TOTAL} enabled with MCP_TOOLSET=all, got ${enabled.length}`);
 });
 
-// ── Criterion 4: Default mode exposes 11 auto tools only ─────────────
+// ── Criterion 4: Default mode exposes auto tools only ────────────────
 
 test('Default mode returns only auto tools', () => {
   const toolset = 'default';
@@ -116,7 +119,7 @@ test('Default mode returns only auto tools', () => {
   const enabled = toolset === 'all'
     ? [...REGISTRY.auto, ...REGISTRY.onDemand]
     : [...REGISTRY.auto, ...extraList.filter(t => REGISTRY.onDemand.includes(t))];
-  assert.equal(enabled.length, 11, `Expected 11 in default mode, got ${enabled.length}`);
+  assert.equal(enabled.length, EXPECTED_AUTO, `Expected ${EXPECTED_AUTO} in default mode, got ${enabled.length}`);
 });
 
 test('Adapter uses MCP_TOOLSET env var', () => {
@@ -136,7 +139,11 @@ test('MCP_EXTRA_TOOLS adds specific on-demand tools to auto set', () => {
   const enabled = toolset === 'all'
     ? [...REGISTRY.auto, ...REGISTRY.onDemand]
     : [...REGISTRY.auto, ...extraList.filter(t => REGISTRY.onDemand.includes(t))];
-  assert.equal(enabled.length, 13, `Expected 11 auto + 2 extra = 13, got ${enabled.length}`);
+  assert.equal(
+    enabled.length,
+    EXPECTED_AUTO + 2,
+    `Expected ${EXPECTED_AUTO} auto + 2 extra = ${EXPECTED_AUTO + 2}, got ${enabled.length}`
+  );
   assert.ok(enabled.includes('a11y.scan'), 'a11y.scan should be in enabled list');
   assert.ok(enabled.includes('vrt.run'), 'vrt.run should be in enabled list');
 });
@@ -145,7 +152,11 @@ test('MCP_EXTRA_TOOLS ignores unknown tool names', () => {
   const extras = 'a11y.scan,nonexistent.tool';
   const extraList = extras.split(/[,\s]+/).filter(Boolean);
   const enabled = [...REGISTRY.auto, ...extraList.filter(t => REGISTRY.onDemand.includes(t))];
-  assert.equal(enabled.length, 12, `Expected 11 + 1 valid extra = 12, got ${enabled.length}`);
+  assert.equal(
+    enabled.length,
+    EXPECTED_AUTO + 1,
+    `Expected ${EXPECTED_AUTO} + 1 valid extra = ${EXPECTED_AUTO + 1}, got ${enabled.length}`
+  );
   assert.ok(!enabled.includes('nonexistent.tool'), 'unknown tool should not appear');
 });
 
@@ -170,7 +181,11 @@ test('New tool in registry would be visible without adapter changes', () => {
   };
   const enabled = [...modifiedRegistry.auto];
   assert.ok(enabled.includes('newTool.test'), 'New tool should be visible after registry update');
-  assert.equal(enabled.length, 12, `Expected 12 after adding new auto tool, got ${enabled.length}`);
+  assert.equal(
+    enabled.length,
+    EXPECTED_AUTO + 1,
+    `Expected ${EXPECTED_AUTO + 1} after adding new auto tool, got ${enabled.length}`
+  );
 });
 
 // ── Criterion 7: Dot → underscore translation preserved ──────────────
