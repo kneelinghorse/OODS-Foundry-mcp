@@ -19,9 +19,10 @@ function injectFieldPlaceholders(schema: UiSchema): UiSchema {
       const content = resolveChildContent(node, objectSchema);
       if (content) {
         if (content.isChildren) {
-          node.props = { ...node.props, text: `{{${content.fieldName}}}` };
+          // Use data-bind attribute + human-readable placeholder text
+          node.props = { ...node.props, text: `[${content.fieldName}]`, 'data-bind': content.fieldName };
         } else if (content.propName) {
-          node.props = { ...node.props, [content.propName]: `{{${content.fieldName}}}` };
+          node.props = { ...node.props, [content.propName]: `[${content.fieldName}]`, 'data-bind': `${content.propName}:${content.fieldName}` };
         }
       }
     }

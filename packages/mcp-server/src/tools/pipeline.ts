@@ -23,6 +23,12 @@ export type PipelineInput = {
     checkA11y?: boolean;
     renderApply?: boolean;
     compact?: boolean;
+    /** Alias: accepted in options for agent ergonomics. */
+    typescript?: boolean;
+    /** Alias: accepted in options for agent ergonomics. */
+    styling?: CodegenStyling;
+    /** Alias: accepted in options for agent ergonomics. */
+    framework?: CodegenFramework;
   };
 };
 
@@ -155,8 +161,8 @@ function errorMessage(error: unknown): string {
 export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   const startedAt = Date.now();
   const steps: PipelineStep[] = [];
-  const framework = input.framework ?? 'react';
-  const styling = input.styling ?? 'tokens';
+  const framework = input.framework ?? input.options?.framework ?? 'react';
+  const styling = input.styling ?? input.options?.styling ?? 'tokens';
   const skipValidation = input.options?.skipValidation === true;
   const skipRender = input.options?.skipRender === true;
   const checkA11y = input.options?.checkA11y === true;
@@ -339,11 +345,13 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   let codegenResult: Awaited<ReturnType<typeof codeGenerateHandle>>;
   stepStart = Date.now();
   try {
+    const typescript = input.options?.typescript;
     codegenResult = await codeGenerateHandle({
       schemaRef: composeResult.schemaRef,
       framework,
       options: {
         styling,
+        ...(typescript !== undefined ? { typescript } : {}),
       },
     });
     stepLatency.codegen = Date.now() - stepStart;

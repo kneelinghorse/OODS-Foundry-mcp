@@ -21,6 +21,8 @@ import {
 } from './component-selector.js';
 import type { ComponentCatalogSummary } from '../tools/types.js';
 import { getContentStrategy, type ContentStrategy } from '../codegen/content-strategy.js';
+import { inferSlotPosition } from './position-affinity.js';
+import type { FieldHint } from './field-affinity.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -109,6 +111,7 @@ export function fillSlotsWithObject(
   catalog: ComponentCatalogSummary[],
   overrides?: Record<string, string>,
   intentContext?: string,
+  fieldHints?: Map<string, FieldHint>,
 ): FillResult {
   const warnings: string[] = [];
   const placements: SlotPlacement[] = [];
@@ -233,9 +236,12 @@ export function fillSlotsWithObject(
     if (filledSlots.has(slot.name)) continue;
     if (!slot.required) continue;
 
+    const slotPosition = inferSlotPosition(slot.name);
     const result: SelectionResult = selectComponent(slot.intent, catalog, {
       topN: 1,
       intentContext: intentContext ? [intentContext, slot.description] : [slot.description],
+      ...(fieldHints?.has(slot.name) ? { fieldHint: fieldHints.get(slot.name) } : {}),
+      ...(slotPosition ? { slotPosition } : {}),
     });
 
     const selected = result.candidates[0]?.name;
@@ -515,6 +521,59 @@ export function wireFieldProps(
   }
 
   return boundCount;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Selection → tree application                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Selection entry from fillSlots() in design.compose.ts.
+ * Mirrors SlotSelectionEntry but only needs slotName + selectedComponent.
+ */
+export interface SelectionEntry {
+  slotName: string;
+  selectedComponent?: string;
+}
+
+/**
+ * Apply computed selection results to the UiSchema tree.
+ *
+ * Walks the tree looking for slot placeholder elements (identified by
+ * meta.intent = "slot:<name>") and replaces their `component` with
+ * the top-ranked selected component from the selection engine.
+ *
+ * This bridges the gap where fillSlots() generates intelligence-aware
+ * rankings (field affinity, position affinity) but doesn't modify the tree.
+ */
+export function applySelectionsToSchema(
+  schema: UiSchema,
+  selections: SelectionEntry[],
+): number {
+  const selectionMap = new Map<string, string>();
+  for (const sel of selections) {
+    if (sel.selectedComponent) {
+      selectionMap.set(sel.slotName, sel.selectedComponent);
+    }
+  }
+
+  if (selectionMap.size === 0) return 0;
+
+  let applied = 0;
+
+  const walk = (el: UiElement): void => {
+    if (isSlotElement(el)) {
+      const slotName = resolveSlotName(el);
+      if (slotName && selectionMap.has(slotName)) {
+        el.component = selectionMap.get(slotName)!;
+        applied++;
+      }
+    }
+    el.children?.forEach(walk);
+  };
+
+  schema.screens.forEach(walk);
+  return applied;
 }
 
 /* ------------------------------------------------------------------ */

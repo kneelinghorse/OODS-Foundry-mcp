@@ -52,6 +52,17 @@
       },
       "additionalProperties": false
     },
+    "data": {
+      "type": "object",
+      "description": "Alias for dataBindings. Maps field names to encoding channels.",
+      "properties": {
+        "x": { "type": "string", "description": "Field name for the x-axis encoding." },
+        "y": { "type": "string", "description": "Field name for the y-axis encoding." },
+        "color": { "type": "string", "description": "Field name for color encoding." },
+        "size": { "type": "string", "description": "Field name for size encoding." }
+      },
+      "additionalProperties": false
+    },
     "theme": {
       "type": "string",
       "description": "Theme token (e.g., 'light', 'dark')."

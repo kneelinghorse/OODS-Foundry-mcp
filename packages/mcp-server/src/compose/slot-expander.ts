@@ -31,6 +31,8 @@ export interface ExpansionResult {
   expanded: boolean;
   /** Reason for expansion or why it was skipped */
   reason: string;
+  /** Field groups: maps slot name to assigned field names */
+  fieldGroups?: Record<string, string[]>;
 }
 
 export interface ExpansionContext {
@@ -81,12 +83,104 @@ function countKpiFields(
 }
 
 /* ------------------------------------------------------------------ */
+/*  Field grouping                                                     */
+/* ------------------------------------------------------------------ */
+
+/** Semantic category buckets for field grouping. */
+const SEMANTIC_CATEGORIES: Record<string, string> = {
+  currency: 'pricing',
+  percentage: 'metrics',
+  rating: 'metrics',
+  count: 'metrics',
+  metric: 'metrics',
+  status: 'status',
+  identifier: 'identity',
+  timestamp: 'temporal',
+  color: 'visual',
+  phone: 'contact',
+  email: 'contact',
+};
+
+const TYPE_CATEGORIES: Record<string, string> = {
+  boolean: 'toggles',
+  datetime: 'temporal',
+  date: 'temporal',
+  email: 'contact',
+  url: 'links',
+  array: 'collections',
+};
+
+/**
+ * Group fields into semantic categories, then distribute across N slots.
+ * Returns a map from slot name to field names.
+ */
+export function groupFieldsIntoSlots(
+  fields: Record<string, FieldDefinition>,
+  slotNames: string[],
+  semanticTypes?: Record<string, string>,
+): Record<string, string[]> {
+  if (slotNames.length === 0) return {};
+
+  // Categorize each field
+  const categorized = new Map<string, string[]>();
+  const uncategorized: string[] = [];
+
+  for (const [fieldName, fieldDef] of Object.entries(fields)) {
+    const semantic = semanticTypes?.[fieldName];
+    const category = (semantic && SEMANTIC_CATEGORIES[semantic])
+      ?? TYPE_CATEGORIES[fieldDef.type]
+      ?? undefined;
+
+    if (category) {
+      const list = categorized.get(category) ?? [];
+      list.push(fieldName);
+      categorized.set(category, list);
+    } else {
+      uncategorized.push(fieldName);
+    }
+  }
+
+  // Distribute category groups round-robin into slots
+  const result: Record<string, string[]> = {};
+  for (const name of slotNames) {
+    result[name] = [];
+  }
+
+  let slotIdx = 0;
+
+  // First, assign each category group to a slot
+  for (const [, fieldNames] of categorized) {
+    const target = slotNames[slotIdx % slotNames.length];
+    result[target].push(...fieldNames);
+    slotIdx++;
+  }
+
+  // Then distribute uncategorized fields to fill remaining/sparse slots
+  for (const fieldName of uncategorized) {
+    // Find the slot with fewest fields
+    let minSlot = slotNames[0];
+    let minCount = result[minSlot].length;
+    for (const name of slotNames) {
+      if (result[name].length < minCount) {
+        minSlot = name;
+        minCount = result[name].length;
+      }
+    }
+    result[minSlot].push(fieldName);
+  }
+
+  return result;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Expansion logic                                                    */
 /* ------------------------------------------------------------------ */
 
 function expandDetailTabs(
   template: TemplateResult,
   fieldCount: number,
+  fields: Record<string, FieldDefinition>,
+  semanticTypes?: Record<string, string>,
 ): ExpansionResult {
   const existingTabs = template.slots.filter(s => s.name.startsWith('tab-'));
   const existingTabCount = existingTabs.length;
@@ -96,11 +190,18 @@ function expandDetailTabs(
   );
 
   if (neededTabs <= existingTabCount) {
+    // Still compute field groups for existing tabs
+    const allTabSlots = template.slots
+      .filter(s => s.name.startsWith('tab-'))
+      .map(s => s.name);
+    const fieldGroups = groupFieldsIntoSlots(fields, allTabSlots, semanticTypes);
+
     return {
       template,
       slotsAdded: 0,
       expanded: false,
       reason: `${fieldCount} fields fit in ${existingTabCount} existing tabs`,
+      fieldGroups,
     };
   }
 
@@ -134,11 +235,18 @@ function expandDetailTabs(
     }
   }
 
+  // Compute field groups for all tabs (existing + expanded)
+  const allTabSlots = result.slots
+    .filter(s => s.name.startsWith('tab-'))
+    .map(s => s.name);
+  const fieldGroups = groupFieldsIntoSlots(fields, allTabSlots, semanticTypes);
+
   return {
     template: result,
     slotsAdded: toAdd,
     expanded: true,
     reason: `Expanded from ${existingTabCount} to ${neededTabs} tabs for ${fieldCount} fields`,
+    fieldGroups,
   };
 }
 
@@ -266,7 +374,7 @@ export function expandSlots(
 
   switch (context.layout) {
     case 'detail':
-      return expandDetailTabs(template, fieldCount);
+      return expandDetailTabs(template, fieldCount, context.fields, context.semanticTypes);
 
     case 'dashboard': {
       const kpiCount = countKpiFields(context.fields, context.semanticTypes);

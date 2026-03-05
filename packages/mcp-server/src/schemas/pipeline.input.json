@@ -90,6 +90,20 @@
         "compact": {
           "type": "boolean",
           "description": "When true (default), omit token CSS from render output and return tokenCssRef instead. Reduces response size by ~40%."
+        },
+        "typescript": {
+          "type": "boolean",
+          "description": "Alias: enable TypeScript output in code generation."
+        },
+        "styling": {
+          "type": "string",
+          "enum": ["inline", "tokens", "tailwind"],
+          "description": "Alias: styling strategy. Overridden by top-level styling if both provided."
+        },
+        "framework": {
+          "type": "string",
+          "enum": ["react", "vue", "html"],
+          "description": "Alias: target framework. Overridden by top-level framework if both provided."
         }
       }
     }
