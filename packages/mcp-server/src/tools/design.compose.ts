@@ -830,12 +830,6 @@ function inferSlotIntentFromFieldHint(hint: FieldHint): string {
   }
 
   return 'form-input';
-function fieldHintToSlotIntent(hint: FieldHint): string | undefined {
-  if (hint.enum && hint.enum.length > 0) return 'enum-input';
-  if (hint.type === 'boolean') return 'boolean-input';
-  if (hint.type === 'date' || hint.type === 'datetime') return 'date-input';
-  if (hint.type === 'email') return 'email-input';
-  return undefined;
 }
 
 function inferFormFieldDescriptorsFromIntent(
@@ -1246,13 +1240,6 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       const slot = slots.find((candidate) => candidate.name === slotName);
       if (slot) {
         slot.intent = inferSlotIntentFromFieldHint(descriptor.hint);
-      // Update slot intent to match the inferred field type
-      const slot = slots.find((s) => s.name === slotName);
-      if (slot && slot.intent === 'form-input') {
-        const intentForHint = fieldHintToSlotIntent(descriptor.hint);
-        if (intentForHint) {
-          slot.intent = intentForHint;
-        }
       }
     }
   } else if (layoutType === 'list') {
