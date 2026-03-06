@@ -240,14 +240,17 @@ describe('cross-framework parity', () => {
       expect(html.code).toContain('[name]');
     });
 
-    it('React and Vue both generate typed props interface', () => {
+    it('React generates typed props interface', () => {
       expect(react.code).toContain('export interface PageProps');
-      expect(vue.code).toContain('interface Props');
     });
 
-    it('React and Vue both destructure field names from props', () => {
+    it('Vue generates ref() bindings for form schemas (Input/Select present)', () => {
+      expect(vue.code).toContain("import { ref } from 'vue'");
+      expect(vue.code).toContain('ref<');
+    });
+
+    it('React destructures field names from props', () => {
       expect(react.code).toMatch(/\{\s*email.*name.*price.*status\s*\}/);
-      expect(vue.code).toContain('defineProps<Props>()');
     });
   });
 

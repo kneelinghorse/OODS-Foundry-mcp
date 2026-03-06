@@ -1,6 +1,6 @@
 {
   "name": "test-tagged-schema",
-  "schemaRef": "compose-191adc8b",
+  "schemaRef": "compose-08265803",
   "schema": {
     "version": "2026.02",
     "screens": [
@@ -567,9 +567,9 @@
     }
   },
   "object": "Product",
-  "version": 7,
+  "version": 21,
   "createdAt": "2026-03-05T23:29:45.932Z",
-  "updatedAt": "2026-03-06T05:39:25.543Z",
+  "updatedAt": "2026-03-06T06:41:04.501Z",
   "tags": [
     "test",
     "sprint74"

@@ -110,7 +110,9 @@
             "positionAffinityUsed": { "type": "boolean", "description": "Whether position-aware scoring was used." },
             "fieldAffinityUsed": { "type": "boolean", "description": "Whether field-type-aware scoring was used." },
             "intentSectionsParsed": { "type": "integer", "description": "Number of intent sections parsed from multi-section prompts." },
-            "sectionContextUsed": { "type": "boolean", "description": "Whether section context influenced slot composition." }
+            "sectionContextUsed": { "type": "boolean", "description": "Whether section context influenced slot composition." },
+            "compositionConfidence": { "type": "number", "description": "Aggregated composition confidence (0-1, average of per-slot raw confidences)." },
+            "lowConfidenceSlots": { "type": "number", "description": "Count of slots with confidence below 0.5 that have alternative candidates." }
           },
           "additionalProperties": false
         }
@@ -127,8 +129,27 @@
         "slotName": { "type": "string" },
         "intent": { "type": "string" },
         "selectedComponent": { "type": "string" },
+        "confidence": { "type": "number", "description": "Raw confidence score (0-1) before normalization." },
         "candidates": {
           "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "confidence", "reason"],
+            "properties": {
+              "name": { "type": "string" },
+              "confidence": { "type": "number" },
+              "reason": { "type": "string" },
+              "keywordTagMatches": { "type": "number" },
+              "keywordTraitMatches": { "type": "number" },
+              "contextTagMatches": { "type": "number" },
+              "contextTraitMatches": { "type": "number" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "alternativeCandidates": {
+          "type": "array",
+          "description": "Alternative candidates surfaced when confidence < 0.5.",
           "items": {
             "type": "object",
             "required": ["name", "confidence", "reason"],

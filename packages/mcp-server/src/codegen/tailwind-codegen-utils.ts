@@ -1,4 +1,4 @@
-import type { UiElement } from '../schemas/generated.js';
+import type { UiElement, UiLayout } from '../schemas/generated.js';
 import { createVariants, inlineStyleToTailwind, type TailwindVariants } from './tailwind-mapper.js';
 
 type NodeProps = Record<string, unknown>;
@@ -49,6 +49,15 @@ const SIZE_CLASS_MAP: Record<string, string> = {
   xl: 'text-lg px-5 py-3',
 };
 
+const RESPONSIVE_SIZE_CLASS_MAP: Record<string, string> = {
+  xs: 'text-xs px-1 py-0.5 sm:px-1.5 sm:py-1',
+  sm: 'text-xs sm:text-sm px-1.5 py-1 sm:px-2 sm:py-1.5',
+  md: 'text-sm md:text-base px-2 py-1.5 md:px-3 md:py-2',
+  default: 'text-sm md:text-base px-2 py-1.5 md:px-3 md:py-2',
+  lg: 'text-base lg:text-lg px-3 py-2 lg:px-4 lg:py-2.5',
+  xl: 'text-lg lg:text-xl px-4 py-2.5 lg:px-5 lg:py-3',
+};
+
 const EMPHASIS_CLASS_MAP: Record<string, string> = {
   low: 'opacity-80',
   medium: 'opacity-90',
@@ -91,10 +100,11 @@ function variantVariableName(component: string): string {
   return `${toCamelCase(component)}Variants`;
 }
 
-function variantClassesForValue(prop: string, rawValue: string): string {
+function variantClassesForValue(prop: string, rawValue: string, responsive = false): string {
   const value = normalizeVariantValue(rawValue);
 
   if (prop === 'size') {
+    if (responsive) return RESPONSIVE_SIZE_CLASS_MAP[value] ?? '';
     return SIZE_CLASS_MAP[value] ?? '';
   }
 
@@ -277,7 +287,7 @@ export function collectTailwindVariantDefinitions(
       let hasMappedClass = false;
       const sortedValues = Array.from(values).sort((a, b) => a.localeCompare(b));
       for (const value of sortedValues) {
-        const classes = variantClassesForValue(key, value);
+        const classes = variantClassesForValue(key, value, /* responsive */ true);
         optionMap[value] = classes;
         if (classes) hasMappedClass = true;
       }
@@ -322,4 +332,23 @@ export function buildTailwindVariantExpression(
   const args = serializeVariantArgs(getNodeProps(node), definition.variantProps);
   if (!args) return null;
   return `${definition.variableName}(${args})`;
+}
+
+/**
+ * Generate responsive Tailwind classes for a layout type.
+ * Mobile-first: base classes for small screens, breakpoint prefixes for larger.
+ */
+export function responsiveLayoutClasses(layout?: UiLayout): string {
+  if (!layout?.type) return '';
+
+  switch (layout.type) {
+    case 'grid':
+      return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
+    case 'sidebar':
+      return 'grid-cols-1 md:grid-cols-[1fr_minmax(16rem,24rem)]';
+    case 'inline':
+      return 'flex-col sm:flex-row';
+    default:
+      return '';
+  }
 }

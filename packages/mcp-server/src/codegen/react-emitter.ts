@@ -5,6 +5,7 @@ import {
   buildTailwindStaticClasses,
   buildTailwindVariantExpression,
   collectTailwindVariantDefinitions,
+  responsiveLayoutClasses,
   type TailwindVariantDefinition,
 } from './tailwind-codegen-utils.js';
 import {
@@ -247,9 +248,11 @@ function emitNode(
 
   if (options.styling === 'tailwind') {
     const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
-    const staticClasses = buildTailwindStaticClasses(node, computedStyle, {
+    const baseClasses = buildTailwindStaticClasses(node, computedStyle, {
       includeVariantFallback: !tailwindVariant,
     });
+    const responsive = responsiveLayoutClasses(node.layout);
+    const staticClasses = responsive ? `${baseClasses} ${responsive}`.trim() : baseClasses;
     const classAttr = buildReactClassAttr(staticClasses, variantExpression);
     if (classAttr) attrParts.push(classAttr);
   } else if (Object.keys(computedStyle).length > 0) {
