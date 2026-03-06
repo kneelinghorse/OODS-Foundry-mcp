@@ -99,6 +99,7 @@ const SEMANTIC_CATEGORIES: Record<string, string> = {
   color: 'visual',
   phone: 'contact',
   email: 'contact',
+  role: 'choices',
 };
 
 const TYPE_CATEGORIES: Record<string, string> = {
@@ -109,6 +110,38 @@ const TYPE_CATEGORIES: Record<string, string> = {
   url: 'links',
   array: 'collections',
 };
+
+function resolveSemanticCategory(semanticType?: string): string | undefined {
+  if (!semanticType) return undefined;
+  const lowerSemantic = semanticType.toLowerCase();
+
+  for (const [token, category] of Object.entries(SEMANTIC_CATEGORIES)) {
+    if (
+      lowerSemantic === token
+      || lowerSemantic.endsWith(`.${token}`)
+      || lowerSemantic.includes(token)
+    ) {
+      return category;
+    }
+  }
+
+  return undefined;
+}
+
+function isLongTextField(fieldName: string, fieldDef: FieldDefinition): boolean {
+  if (fieldDef.type !== 'string') return false;
+
+  const maxLength = typeof fieldDef.validation?.maxLength === 'number'
+    ? fieldDef.validation.maxLength
+    : undefined;
+  const normalizedName = fieldName.replace(/[_-]+/g, ' ');
+  const lowerText = `${normalizedName} ${fieldDef.description}`.toLowerCase();
+
+  return Boolean(
+    (maxLength && maxLength >= 120)
+    || /\b(description|summary|notes?|message|comment|reason|details?|body|content|bio|explanation|free form)\b/.test(lowerText),
+  );
+}
 
 /**
  * Group fields into semantic categories, then distribute across N slots.
@@ -127,7 +160,9 @@ export function groupFieldsIntoSlots(
 
   for (const [fieldName, fieldDef] of Object.entries(fields)) {
     const semantic = semanticTypes?.[fieldName];
-    const category = (semantic && SEMANTIC_CATEGORIES[semantic])
+    const category = resolveSemanticCategory(semantic)
+      ?? (fieldDef.validation?.enum && fieldDef.validation.enum.length > 0 ? 'choices' : undefined)
+      ?? (isLongTextField(fieldName, fieldDef) ? 'narrative' : undefined)
       ?? TYPE_CATEGORIES[fieldDef.type]
       ?? undefined;
 
@@ -303,17 +338,24 @@ function expandDashboardMetrics(
 function expandFormFields(
   template: TemplateResult,
   fieldCount: number,
+  fields: Record<string, FieldDefinition>,
+  semanticTypes?: Record<string, string>,
 ): ExpansionResult {
   const existingFields = template.slots.filter(s => s.name.startsWith('field-'));
   const existingCount = existingFields.length;
   const neededGroups = Math.min(fieldCount, MAX_FIELD_GROUPS);
 
   if (neededGroups <= existingCount) {
+    const allFieldSlots = template.slots
+      .filter(s => s.name.startsWith('field-'))
+      .map(s => s.name);
+
     return {
       template,
       slotsAdded: 0,
       expanded: false,
       reason: `${fieldCount} fields fit in ${existingCount} existing field groups`,
+      fieldGroups: groupFieldsIntoSlots(fields, allFieldSlots, semanticTypes),
     };
   }
 
@@ -350,11 +392,16 @@ function expandFormFields(
     }
   }
 
+  const allFieldSlots = result.slots
+    .filter(s => s.name.startsWith('field-'))
+    .map(s => s.name);
+
   return {
     template: result,
     slotsAdded: toAdd,
     expanded: true,
     reason: `Expanded from ${existingCount} to ${neededGroups} field groups for ${fieldCount} fields`,
+    fieldGroups: groupFieldsIntoSlots(fields, allFieldSlots, semanticTypes),
   };
 }
 
@@ -382,7 +429,7 @@ export function expandSlots(
     }
 
     case 'form':
-      return expandFormFields(template, fieldCount);
+      return expandFormFields(template, fieldCount, context.fields, context.semanticTypes);
 
     case 'list':
       return {

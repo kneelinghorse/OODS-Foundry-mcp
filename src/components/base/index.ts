@@ -12,10 +12,14 @@ export { Card } from './Card.js';
 export type { CardProps } from './Card.js';
 export { TextField } from './TextField.js';
 export type { TextFieldProps } from './TextField.js';
+export { DatePicker } from './DatePicker.js';
+export type { DatePickerProps } from './DatePicker.js';
 export { Select } from './Select.js';
 export type { SelectProps } from './Select.js';
 export { Checkbox } from './Checkbox.js';
 export type { CheckboxProps } from './Checkbox.js';
+export { Textarea } from './Textarea.js';
+export type { TextareaProps } from './Textarea.js';
 export type {
   FieldValidation,
   ValidationState,

@@ -106,6 +106,23 @@ describe('selectComponent — intent-to-component mappings', () => {
     expect(topName(result)).toBe('Input');
   });
 
+  it('top candidate for "search-input" is SearchInput', () => {
+    const result = selectComponent('search-input', catalog);
+    expect(topName(result)).toBe('SearchInput');
+    expect(topN(result, 2)).toContain('Input');
+  });
+
+  it('header search slots still keep SearchInput ahead of Input', () => {
+    const result = selectComponent('search-input', catalog, {
+      intentContext: 'search input',
+      slotPosition: 'header',
+    });
+    expect(topName(result)).toBe('SearchInput');
+    expect(result.candidates.findIndex((candidate) => candidate.name === 'SearchInput')).toBeLessThan(
+      result.candidates.findIndex((candidate) => candidate.name === 'Input'),
+    );
+  });
+
   it('top candidate for "page-header" includes Text', () => {
     const result = selectComponent('page-header', catalog);
     expect(topN(result, 3)).toContain('Text');
@@ -123,6 +140,31 @@ describe('selectComponent — intent-to-component mappings', () => {
     expect(top3).toContain('Select');
   });
 
+  it('"boolean-input" prioritizes toggle-style controls', () => {
+    const result = selectComponent('boolean-input', catalog);
+    expect(topN(result, 2).some((name) => name === 'Toggle' || name === 'Checkbox')).toBe(true);
+  });
+
+  it('"enum-input" prefers Select', () => {
+    const result = selectComponent('enum-input', catalog);
+    expect(topName(result)).toBe('Select');
+  });
+
+  it('"date-input" prefers DatePicker', () => {
+    const result = selectComponent('date-input', catalog);
+    expect(topName(result)).toBe('DatePicker');
+  });
+
+  it('"email-input" prefers Input', () => {
+    const result = selectComponent('email-input', catalog);
+    expect(topName(result)).toBe('Input');
+  });
+
+  it('"long-text-input" includes Textarea', () => {
+    const result = selectComponent('long-text-input', catalog);
+    expect(topN(result, 2)).toContain('Textarea');
+  });
+
   it('"metrics-display" includes Card in top 3', () => {
     const result = selectComponent('metrics-display', catalog);
     expect(topN(result, 3)).toContain('Card');
@@ -137,6 +179,17 @@ describe('selectComponent — intent-to-component mappings', () => {
   it('"filter-control" includes Select', () => {
     const result = selectComponent('filter-control', catalog);
     expect(hasCandidate(result, 'Select')).toBe(true);
+  });
+
+  it('search-oriented filter controls prefer SearchInput over generic Input', () => {
+    const result = selectComponent('filter-control', catalog, {
+      intentContext: 'search accounts by name',
+      slotPosition: 'header',
+    });
+    expect(topName(result)).toBe('SearchInput');
+    expect(result.candidates.findIndex((candidate) => candidate.name === 'SearchInput')).toBeLessThan(
+      result.candidates.findIndex((candidate) => candidate.name === 'Input'),
+    );
   });
 
   it('"data-display" includes Card', () => {
@@ -186,6 +239,19 @@ describe('selectComponent — scoring signals', () => {
     const result = selectComponent('data-table', catalog);
     const table = result.candidates.find(c => c.name === 'Table');
     expect(table!.reason).toContain('name contains');
+  });
+
+  it('non-search form fields do not bias toward SearchInput', () => {
+    const result = selectComponent('form-input', catalog, {
+      intentContext: 'email address field',
+    });
+    expect(topName(result)).toBe('Input');
+    const searchInputIndex = result.candidates.findIndex((candidate) => candidate.name === 'SearchInput');
+    if (searchInputIndex !== -1) {
+      expect(searchInputIndex).toBeGreaterThan(
+        result.candidates.findIndex((candidate) => candidate.name === 'Input'),
+      );
+    }
   });
 });
 

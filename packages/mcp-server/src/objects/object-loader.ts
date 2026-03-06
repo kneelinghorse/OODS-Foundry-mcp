@@ -29,6 +29,7 @@ function scanDirectory(dir: string, index: Map<string, string>): void {
   } catch {
     return; // directory doesn't exist or unreadable
   }
+  entries.sort((a, b) => a.name.localeCompare(b.name));
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
@@ -40,7 +41,7 @@ function scanDirectory(dir: string, index: Map<string, string>): void {
         const parsed = parseYaml(content) as Record<string, unknown>;
         const header = parsed?.object as Record<string, unknown> | undefined;
         const name = header?.name as string | undefined;
-        if (name) {
+        if (name && !index.has(name)) {
           index.set(name, fullPath);
         }
       } catch {

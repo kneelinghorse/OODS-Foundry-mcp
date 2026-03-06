@@ -365,7 +365,7 @@ describe('backward compatibility', () => {
     expect(result.objectUsed?.traits).not.toContain('behavioral/Searchable');
   });
 
-  it('Transaction search slot uses generic component (not SearchInput)', async () => {
+  it('Transaction search slot now benefits from generic SearchInput ranking', async () => {
     const result = await composeHandle({
       object: 'Transaction',
       context: 'list',
@@ -374,7 +374,7 @@ describe('backward compatibility', () => {
     });
     const searchSel = result.selections.find((s) => s.slotName === 'search');
     expect(searchSel).toBeDefined();
-    expect(searchSel!.selectedComponent).not.toBe('SearchInput');
+    expect(searchSel!.selectedComponent).toBe('SearchInput');
   });
 
   it('compose without object still works', async () => {

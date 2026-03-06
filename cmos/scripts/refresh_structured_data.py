@@ -99,15 +99,36 @@ BASIC_COMPONENT_DEFINITIONS: Tuple[Dict[str, Any], ...] = (
     },
     {
         "id": "Input",
-        "tags": ["field", "form", "primitive"],
+        "tags": ["field", "form", "input", "interactive", "primitive"],
         "contexts": ["form"],
         "regions": ["form", "main"],
     },
     {
-        "id": "Select",
-        "tags": ["field", "form", "primitive"],
+        "id": "Checkbox",
+        "tags": ["boolean", "field", "form", "input", "interactive", "primitive"],
         "contexts": ["form"],
         "regions": ["form", "main"],
+        "sourceFiles": ["src/components/base/Checkbox.tsx"],
+    },
+    {
+        "id": "DatePicker",
+        "tags": ["date", "field", "form", "input", "interactive", "primitive"],
+        "contexts": ["form"],
+        "regions": ["form", "main"],
+        "sourceFiles": ["src/components/base/DatePicker.tsx"],
+    },
+    {
+        "id": "Select",
+        "tags": ["field", "form", "input", "interactive", "primitive", "select"],
+        "contexts": ["form"],
+        "regions": ["form", "main"],
+    },
+    {
+        "id": "Textarea",
+        "tags": ["field", "form", "input", "interactive", "multiline", "primitive", "text"],
+        "contexts": ["form"],
+        "regions": ["form", "main"],
+        "sourceFiles": ["src/components/base/Textarea.tsx"],
     },
     {
         "id": "Badge",
@@ -401,6 +422,7 @@ def ensure_basic_components(index: Dict[str, Dict[str, Any]]) -> None:
         comp["contexts"].update(definition.get("contexts") or [])
         comp["regions"].update(definition.get("regions") or [])
         comp["sourceFiles"].add(source_file)
+        comp["sourceFiles"].update(definition.get("sourceFiles") or [])
 
 
 def summarize_domains(domain_traits: Dict[str, Set[str]], domain_objects: Dict[str, Set[str]]) -> List[Dict[str, Any]]:

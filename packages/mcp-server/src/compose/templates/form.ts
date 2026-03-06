@@ -20,6 +20,12 @@ import {
 export interface FormOptions {
   /** Number of field groups / sections (default: 3). */
   fieldGroups?: number;
+  /** Optional per-slot metadata for field groups. */
+  fieldSlots?: Array<{
+    description?: string;
+    intent?: string;
+    required?: boolean;
+  }>;
   /** Show a banner above the form (e.g. validation summary) (default: false). */
   includeBanner?: boolean;
   /** Theme token (optional). */
@@ -28,7 +34,19 @@ export interface FormOptions {
 
 export function formTemplate(opts: FormOptions = {}): TemplateResult {
   resetIdCounter();
-  const { fieldGroups = 3, includeBanner = false, theme } = opts;
+  const {
+    fieldGroups = 3,
+    fieldSlots,
+    includeBanner = false,
+    theme,
+  } = opts;
+  const resolvedFieldSlots = fieldSlots && fieldSlots.length > 0
+    ? fieldSlots
+    : Array.from({ length: fieldGroups }, (_, idx) => ({
+      description: `Form field group ${idx + 1}`,
+      intent: 'form-input',
+      required: idx === 0,
+    }));
 
   const slots: Slot[] = [
     { name: 'title', description: 'Form heading', intent: 'page-header', required: true },
@@ -36,12 +54,13 @@ export function formTemplate(opts: FormOptions = {}): TemplateResult {
   ];
 
   // Add per-field-group slots
-  for (let i = 0; i < fieldGroups; i++) {
+  for (let i = 0; i < resolvedFieldSlots.length; i++) {
+    const fieldSlot = resolvedFieldSlots[i];
     slots.push({
       name: `field-${i}`,
-      description: `Form field group ${i + 1}`,
-      intent: 'form-input',
-      required: i === 0,
+      description: fieldSlot.description ?? `Form field group ${i + 1}`,
+      intent: fieldSlot.intent ?? 'form-input',
+      required: fieldSlot.required ?? i === 0,
     });
   }
 
@@ -72,12 +91,13 @@ export function formTemplate(opts: FormOptions = {}): TemplateResult {
 
   // -- field groups --
   const fieldChildren: UiElement[] = [];
-  for (let i = 0; i < fieldGroups; i++) {
+  for (let i = 0; i < resolvedFieldSlots.length; i++) {
+    const fieldSlot = resolvedFieldSlots[i];
     fieldChildren.push({
       id: uid('form-field-group'),
       component: 'Stack',
       layout: { type: 'stack', gapToken: 'cluster-tight' },
-      children: [slotElement(`field-${i}`, 'form-input')],
+      children: [slotElement(`field-${i}`, fieldSlot.intent ?? 'form-input')],
     });
   }
   children.push({

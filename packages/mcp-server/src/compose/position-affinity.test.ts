@@ -72,6 +72,7 @@ describe('inferSlotPosition', () => {
     expect(inferSlotPosition('title')).toBe('header');
     expect(inferSlotPosition('banner')).toBe('header');
     expect(inferSlotPosition('search')).toBe('header');
+    expect(inferSlotPosition('toolbar-actions')).toBe('header');
   });
 
   it('maps main-like slot names', () => {
@@ -80,6 +81,7 @@ describe('inferSlotPosition', () => {
     expect(inferSlotPosition('metrics')).toBe('main');
     expect(inferSlotPosition('main-section-1')).toBe('main');
     expect(inferSlotPosition('metrics-section-1')).toBe('main');
+    expect(inferSlotPosition('field-0')).toBe('main');
   });
 
   it('maps footer-like slot names', () => {
@@ -102,6 +104,6 @@ describe('inferSlotPosition', () => {
 
   it('returns undefined for unknown slot names', () => {
     expect(inferSlotPosition('custom-slot')).toBeUndefined();
-    expect(inferSlotPosition('field-0')).toBeUndefined();
+    expect(inferSlotPosition('chart-toolbar')).toBeUndefined();
   });
 });

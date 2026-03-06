@@ -63,6 +63,32 @@ const CONTEXT_KEYWORDS: Record<string, string> = {
   signup: 'form',
 };
 
+const OBJECT_CONFIDENCE_CONTEXT_KEYWORDS = [
+  'detail',
+  'details',
+  'profile',
+  'list',
+  'table',
+  'index',
+  'directory',
+  'catalog',
+  'form',
+  'register',
+  'signup',
+] as const;
+
+const OBJECT_REFERENCE_VERBS = [
+  'show',
+  'view',
+  'inspect',
+  'open',
+  'browse',
+  'edit',
+  'render',
+  'compose',
+  'build',
+] as const;
+
 /**
  * Extract context from intent string.
  * Returns the first matching context keyword, or undefined.
@@ -85,27 +111,112 @@ function detectContextFromIntent(intent: string): string | undefined {
 
 /**
  * Detect an object name mentioned in the intent string.
- * Matches case-insensitively against all known object names.
+ * Requires a word-boundary match plus at least one confidence signal:
+ * - exact-case object mention outside sentence-initial position
+ * - immediate adjacency to a layout/context keyword
+ * - explicit object reference phrasing such as "show me the Product"
  */
 function detectObjectFromIntent(intent: string): string | undefined {
   const known = listObjects();
-  const lower = intent.toLowerCase();
+  const ranked = [...known]
+    .map(name => scoreObjectIntentMatch(intent, name))
+    .filter((candidate): candidate is ObjectIntentCandidate => candidate !== undefined)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.name.length !== a.name.length) return b.name.length - a.name.length;
+      return a.name.localeCompare(b.name);
+    });
 
-  // Try longest names first to avoid partial matches (e.g., "User" matching inside "UserProfile")
-  const sorted = [...known].sort((a, b) => b.length - a.length);
-
-  for (const name of sorted) {
-    // Word-boundary match: the object name should appear as a standalone word
-    const pattern = new RegExp(`\\b${escapeRegex(name)}\\b`, 'i');
-    if (pattern.test(lower)) {
-      return name;
-    }
-  }
-  return undefined;
+  return ranked[0]?.name;
 }
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+interface ObjectIntentCandidate {
+  name: string;
+  score: number;
+}
+
+function scoreObjectIntentMatch(intent: string, name: string): ObjectIntentCandidate | undefined {
+  if (!hasWordBoundaryMatch(intent, name)) {
+    return undefined;
+  }
+
+  let score = 1;
+
+  if (hasExactCaseObjectMatch(intent, name)) {
+    score++;
+  }
+
+  if (hasAdjacentContextKeyword(intent, name)) {
+    score++;
+  }
+
+  if (hasExplicitObjectReference(intent, name)) {
+    score++;
+  }
+
+  return score >= 2 ? { name, score } : undefined;
+}
+
+function hasWordBoundaryMatch(intent: string, name: string): boolean {
+  return new RegExp(`\\b${escapeRegex(name)}\\b`, 'i').test(intent);
+}
+
+function hasExactCaseObjectMatch(intent: string, name: string): boolean {
+  const pattern = new RegExp(`\\b${escapeRegex(name)}\\b`, 'g');
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(intent)) !== null) {
+    if (!isSentenceInitialMatch(intent, match.index)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasAdjacentContextKeyword(intent: string, name: string): boolean {
+  const contextPattern = OBJECT_CONFIDENCE_CONTEXT_KEYWORDS
+    .map(escapeRegex)
+    .join('|');
+
+  const pattern = new RegExp(
+    `(?:\\b(?:${contextPattern})\\b\\s+\\b${escapeRegex(name)}\\b|\\b${escapeRegex(name)}\\b\\s+\\b(?:${contextPattern})\\b)`,
+    'i',
+  );
+
+  return pattern.test(intent);
+}
+
+function hasExplicitObjectReference(intent: string, name: string): boolean {
+  const verbPattern = OBJECT_REFERENCE_VERBS.map(escapeRegex).join('|');
+  const pattern = new RegExp(
+    `\\b(?:${verbPattern})\\b\\s+(?:me\\s+)?(?:the\\s+|a\\s+|an\\s+)?\\b${escapeRegex(name)}\\b`,
+    'g',
+  );
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(intent)) !== null) {
+    const nameStart = match.index + match[0].lastIndexOf(name);
+    if (!isSentenceInitialMatch(intent, nameStart)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isSentenceInitialMatch(intent: string, start: number): boolean {
+  let i = start - 1;
+
+  while (i >= 0 && /\s/.test(intent[i])) {
+    i--;
+  }
+
+  return i < 0 || /[.!?]/.test(intent[i]);
 }
 
 /* ------------------------------------------------------------------ */

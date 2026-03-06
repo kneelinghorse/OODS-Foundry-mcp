@@ -153,7 +153,7 @@ describe('wireFieldProps', () => {
         id: 'screen',
         component: 'Stack',
         children: [
-          { id: 'btn', component: 'Button', props: { variant: 'primary' } },
+          { id: 'badge', component: 'Badge', props: { tone: 'info' } },
         ],
       }],
       { label: { type: 'string', required: true } },
@@ -161,9 +161,30 @@ describe('wireFieldProps', () => {
 
     wireFieldProps(schema);
 
-    const btn = findAllElements(schema, (el) => el.component === 'Button')[0];
-    expect(btn.props?.field).toBe('label');
-    expect(btn.props?.variant).toBe('primary');
+    const badge = findAllElements(schema, (el) => el.component === 'Badge')[0];
+    expect(badge.props?.field).toBe('label');
+    expect(badge.props?.tone).toBe('info');
+  });
+
+  it('sets email input type when binding an email field to Input', () => {
+    const schema = makeSchema(
+      [{
+        id: 'screen',
+        component: 'Stack',
+        children: [
+          { id: 'email-input', component: 'Input' },
+        ],
+      }],
+      {
+        email: { type: 'email', required: true, description: 'Primary email' },
+      },
+    );
+
+    wireFieldProps(schema);
+
+    const input = findAllElements(schema, (el) => el.component === 'Input')[0];
+    expect(input.props?.field).toBe('email');
+    expect(input.props?.type).toBe('email');
   });
 
   it('includes all bound fields in objectSchema', () => {

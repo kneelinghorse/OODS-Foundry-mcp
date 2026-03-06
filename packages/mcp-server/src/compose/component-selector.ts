@@ -89,6 +89,41 @@ const INTENT_MAP: Record<string, IntentSignals> = {
     contexts: ['form'],
     regions: ['forms', 'form'],
   },
+  'boolean-input': {
+    preferredComponents: ['Toggle', 'Checkbox', 'Switch'],
+    tags: ['interactive', 'input'],
+    contexts: ['form'],
+    regions: ['forms', 'form'],
+    categories: ['behavioral', 'primitive'],
+  },
+  'enum-input': {
+    preferredComponents: ['Select', 'TagInput', 'Input'],
+    tags: ['interactive', 'input', 'select'],
+    contexts: ['form'],
+    regions: ['forms', 'form'],
+    categories: ['primitive', 'behavioral'],
+  },
+  'date-input': {
+    preferredComponents: ['DatePicker', 'Input'],
+    tags: ['interactive', 'input', 'date'],
+    contexts: ['form'],
+    regions: ['forms', 'form'],
+    categories: ['behavioral', 'primitive'],
+  },
+  'email-input': {
+    preferredComponents: ['Input'],
+    tags: ['interactive', 'input', 'email'],
+    contexts: ['form'],
+    regions: ['forms', 'form'],
+    categories: ['primitive'],
+  },
+  'long-text-input': {
+    preferredComponents: ['Textarea', 'Input'],
+    tags: ['interactive', 'input', 'text'],
+    contexts: ['form'],
+    regions: ['forms', 'form'],
+    categories: ['primitive'],
+  },
   'data-table': {
     preferredComponents: ['Table'],
     tags: ['data', 'tabular'],
@@ -183,6 +218,8 @@ const WEIGHTS = {
   keywordTraitMatch: 0.12,
   /** Keyword overlap with component contexts (intent-driven). */
   keywordContextMatch: 0.12,
+  /** Additive bias for SearchInput in search-oriented slots. */
+  searchIntentBias: 0.25,
 } as const;
 
 /** Maximum possible score (used for normalization). */
@@ -276,12 +313,35 @@ const CONTEXT_STOPWORDS = new Set([
   'overview',
 ]);
 
+const SEARCH_SIGNAL_KEYWORDS = new Set([
+  'find',
+  'lookup',
+  'query',
+  'search',
+]);
+
 function filterContextTokens(tokens: string[]): string[] {
   return tokens.filter((token) => (
     token.length > 1
     && !/^\d+$/.test(token)
     && !CONTEXT_STOPWORDS.has(token)
   ));
+}
+
+function isSearchOrientedSlot(
+  intent: string,
+  keywords: string[],
+  contextKeywords: string[],
+): boolean {
+  if (intent === 'search-input') {
+    return true;
+  }
+
+  if (intent !== 'filter-control') {
+    return false;
+  }
+
+  return [...keywords, ...contextKeywords].some((keyword) => SEARCH_SIGNAL_KEYWORDS.has(keyword));
 }
 
 function intersectionList(a: string[], b: string[]): string[] {
@@ -479,6 +539,7 @@ export function selectComponent(
   const contextKeywords = filterContextTokens(tokenizeIntent(intentContext));
   const keywords = Array.from(new Set([...slotKeywords, ...contextKeywords]));
   const signals = INTENT_MAP[normalizedIntent];
+  const searchOrientedSlot = isSearchOrientedSlot(normalizedIntent, keywords, contextKeywords);
 
   const scored = catalog.map(component => {
     const {
@@ -516,6 +577,11 @@ export function selectComponent(
       }
     }
 
+    if (searchOrientedSlot && component.name === 'SearchInput') {
+      finalScore = Math.min(finalScore + WEIGHTS.searchIntentBias, MAX_RAW_SCORE);
+      finalReasons.push('search intent bias');
+    }
+
     return {
       name: component.name,
       confidence: finalScore,
@@ -537,6 +603,10 @@ export function selectComponent(
   // Sort by confidence descending, then alphabetically for ties
   pool.sort((a, b) => {
     if (b.confidence !== a.confidence) return b.confidence - a.confidence;
+    if (searchOrientedSlot) {
+      if (a.name === 'SearchInput' && b.name !== 'SearchInput') return -1;
+      if (b.name === 'SearchInput' && a.name !== 'SearchInput') return 1;
+    }
     return a.name.localeCompare(b.name);
   });
 

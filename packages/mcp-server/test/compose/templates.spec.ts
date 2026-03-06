@@ -254,6 +254,24 @@ describe('formTemplate', () => {
     expect(countNodes(s5)).toBeGreaterThan(countNodes(s3));
   });
 
+  it('uses provided field slot metadata when available', () => {
+    const { slots } = formTemplate({
+      fieldSlots: [
+        { description: 'Primary email field', intent: 'email-input' },
+        { description: 'Role selector', intent: 'enum-input' },
+      ],
+    });
+
+    expect(slots.find((slot) => slot.name === 'field-0')).toMatchObject({
+      description: 'Primary email field',
+      intent: 'email-input',
+    });
+    expect(slots.find((slot) => slot.name === 'field-1')).toMatchObject({
+      description: 'Role selector',
+      intent: 'enum-input',
+    });
+  });
+
   it('includes banner when includeBanner=true', () => {
     const { slots: withBanner } = formTemplate({ includeBanner: true });
     const { slots: withoutBanner } = formTemplate({ includeBanner: false });
@@ -386,7 +404,7 @@ describe('listTemplate', () => {
   it('uses only registered components', () => {
     const { schema } = listTemplate();
     const comps = collectComponents(schema);
-    const expected = new Set(['Stack', 'Grid', 'Card', 'Text', 'Button', 'Input', 'Select', 'Badge', 'Banner', 'Table', 'Tabs']);
+    const expected = new Set(['Stack', 'Grid', 'Card', 'Text', 'Button', 'Input', 'SearchInput', 'Select', 'Badge', 'Banner', 'Table', 'Tabs']);
     for (const c of comps) {
       expect(expected.has(c), `Component "${c}" not registered`).toBe(true);
     }
