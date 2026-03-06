@@ -36,7 +36,8 @@ import { composeObject, type ComposedObject } from '../objects/trait-composer.js
 import type { FieldDefinition, SemanticMapping } from '../objects/types.js';
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
 import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldProps, applySelectionsToSchema } from '../compose/object-slot-filler.js';
-import { collectViewExtensions } from '../compose/view-extension-collector.js';
+import { collectDashboardViewExtensions, collectViewExtensions } from '../compose/view-extension-collector.js';
+import type { SlotPlan } from '../compose/view-extension-collector.js';
 import { expandSlots, groupFieldsIntoSlots, type ExpansionContext } from '../compose/slot-expander.js';
 import { inferSlotPosition } from '../compose/position-affinity.js';
 import { selectPattern, type CompositionContext } from '../compose/slot-patterns.js';
@@ -794,6 +795,52 @@ function countNodes(schema: UiSchema): number {
   return count;
 }
 
+function resolveCatalogFallback(
+  entry: SlotPlan,
+  layout: LayoutType,
+): string | undefined {
+  switch (entry.component) {
+    case 'BillingSummaryBadge':
+      return layout === 'dashboard' ? 'PriceSummary' : 'PriceBadge';
+    case 'BillingCardMeta':
+      return 'PriceCardMeta';
+    default:
+      return undefined;
+  }
+}
+
+function normalizeObjectPlanForCatalog(
+  plan: SlotPlan[],
+  catalog: ComponentCatalogSummary[],
+  layout: LayoutType,
+): SlotPlan[] {
+  const allowedComponents = new Set(catalog.map((component) => component.name));
+  const deduped = new Set<string>();
+  const normalized: SlotPlan[] = [];
+
+  for (const entry of plan) {
+    const component = allowedComponents.has(entry.component)
+      ? entry.component
+      : resolveCatalogFallback(entry, layout);
+    if (!component || !allowedComponents.has(component)) {
+      continue;
+    }
+
+    const nextEntry = component === entry.component
+      ? entry
+      : { ...entry, component };
+    const signature = `${nextEntry.targetSlot ?? ''}:${nextEntry.component}:${JSON.stringify(nextEntry.props)}`;
+    if (deduped.has(signature)) {
+      continue;
+    }
+
+    deduped.add(signature);
+    normalized.push(nextEntry);
+  }
+
+  return normalized;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Handler                                                            */
 /* ------------------------------------------------------------------ */
@@ -1092,16 +1139,20 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   if (composed) {
-    const collected = collectViewExtensions(composed, contextForExtensions);
+    const collected = layoutType === 'dashboard'
+      ? collectDashboardViewExtensions(composed)
+      : collectViewExtensions(composed, contextForExtensions);
     for (const w of collected.warnings) {
       warnings.push({ code: 'OODS-V119', message: w });
     }
 
-    if (collected.plan.length > 0) {
+    const slotPlan = normalizeObjectPlanForCatalog(collected.plan, catalog, layoutType);
+
+    if (slotPlan.length > 0) {
       // Use view_extension-driven slot filling
       const fillResult = fillSlotsWithObject(
         { schema, slots },
-        collected.plan,
+        slotPlan,
         catalog,
         input.preferences?.componentOverrides,
         intentStr,

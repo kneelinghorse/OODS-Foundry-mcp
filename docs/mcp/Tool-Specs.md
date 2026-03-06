@@ -1,10 +1,12 @@
 # MCP Tool Specs (v1.0)
 
-This document is the contract surface for the OODS Foundry MCP server: tool names, registration rules, and the expected input/output shapes (backed by the JSON schemas in `packages/mcp-server/src/schemas/`).
+This document is the operator-facing contract surface for the OODS Foundry MCP server: tool names, registration rules, and the expected input/output shapes (backed by the JSON schemas in `packages/mcp-server/src/schemas/`).
+
+For exhaustive per-tool parameter tables across the full live tool surface, also use `docs/api/README.md`.
 
 ## Registration + enablement
 
-Auto tools are registered by default. On-demand tools are only registered when enabled.
+Auto tools are registered by default (22 at the time of writing). On-demand tools are only registered when enabled (9 at the time of writing).
 
 - Enable every on-demand tool: `MCP_TOOLSET=all`
 - Enable a subset: `MCP_EXTRA_TOOLS=a11y.scan,vrt.run`
@@ -12,6 +14,16 @@ Auto tools are registered by default. On-demand tools are only registered when e
 Registry source of truth: `packages/mcp-server/src/tools/registry.json` (copied to `dist/tools/registry.json` on build).
 
 Removed in v1.0: `design.generate` (it was a stub and is no longer shipped).
+
+## Cross-tool semantics
+
+- `schemaRef` TTL: refs returned by `design.compose`, `viz.compose`, `pipeline`, and `schema.load` expire after 30 minutes. Persist work with `schema.save` before expiry if you need cross-session reuse.
+- `apply`: write-capable tools default to dry-run/preview behavior. Set `apply: true` only when you want artifacts written or heavy outputs returned. `repl.render` returns HTML/fragments only when `apply: true`.
+- `compact`: `pipeline` defaults to compact render output and returns `tokenCssRef` instead of inlining token CSS. `repl.render` keeps full token CSS by default; opt into compact mode with `output.compact: true`.
+- Trait-name formats vary by tool family:
+  - `catalog.list` and `map.*` use canonical structured-data trait names such as `Stateful`, `Labelled`, or `Priceable`
+  - `object.list` accepts full or suffix-matched namespaced object traits such as `lifecycle/Stateful` or `Stateful`
+  - `viz.compose` explicit traits use hyphenated viz IDs such as `mark-bar` and `encoding-position-x`
 
 ## Transport
 
@@ -34,7 +46,9 @@ Response (error):
 
 ---
 
-## Auto tool contracts (11 tools)
+## Auto tool contracts (22 tools)
+
+The expanded narrative sections below cover 11 heavily used auto tools. The remaining 11 default tools are summarized near the end of this section and link to the maintained `docs/api/*` pages.
 
 ### `tokens.build`
 
@@ -93,16 +107,16 @@ Example output (payload omitted when ETag matches):
 ```json
 {
   "dataset": "components",
-  "version": "2026-02-24",
-  "generatedAt": "2026-02-24T05:09:44Z",
-  "etag": "60c44643e57a55566ebb216000b57f3617a3ee6ef2c410b9cc10f1d72185be42",
+  "version": "2026-03-06",
+  "generatedAt": "2026-03-06T02:51:49Z",
+  "etag": "c4bfbbcca95bb631b5a528db5885161196ee357acacaf3de899e43b415be5608",
   "matched": true,
   "payloadIncluded": false,
-  "path": "cmos/planning/oods-components.json",
+  "path": "artifacts/structured-data/oods-components-2026-03-06.json",
   "manifestPath": "artifacts/structured-data/manifest.json",
-  "sizeBytes": 348465,
+  "sizeBytes": 472491,
   "schemaValidated": true,
-  "meta": { "componentCount": 73, "traitCount": 35, "objectCount": 12, "domainCount": 1, "patternCount": 2 }
+  "meta": { "componentCount": 101, "traitCount": 41, "objectCount": 12, "domainCount": 1, "patternCount": 2 }
 }
 ```
 
@@ -316,27 +330,28 @@ Example output (truncated, default summary + pagination):
   "page": 1,
   "pageSize": 25,
   "returnedCount": 25,
-  "totalCount": 73,
+  "totalCount": 101,
   "hasMore": true,
   "components": [
     {
-      "name": "Button",
-      "displayName": "Button",
+      "name": "AddressCollectionPanel",
+      "displayName": "AddressCollectionPanel",
       "categories": ["core"],
-      "tags": [],
-      "contexts": ["form"],
-      "regions": [],
-      "traits": ["Clickable"]
+      "tags": ["address", "delivery", "location", "validation"],
+      "contexts": ["detail"],
+      "regions": ["detail", "form", "list", "timeline"],
+      "traits": ["Addressable"]
     }
   ],
-  "generatedAt": "2026-02-24T05:09:44Z",
-  "stats": { "componentCount": 73, "traitCount": 35 }
+  "generatedAt": "2026-03-06T02:51:49Z",
+  "stats": { "componentCount": 101, "traitCount": 41 }
 }
 ```
 
 Notes:
 - Unfiltered calls default to `detail: "summary"` with pagination (`pageSize: 25`). Use `page`/`pageSize` to navigate.
 - To opt into full detail (props, slots, code references), set `detail: "full"` explicitly. Filtered calls default to full detail for backward compatibility.
+- Trait filters use canonical structured-data trait names such as `Stateful`, `Priceable`, or `Addressable`.
 - When `trait` yields zero results, responses include `suggestions.traits` with nearest valid trait names (case-insensitive + typo tolerance).
 
 Example input (explicit full detail):
@@ -503,7 +518,7 @@ Example input:
 {
   "externalSystem": "material",
   "externalComponent": "Button",
-  "oodsTraits": ["Clickable", "Themeable"],
+  "oodsTraits": ["Stateful", "Labelled"],
   "propMappings": [
     { "externalProp": "variant", "oodsProp": "appearance", "coercion": { "type": "enum-map", "values": { "contained": "primary", "outlined": "secondary", "text": "ghost" } } },
     { "externalProp": "disabled", "oodsProp": "isDisabled" }
@@ -521,7 +536,7 @@ Example output:
     "id": "material-button",
     "externalSystem": "material",
     "externalComponent": "Button",
-    "oodsTraits": ["Clickable", "Themeable"],
+    "oodsTraits": ["Stateful", "Labelled"],
     "propMappings": ["..."],
     "confidence": "manual",
     "metadata": {
@@ -537,6 +552,7 @@ Example output:
 Notes:
 - When `apply` is `false` (or omitted), the mapping is not persisted and `applied` is `false`. The response includes a dry-run warning.
 - When `status` is `"error"`, an `errors` object is returned with `message` + `details` (field-level entries matching `formatValidationErrors()`).
+- `oodsTraits` should use canonical structured-data trait names such as `Stateful`, `Labelled`, or `Priceable`. Discover valid values via `structuredData.fetch` or `catalog.list`.
 
 Input fields:
 | Field | Type | Required | Description |
@@ -567,7 +583,7 @@ Example output:
 ```json
 {
   "mappings": [
-    { "id": "material__Button", "externalSystem": "material", "externalComponent": "Button", "oodsTraits": ["Clickable", "Themeable"], "..." : "..." }
+    { "id": "material__Button", "externalSystem": "material", "externalComponent": "Button", "oodsTraits": ["Stateful", "Labelled"], "..." : "..." }
   ],
   "totalCount": 3,
   "stats": { "mappingCount": 3, "systemCount": 1 },
@@ -608,6 +624,26 @@ Example output (not found):
   "message": "No mapping found for material/TextField"
 }
 ```
+
+---
+
+### Additional auto tools available by default
+
+These tools are part of the default auto-registered surface and have full parameter/output tables under `docs/api/*.md`.
+
+| Tool | Purpose | Key semantics | API doc |
+|------|---------|---------------|---------|
+| `pipeline` | Compose → validate → render → code generation in one call | Returns `schemaRef`; compact render output is on by default; `save` persists schemas beyond the 30-minute TTL | [pipeline](../api/pipeline.md) |
+| `health` | Inspect live server readiness and registry/token/schema-store status | Useful for connection smoke checks and current inventory counts | [health](../api/health.md) |
+| `map.update` | Update an existing mapping by id | `updates.oodsTraits` uses canonical structured-data trait names | [map.update](../api/map-update.md) |
+| `map.delete` | Delete an existing mapping by id | Removes the mapping record from the shared mapping store | [map.delete](../api/map-delete.md) |
+| `schema.save` | Persist a `schemaRef` under a stable name | Use before `schemaRef` expiry; supports tags and author metadata | [schema.save](../api/schema-save.md) |
+| `schema.load` | Load a saved schema into a fresh `schemaRef` | Returns a new 30-minute `schemaRef` plus schema metadata | [schema.load](../api/schema-load.md) |
+| `schema.list` | List saved schema metadata | Filter by object, context, or tags | [schema.list](../api/schema-list.md) |
+| `schema.delete` | Delete a saved schema | Removes the saved schema and index metadata entry | [schema.delete](../api/schema-delete.md) |
+| `object.list` | Browse canonical OODS objects | Trait filter accepts `lifecycle/Stateful` or suffix form `Stateful` | [object.list](../api/object-list.md) |
+| `object.show` | Show a full object definition with composed traits and view extensions | Optional context filter narrows the view-extension surface | [object.show](../api/object-show.md) |
+| `viz.compose` | Compose chart schemas from explicit bindings or object viz traits | Explicit `traits` use viz ids such as `mark-bar` and `encoding-position-x` | [viz.compose](../api/viz-compose.md) |
 
 ---
 

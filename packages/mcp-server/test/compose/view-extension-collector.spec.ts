@@ -9,7 +9,11 @@
  * 5. Works for all contexts: detail, list, form, timeline, card, inline
  */
 import { describe, it, expect } from 'vitest';
-import { collectViewExtensions, type SlotPlan } from '../../src/compose/view-extension-collector.js';
+import {
+  collectDashboardViewExtensions,
+  collectViewExtensions,
+  type SlotPlan,
+} from '../../src/compose/view-extension-collector.js';
 import { loadObject } from '../../src/objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../../src/objects/trait-composer.js';
 
@@ -185,6 +189,28 @@ describe('collectViewExtensions — context coverage', () => {
       expect(result.plan).toBeInstanceOf(Array);
       expect(result.warnings).toBeInstanceOf(Array);
     }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Dashboard projection                                               */
+/* ------------------------------------------------------------------ */
+
+describe('collectDashboardViewExtensions — dashboard projection', () => {
+  it('projects Subscription dashboard slots from compact and detail contexts', () => {
+    const composed = getSubscription();
+    const result = collectDashboardViewExtensions(composed);
+
+    expect(result.warnings).toEqual([]);
+    expect(result.plan.some((entry) =>
+      entry.targetSlot === 'metrics' && entry.component === 'CycleProgressCard',
+    )).toBe(true);
+    expect(result.plan.some((entry) =>
+      entry.targetSlot === 'main-content' && entry.component === 'PaymentTimeline',
+    )).toBe(true);
+    expect(result.plan.some((entry) =>
+      entry.targetSlot === 'sidebar' && entry.component === 'StatusBadge',
+    )).toBe(true);
   });
 });
 

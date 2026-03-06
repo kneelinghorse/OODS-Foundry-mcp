@@ -14,10 +14,17 @@ pnpm --filter @oods/mcp-server build
 ```
 3) Run tooling through the Agent CLI with transcripts:
 ```bash
-pnpm exec tsx tools/oods-agent-cli/src/index.ts plan diag.snapshot
+pnpm exec tsx tools/oods-agent-cli/src/index.ts plan catalog.list '{}'
+pnpm exec tsx tools/oods-agent-cli/src/index.ts plan health '{}'
 pnpm exec tsx tools/oods-agent-cli/src/index.ts apply tokens.build '{"brand":"A"}' --approve
 ```
 4) Embed `DesignLabShell` (see `docs/mcp/Design-Lab-Shell.md`) in Storybook or local UIs to preview schemas against the renderer/validator.
+
+Optional on-demand diagnostics:
+
+```bash
+MCP_EXTRA_TOOLS=diag.snapshot pnpm exec tsx tools/oods-agent-cli/src/index.ts plan diag.snapshot
+```
 
 ## Design Lab + structured data
 

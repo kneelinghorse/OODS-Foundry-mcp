@@ -169,6 +169,25 @@ describe('object-aware compose — hybrid mode', () => {
     expect(result.objectUsed!.name).toBe('Subscription');
   });
 
+  it('dashboard intent + object projects richer dashboard components from fallback object contexts', async () => {
+    const result = await handle({
+      intent: 'subscription dashboard with metrics and billing health',
+      object: 'Subscription',
+      layout: 'dashboard',
+    });
+
+    expect(result.layout).toBe('dashboard');
+    expect(result.validation?.status).toBe('ok');
+    expect(result.warnings.some((warning) => warning.code === 'OODS-V119')).toBe(false);
+
+    const components = collectComponentNames(result.schema.screens[0] as Record<string, unknown>);
+    expect(components).toContain('PriceSummary');
+    expect(components).toContain('StatusTimeline');
+    expect(components).toContain('StatusBadge');
+    expect(components).toContain('CancellationSummary');
+    expect(components).not.toContain('VizAreaPreview');
+  });
+
   it('object-only: synthetic intent generates valid schema', async () => {
     const result = await handle({
       object: 'Subscription',

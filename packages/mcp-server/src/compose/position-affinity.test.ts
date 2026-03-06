@@ -64,6 +64,21 @@ describe('getPositionAffinity', () => {
     const result = getPositionAffinity('FilterPanel', 'sidebar');
     expect(result.multiplier).toBeGreaterThan(1.0);
   });
+
+  it('boosts Select in main form slots', () => {
+    const result = getPositionAffinity('Select', 'main');
+    expect(result.multiplier).toBeGreaterThan(1.0);
+  });
+
+  it('keeps Input neutral in main form slots', () => {
+    const result = getPositionAffinity('Input', 'main');
+    expect(result.multiplier).toBe(1.0);
+  });
+
+  it('boosts Textarea in main form slots', () => {
+    const result = getPositionAffinity('Textarea', 'main');
+    expect(result.multiplier).toBeGreaterThan(1.0);
+  });
 });
 
 describe('inferSlotPosition', () => {

@@ -150,6 +150,14 @@ describe('selectComponent — intent-to-component mappings', () => {
     expect(topName(result)).toBe('Select');
   });
 
+  it('"enum-input" keeps Select ahead of Input in main form slots', () => {
+    const result = selectComponent('enum-input', catalog, {
+      intentContext: ['Subscription form view'],
+      slotPosition: 'main',
+    });
+    expect(topName(result)).toBe('Select');
+  });
+
   it('"date-input" prefers DatePicker', () => {
     const result = selectComponent('date-input', catalog);
     expect(topName(result)).toBe('DatePicker');
@@ -163,6 +171,14 @@ describe('selectComponent — intent-to-component mappings', () => {
   it('"long-text-input" includes Textarea', () => {
     const result = selectComponent('long-text-input', catalog);
     expect(topN(result, 2)).toContain('Textarea');
+  });
+
+  it('"long-text-input" keeps Textarea ahead of Input in main form slots', () => {
+    const result = selectComponent('long-text-input', catalog, {
+      intentContext: ['Subscription form view'],
+      slotPosition: 'main',
+    });
+    expect(topName(result)).toBe('Textarea');
   });
 
   it('"metrics-display" includes Card in top 3', () => {
