@@ -90,6 +90,61 @@ describe('codegen prop binding', () => {
     });
   });
 
+  describe('enriched prop binding from objectSchema metadata', () => {
+    // Schema with enriched props (as produced by compose with wireFieldProps)
+    const enrichedSchema: UiSchema = {
+      version: '2026.02',
+      objectSchema: {
+        email: { type: 'email', required: true, description: 'User email address' },
+        role: { type: 'string', required: false, enum: ['admin', 'user', 'guest'] },
+        bio: { type: 'string', required: false, description: 'User biography' },
+      },
+      screens: [
+        {
+          id: 'form-screen',
+          component: 'Stack',
+          layout: { type: 'stack' },
+          children: [
+            { id: 'email-input', component: 'Input', props: { field: 'email', label: 'User email address', placeholder: 'Enter email', type: 'email' } },
+            { id: 'role-select', component: 'Select', props: { field: 'role', label: 'User role', placeholder: 'Enter role', options: ['admin', 'user', 'guest'] } },
+            { id: 'bio-text', component: 'Textarea', props: { field: 'bio', label: 'User biography', placeholder: 'Enter bio' } },
+          ],
+        },
+      ],
+    };
+
+    it('React emitter emits label from field description', () => {
+      const result = reactEmit(enrichedSchema, defaultOptions);
+      expect(result.code).toContain('label="User email address"');
+    });
+
+    it('React emitter emits placeholder for input-like components', () => {
+      const result = reactEmit(enrichedSchema, defaultOptions);
+      expect(result.code).toContain('placeholder="Enter email"');
+    });
+
+    it('React emitter emits type for email fields on Input', () => {
+      const result = reactEmit(enrichedSchema, defaultOptions);
+      expect(result.code).toContain('type="email"');
+    });
+
+    it('React emitter emits select options as prop', () => {
+      const result = reactEmit(enrichedSchema, defaultOptions);
+      expect(result.code).toContain('options=');
+    });
+
+    it('Vue emitter emits label and placeholder for form fields', () => {
+      const result = vueEmit(enrichedSchema, defaultOptions);
+      expect(result.code).toContain('label="User email address"');
+      expect(result.code).toContain('placeholder="Enter email"');
+    });
+
+    it('HTML emitter emits data-bind for field-bound components', () => {
+      const result = htmlEmit(enrichedSchema, defaultOptions);
+      expect(result.code).toContain('data-bind="value:email"');
+    });
+  });
+
   describe('no regression for schemas without objectSchema', () => {
     const plainSchema: UiSchema = {
       version: '2026.02',
