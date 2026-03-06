@@ -1,13 +1,14 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-03-06 | Sprint 78 latest-dist retest `s78-m06`
+> Updated: 2026-03-06 | Sprint 79 retest `s79-m04`
 
 ## Current State
 
-- **Platform Score:** 87/100 (Sprint 78 latest-dist retest)
+- **Platform Score:** 89/100 (Sprint 79 retest — Codegen Quality 13→17)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Retest Coverage:** 386 test files, 3303 tests passing, 0 failures on rebuilt dist
+- **Test Suite:** 107 files, 1698 tests, 0 failures (mcp-server)
+- **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
 
 ## Validated Release Gates
@@ -49,6 +50,15 @@
 | `s76-m05` | Codegen schema validity gate | Fixed | Unknown components now stop `code.generate` with `OODS-V119` and no code output |
 | `s76-m06` | Render preview messaging integrity | Fixed | Invalid render previews now say `Render blocked` instead of `Render ready` |
 
+## Sprint 79 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s79-m01` | Codegen prop-binding accuracy: resolveFieldProps() enriches emitted components with labels, placeholders, required, input types, enum options from objectSchema | Done | 13 new tests in prop-binding.spec.ts, 0 regressions |
+| `s79-m02` | Cross-framework parity: section layout binding fix (React+Vue), 28-test parity suite | Done | cross-framework-parity.spec.ts verifies nested children, sidebar, section, field injection, event bindings, prop enrichment, token overrides across all 3 frameworks |
+| `s79-m03` | Styling mode 3×3 matrix: 54 tests covering React/Vue/HTML × inline/tokens/tailwind | Done | styling-mode-coverage.spec.ts — all 9 combos pass on first run |
+| `s79-m04` | Latest-dist retest + score refresh: build clean, 107 files / 1698 tests / 0 failures | Done | Score: 89/100 (Codegen Quality 13→17) |
+
 ## Carry-Forward Backlog
 
 ### P1 — Composition Quality
@@ -72,9 +82,9 @@
 
 | Category | Weight | Current | Notes |
 |----------|--------|---------|-------|
-| API Surface Completeness | 15 | 15 | Bridge output schema aligned with compose fields (S78) |
-| Composition Intelligence | 25 | 21 | Intent-driven form field differentiation now includes keyword cues (dropdown→Select) |
-| Code Generation Quality | 20 | 15 | Prop enrichment (label/placeholder/type/options), cross-framework parity, 9 styling×framework combinations validated |
+| API Surface Completeness | 15 | 14 | Bridge tool-surface honesty fixed |
+| Composition Intelligence | 25 | 20 | Object filtering, search disambiguation, and slot vocabulary now validate on latest dist |
+| Code Generation Quality | 20 | 17 | S79: prop-binding enrichment from objectSchema (labels, placeholders, required, types, enum options), cross-framework parity verified (28 tests), all 9 framework×styling combos validated (54 tests), section layout bindings fixed |
 | Pipeline & Persistence | 15 | 14 | Artifact apply paths now reliable |
 | Error Handling & DX | 10 | 10 | Better metadata and fewer trust-breaking runtime surprises |
 | Visualization | 10 | 9 | Latest-dist viz path validates cleanly |
@@ -85,7 +95,7 @@
 
 | Date | Agent | Score | Scope | Report |
 |------|-------|-------|-------|--------|
-| 2026-03-06 | Claude Opus 4.6 | 89/100 | Sprint 78 latest-dist retest | 386 test files, 3303 tests, 0 failures |
+| 2026-03-06 | Claude Opus 4.6 | 89/100 | Sprint 79 retest — Codegen Quality 13→17 | `s79-m04` build+test gate |
 | 2026-03-06 | Codex GPT-5 | 84/100 | Sprint 76 latest-dist retest | `cmos/reports/s76-retest-latest-dist.md` |
 | 2026-03-06 | Codex GPT-5 | Docs aligned | README + MCP tool-surface alignment | `cmos/reports/s77-m04-docs-tool-surface-alignment-2026-03-06.md` |
 | 2026-03-06 | Codex GPT-5 | 75/100 | Sprint 75 latest-dist retest | `cmos/reports/s75-m05-latest-dist-retest-2026-03-06.md` |

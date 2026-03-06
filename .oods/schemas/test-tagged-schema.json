@@ -1,6 +1,6 @@
 {
   "name": "test-tagged-schema",
-  "schemaRef": "compose-191adc8b",
+  "schemaRef": "compose-1da67296",
   "schema": {
     "version": "2026.02",
     "screens": [
@@ -57,7 +57,9 @@
                     "props": {
                       "field": "searchQuery",
                       "placeholderParameter": "placeholder",
-                      "clearableParameter": "clearable"
+                      "clearableParameter": "clearable",
+                      "label": "The current search query string entered by the user.",
+                      "placeholder": "Enter searchQuery"
                     }
                   },
                   {
@@ -131,7 +133,8 @@
                           "label": "tab-1"
                         },
                         "props": {
-                          "field": "inventory_status"
+                          "field": "inventory_status",
+                          "label": "Availability state synchronized with inventory service."
                         }
                       }
                     ]
@@ -155,7 +158,8 @@
                           "label": "tab-2"
                         },
                         "props": {
-                          "field": "created_at"
+                          "field": "created_at",
+                          "label": "Timestamp recording when the entity was first created."
                         }
                       }
                     ]
@@ -567,9 +571,9 @@
     }
   },
   "object": "Product",
-  "version": 7,
-  "createdAt": "2026-03-05T23:29:45.932Z",
-  "updatedAt": "2026-03-06T05:39:25.543Z",
+  "version": 5,
+  "createdAt": "2026-03-06T04:46:17.426Z",
+  "updatedAt": "2026-03-06T05:04:03.490Z",
   "tags": [
     "test",
     "sprint74"

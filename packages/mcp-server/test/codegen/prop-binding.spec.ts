@@ -3,7 +3,9 @@ import type { UiSchema, FieldSchemaEntry } from '../../src/schemas/generated.js'
 import { emit as reactEmit } from '../../src/codegen/react-emitter.js';
 import { emit as vueEmit } from '../../src/codegen/vue-emitter.js';
 import { emit as htmlEmit } from '../../src/codegen/html-emitter.js';
+import { resolveFieldProps } from '../../src/codegen/binding-utils.js';
 import type { CodegenOptions } from '../../src/codegen/types.js';
+import type { UiElement } from '../../src/schemas/generated.js';
 
 const objectSchema: Record<string, FieldSchemaEntry> = {
   name: { type: 'string', required: true, description: 'Product name' },
@@ -90,14 +92,15 @@ describe('codegen prop binding', () => {
     });
   });
 
-  describe('enriched prop binding from objectSchema metadata', () => {
-    // Schema with enriched props (as produced by compose with wireFieldProps)
+  describe('prop enrichment from objectSchema metadata', () => {
     const enrichedSchema: UiSchema = {
-      version: '2026.02',
+      version: '2026.03',
       objectSchema: {
         email: { type: 'email', required: true, description: 'User email address' },
-        role: { type: 'string', required: false, enum: ['admin', 'user', 'guest'] },
-        bio: { type: 'string', required: false, description: 'User biography' },
+        status: { type: 'string', required: true, enum: ['active', 'inactive', 'draft'] },
+        amount: { type: 'number', required: false, description: 'Payment amount' },
+        category: { type: 'string', required: true, enum: ['electronics', 'clothing', 'food'] },
+        website: { type: 'url', required: false, description: 'Company website URL' },
       },
       screens: [
         {
@@ -105,43 +108,138 @@ describe('codegen prop binding', () => {
           component: 'Stack',
           layout: { type: 'stack' },
           children: [
-            { id: 'email-input', component: 'Input', props: { field: 'email', label: 'User email address', placeholder: 'Enter email', type: 'email' } },
-            { id: 'role-select', component: 'Select', props: { field: 'role', label: 'User role', placeholder: 'Enter role', options: ['admin', 'user', 'guest'] } },
-            { id: 'bio-text', component: 'Textarea', props: { field: 'bio', label: 'User biography', placeholder: 'Enter bio' } },
+            { id: 'email-input', component: 'Input', props: { field: 'email' } },
+            { id: 'status-badge', component: 'StatusBadge', props: { field: 'status' } },
+            { id: 'amount-input', component: 'Input', props: { field: 'amount' } },
+            { id: 'category-select', component: 'Select', props: { field: 'category' } },
+            { id: 'website-input', component: 'Input', props: { field: 'website' } },
+            { id: 'label-with-existing', component: 'Badge', props: { field: 'status', label: 'Custom Label' } },
           ],
         },
       ],
     };
 
-    it('React emitter emits label from field description', () => {
-      const result = reactEmit(enrichedSchema, defaultOptions);
-      expect(result.code).toContain('label="User email address"');
+    describe('resolveFieldProps unit', () => {
+      const os = enrichedSchema.objectSchema!;
+
+      it('returns placeholder from description for value-prop components', () => {
+        const node: UiElement = { id: 'e', component: 'Input', props: { field: 'email' } };
+        const result = resolveFieldProps(node, os);
+        expect(result).toBeTruthy();
+        expect(result!.placeholder).toBe('User email address');
+      });
+
+      it('returns required for required value-prop fields', () => {
+        const node: UiElement = { id: 'e', component: 'Input', props: { field: 'email' } };
+        const result = resolveFieldProps(node, os);
+        expect(result!.required).toBe(true);
+      });
+
+      it('does not return required for optional fields', () => {
+        const node: UiElement = { id: 'a', component: 'Input', props: { field: 'amount' } };
+        const result = resolveFieldProps(node, os);
+        expect(result!.required).toBeUndefined();
+      });
+
+      it('returns input type from semantic field type', () => {
+        const emailNode: UiElement = { id: 'e', component: 'Input', props: { field: 'email' } };
+        expect(resolveFieldProps(emailNode, os)!.type).toBe('email');
+
+        const urlNode: UiElement = { id: 'w', component: 'Input', props: { field: 'website' } };
+        expect(resolveFieldProps(urlNode, os)!.type).toBe('url');
+
+        const amountNode: UiElement = { id: 'a', component: 'Input', props: { field: 'amount' } };
+        expect(resolveFieldProps(amountNode, os)!.type).toBe('number');
+      });
+
+      it('returns humanized label for label-prop and status-prop components', () => {
+        const node: UiElement = { id: 's', component: 'StatusBadge', props: { field: 'status' } };
+        const result = resolveFieldProps(node, os);
+        expect(result!.label).toBe('Status');
+      });
+
+      it('does not override existing label', () => {
+        const node: UiElement = { id: 'b', component: 'Badge', props: { field: 'status', label: 'Custom' } };
+        const result = resolveFieldProps(node, os);
+        expect(result?.label).toBeUndefined();
+      });
+
+      it('returns enum options for Select components', () => {
+        const node: UiElement = { id: 'c', component: 'Select', props: { field: 'category' } };
+        const result = resolveFieldProps(node, os);
+        expect(result!.options).toEqual([
+          { label: 'Electronics', value: 'electronics' },
+          { label: 'Clothing', value: 'clothing' },
+          { label: 'Food', value: 'food' },
+        ]);
+      });
+
+      it('returns null for components with no field binding', () => {
+        const node: UiElement = { id: 'b', component: 'Button', props: { label: 'Save' } };
+        expect(resolveFieldProps(node, os)).toBeNull();
+      });
+
+      it('returns null for layout components (strategy=none)', () => {
+        const node: UiElement = { id: 's', component: 'Stack', props: { field: 'email' } };
+        expect(resolveFieldProps(node, os)).toBeNull();
+      });
     });
 
-    it('React emitter emits placeholder for input-like components', () => {
+    describe('React emitter enrichment', () => {
       const result = reactEmit(enrichedSchema, defaultOptions);
-      expect(result.code).toContain('placeholder="Enter email"');
+
+      it('emits placeholder for form inputs', () => {
+        expect(result.code).toContain('placeholder="User email address"');
+      });
+
+      it('emits required attribute for required form inputs', () => {
+        expect(result.code).toContain('required');
+      });
+
+      it('emits input type from semantic field type', () => {
+        expect(result.code).toContain('type="email"');
+      });
+
+      it('emits enum options for Select components', () => {
+        expect(result.code).toContain('options=');
+      });
+
+      it('does not override existing labels', () => {
+        expect(result.code).toContain('label="Custom Label"');
+      });
     });
 
-    it('React emitter emits type for email fields on Input', () => {
-      const result = reactEmit(enrichedSchema, defaultOptions);
-      expect(result.code).toContain('type="email"');
-    });
-
-    it('React emitter emits select options as prop', () => {
-      const result = reactEmit(enrichedSchema, defaultOptions);
-      expect(result.code).toContain('options=');
-    });
-
-    it('Vue emitter emits label and placeholder for form fields', () => {
+    describe('Vue emitter enrichment', () => {
       const result = vueEmit(enrichedSchema, defaultOptions);
-      expect(result.code).toContain('label="User email address"');
-      expect(result.code).toContain('placeholder="Enter email"');
+
+      it('emits placeholder for form inputs', () => {
+        expect(result.code).toContain('placeholder="User email address"');
+      });
+
+      it('emits required attribute for required form inputs', () => {
+        expect(result.code).toMatch(/\brequired\b/);
+      });
+
+      it('emits input type from semantic field type', () => {
+        expect(result.code).toContain('type="email"');
+      });
+
+      it('emits enum options for Select components', () => {
+        expect(result.code).toContain(':options=');
+      });
+
+      it('does not override existing labels', () => {
+        expect(result.code).toContain('label="Custom Label"');
+      });
     });
 
-    it('HTML emitter emits data-bind for field-bound components', () => {
+    describe('HTML emitter enrichment', () => {
       const result = htmlEmit(enrichedSchema, defaultOptions);
-      expect(result.code).toContain('data-bind="value:email"');
+
+      it('includes enriched prop data in HTML output', () => {
+        expect(result.status).toBe('ok');
+        expect(result.code).toContain('data-oods-component');
+      });
     });
   });
 

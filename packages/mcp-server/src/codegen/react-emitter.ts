@@ -14,6 +14,7 @@ import {
   generateHandlerStubs,
   collectPropDefaults,
   resolveChildContent,
+  resolveFieldProps,
 } from './binding-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -203,10 +204,19 @@ function emitNode(
     resolveLayoutStyles(node.layout),
     resolveStyleTokens(node.style),
   );
-  const propsObject = node.props && typeof node.props === 'object'
-    ? (node.props as Record<string, unknown>)
+  let propsObject = node.props && typeof node.props === 'object'
+    ? { ...(node.props as Record<string, unknown>) }
     : null;
   const tailwindVariant = tailwindVariants.get(tag);
+
+  // Enrich props from objectSchema metadata (labels, placeholders, required, options, type)
+  const enriched = resolveFieldProps(node, objectSchema);
+  if (enriched) {
+    if (!propsObject) propsObject = {};
+    for (const [key, value] of Object.entries(enriched)) {
+      if (propsObject[key] === undefined) propsObject[key] = value;
+    }
+  }
 
   // Build attributes list
   const attrParts: string[] = [];
@@ -298,6 +308,12 @@ function emitNode(
     if (propsObject) {
       const propsStr = propsToJsxAttrs(propsObject, options.styling === 'tailwind');
       if (propsStr) innerAttrParts.push(propsStr);
+    }
+    // Event bindings belong on the component, not the section wrapper
+    if (node.bindings && typeof node.bindings === 'object') {
+      for (const [eventKey, handlerName] of Object.entries(node.bindings).sort(([a], [b]) => a.localeCompare(b))) {
+        innerAttrParts.push(`${eventKey}={${handlerName}}`);
+      }
     }
     if (options.styling === 'tailwind') {
       const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);

@@ -14,6 +14,7 @@ import {
   generateHandlerStubs,
   collectPropDefaults,
   resolveChildContent,
+  resolveFieldProps,
 } from './binding-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -196,10 +197,19 @@ function emitTemplateNode(
     resolveLayoutStyles(node.layout),
     resolveStyleTokens(node.style),
   );
-  const propsObject = node.props && typeof node.props === 'object'
-    ? (node.props as Record<string, unknown>)
+  let propsObject = node.props && typeof node.props === 'object'
+    ? { ...(node.props as Record<string, unknown>) }
     : null;
   const tailwindVariant = tailwindVariants.get(tag);
+
+  // Enrich props from objectSchema metadata (labels, placeholders, required, options, type)
+  const enriched = resolveFieldProps(node, objectSchema);
+  if (enriched) {
+    if (!propsObject) propsObject = {};
+    for (const [key, value] of Object.entries(enriched)) {
+      if (propsObject[key] === undefined) propsObject[key] = value;
+    }
+  }
 
   // Build attributes
   const attrParts: string[] = [];
@@ -284,6 +294,13 @@ function emitTemplateNode(
     if (propsObject) {
       const propsStr = propsToVueAttrs(propsObject, options.styling === 'tailwind');
       if (propsStr) innerAttrParts.push(propsStr);
+    }
+    // Event bindings belong on the component, not the section wrapper
+    if (node.bindings && typeof node.bindings === 'object') {
+      for (const [eventKey, handlerName] of Object.entries(node.bindings).sort(([a], [b]) => a.localeCompare(b))) {
+        const vueEvent = eventKey.replace(/^on([A-Z])/, (_, c: string) => c.toLowerCase());
+        innerAttrParts.push(`@${vueEvent}="${handlerName}"`);
+      }
     }
     if (options.styling === 'tailwind') {
       const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);

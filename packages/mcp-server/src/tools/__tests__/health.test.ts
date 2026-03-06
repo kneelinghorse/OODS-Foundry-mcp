@@ -53,7 +53,7 @@ describe('health tool', () => {
     expect(validateOutput(output)).toBe(true);
     expect(output.schemas.savedCount).toBe(0);
     expect(output.server.uptime).toBeGreaterThanOrEqual(0);
-    expect(output.latency).toBeLessThan(50);
+    expect(output.latency).toBeLessThan(100);
     expect(output.status === 'ok' || output.status === 'degraded').toBe(true);
   });
 

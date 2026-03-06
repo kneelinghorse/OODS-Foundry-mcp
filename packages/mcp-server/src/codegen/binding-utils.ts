@@ -172,6 +172,90 @@ export function collectPropDefaults(
 }
 
 // ---------------------------------------------------------------------------
+// Field → prop enrichment from objectSchema metadata
+// ---------------------------------------------------------------------------
+
+const SEMANTIC_TYPE_TO_INPUT: Record<string, string> = {
+  email: 'email',
+  url: 'url',
+  date: 'date',
+  datetime: 'datetime-local',
+  integer: 'number',
+  number: 'number',
+};
+
+function humanizeFieldName(fieldName: string): string {
+  return fieldName
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function humanizeEnumValue(value: string): string {
+  return value
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export interface FieldPropEnrichment {
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: Array<{ label: string; value: string }>;
+  type?: string;
+}
+
+/**
+ * Derive additional props from objectSchema metadata for a field-bound component.
+ * Returns null if the node has no field binding or no enrichments are needed.
+ * Does not override props that are already explicitly set on the node.
+ */
+export function resolveFieldProps(
+  node: UiElement,
+  objectSchema?: Record<string, FieldSchemaEntry>,
+): FieldPropEnrichment | null {
+  const fieldProp = node.props?.field;
+  if (typeof fieldProp !== 'string' || !fieldProp) return null;
+  if (!objectSchema || !objectSchema[fieldProp]) return null;
+
+  const entry = objectSchema[fieldProp];
+  const strategy = getContentStrategy(node.component);
+  if (strategy === 'none') return null;
+
+  const existing = (node.props as Record<string, unknown>) ?? {};
+  const props: FieldPropEnrichment = {};
+
+  // Label: humanize field name for label-prop and status-prop components
+  if (!existing.label && (strategy === 'label-prop' || strategy === 'status-prop')) {
+    props.label = humanizeFieldName(fieldProp);
+  }
+
+  // Enrichments specific to form input components (value-prop strategy)
+  if (strategy === 'value-prop') {
+    if (!existing.placeholder && entry.description) {
+      props.placeholder = entry.description;
+    }
+    if (entry.required && existing.required === undefined) {
+      props.required = true;
+    }
+    if (!existing.type) {
+      const inputType = SEMANTIC_TYPE_TO_INPUT[entry.type];
+      if (inputType) props.type = inputType;
+    }
+  }
+
+  // Enum options for Select-like components
+  if (
+    entry.enum && entry.enum.length > 0 &&
+    !existing.options &&
+    (node.component === 'Select' || node.component === 'StatusSelector')
+  ) {
+    props.options = entry.enum.map((v) => ({ label: humanizeEnumValue(v), value: v }));
+  }
+
+  return Object.keys(props).length > 0 ? props : null;
+}
+
+// ---------------------------------------------------------------------------
 // Field → component content resolution for codegen prop binding
 // ---------------------------------------------------------------------------
 

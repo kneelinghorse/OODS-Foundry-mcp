@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "updatedAt": "2026-03-06T05:04:03.495Z",
+  "schemas": [
+    {
+      "name": "test-tagged-schema",
+      "schemaRef": "compose-1da67296",
+      "object": "Product",
+      "version": 5,
+      "createdAt": "2026-03-06T04:46:17.426Z",
+      "updatedAt": "2026-03-06T05:04:03.490Z",
+      "tags": [
+        "test",
+        "sprint74"
+      ]
+    }
+  ]
+}
