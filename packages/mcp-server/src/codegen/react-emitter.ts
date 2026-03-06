@@ -348,9 +348,38 @@ function emitNode(
       if (fieldContent.isChildren) {
         return `<${tag}${attrs}>{${fieldContent.fieldName}}</${tag}>`;
       }
-      // Prop-based injection: add prop to attrs
+      // Prop-based injection: rebuild attrs without the conflicting static prop
+      // to avoid emitting both label="static" and label={dynamic}
+      let cleanAttrs = attrs;
+      if (fieldContent.propName && propsObject?.[fieldContent.propName] !== undefined) {
+        delete propsObject[fieldContent.propName];
+        const rebuiltAttrParts: string[] = [];
+        rebuiltAttrParts.push(`id="${node.id}"`);
+        rebuiltAttrParts.push(`data-oods-component="${tag}"`);
+        if (node.layout?.type) rebuiltAttrParts.push(`data-layout="${node.layout.type}"`);
+        if (propsObject) {
+          const propsStr = propsToJsxAttrs(propsObject, options.styling === 'tailwind');
+          if (propsStr) rebuiltAttrParts.push(propsStr);
+        }
+        if (node.bindings && typeof node.bindings === 'object') {
+          for (const [eventKey, handlerName] of Object.entries(node.bindings).sort(([a], [b]) => a.localeCompare(b))) {
+            rebuiltAttrParts.push(`${eventKey}={${handlerName}}`);
+          }
+        }
+        if (options.styling === 'tailwind') {
+          const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
+          const baseClasses = buildTailwindStaticClasses(node, computedStyle, { includeVariantFallback: !tailwindVariant });
+          const responsive = responsiveLayoutClasses(node.layout);
+          const staticClasses = responsive ? `${baseClasses} ${responsive}`.trim() : baseClasses;
+          const classAttr = buildReactClassAttr(staticClasses, variantExpression);
+          if (classAttr) rebuiltAttrParts.push(classAttr);
+        } else if (Object.keys(computedStyle).length > 0) {
+          rebuiltAttrParts.push(`style={${styleObjToJsx(computedStyle)}}`);
+        }
+        cleanAttrs = rebuiltAttrParts.length > 0 ? ` ${rebuiltAttrParts.join(' ')}` : '';
+      }
       const propAttr = `${fieldContent.propName}={${fieldContent.fieldName}}`;
-      return `<${tag}${attrs} ${propAttr} />`;
+      return `<${tag}${cleanAttrs} ${propAttr} />`;
     }
     return `<${tag}${attrs} />`;
   }
@@ -514,13 +543,20 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
     lines.push('');
   }
 
-  // Emit prop default declarations from objectSchema field values
+  // Emit prop default declarations — but skip any names already destructured
+  // from the component params to avoid illegal const redeclarations
   if (propDefaults && propDefaults.size > 0) {
+    const destructuredNames = hasObjectSchema
+      ? new Set(Object.keys(schema.objectSchema!).map(snakeToCamel))
+      : new Set<string>();
+    let emittedAny = false;
     for (const [propName, { formatted, isExpression }] of propDefaults) {
+      if (destructuredNames.has(propName)) continue;
       const rhs = isExpression ? formatted : `'${formatted.replace(/'/g, "\\'")}'`;
       lines.push(`  const ${propName} = ${rhs};`);
+      emittedAny = true;
     }
-    lines.push('');
+    if (emittedAny) lines.push('');
   }
 
   if (tailwindVariants.size > 0) {

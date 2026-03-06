@@ -79,8 +79,12 @@ type ToolPolicyState = {
   allow: string[];
 };
 
+// import.meta.url → file:///repo/packages/mcp-bridge/{src|dist}/config.{ts|js}
+// new URL('.', ...) → directory with trailing slash
+// path.dirname strips trailing slash → /repo/packages/mcp-bridge
+// So we go up 2 levels to reach the repo root.
 const CONFIG_DIR = path.dirname(fileURLToPath(new URL('.', import.meta.url)));
-const REPO_ROOT = path.resolve(CONFIG_DIR, '..', '..', '..');
+const REPO_ROOT = path.resolve(CONFIG_DIR, '..', '..');
 const POLICY_PATH = path.resolve(REPO_ROOT, 'configs/agent/policy.json');
 
 const FALLBACK_POLICY: AgentPolicyDoc = {

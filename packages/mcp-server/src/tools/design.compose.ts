@@ -426,6 +426,7 @@ function inferSlotIntentFromFields(
 
   // Count semantic/type categories
   const categories: Record<string, number> = {};
+  let classified = 0;
 
   for (const name of fieldNames) {
     const field = schema[name];
@@ -449,16 +450,22 @@ function inferSlotIntentFromFields(
 
     if (isStatusLike) {
       categories['status'] = (categories['status'] ?? 0) + 1;
+      classified++;
     } else if (isMetricLike) {
       categories['metrics'] = (categories['metrics'] ?? 0) + 1;
+      classified++;
     } else if (isTemporalLike) {
       categories['temporal'] = (categories['temporal'] ?? 0) + 1;
+      classified++;
     } else if (isMetadataLike) {
       categories['metadata'] = (categories['metadata'] ?? 0) + 1;
+      classified++;
     }
   }
 
-  // Find dominant category
+  // Find dominant category — require majority (>50% of fields) to override intent.
+  // Without strong dominance, keep the default 'data-display' which selects
+  // container components (Card, Stack) appropriate for multi-field tabs.
   let dominant: string | undefined;
   let maxCount = 0;
   for (const [cat, count] of Object.entries(categories)) {
@@ -468,13 +475,27 @@ function inferSlotIntentFromFields(
     }
   }
 
-  // Map category to intent
+  const totalFields = fieldNames.length;
+  const dominanceRatio = totalFields > 0 ? maxCount / totalFields : 0;
+
+  // Require >50% dominance for leaf-level intents (status-indicator, metrics-display).
+  // These intents select leaf components (Badge, StatusBadge) which are wrong for
+  // multi-field tab containers. Container-safe intents (metadata-display) have a
+  // lower threshold since they prefer Stack/Text which work as containers.
   switch (dominant) {
-    case 'status': return 'status-indicator';
-    case 'metrics': return 'metrics-display';
-    case 'temporal': return 'metadata-display';
-    case 'metadata': return 'metadata-display';
-    default: return undefined; // Keep 'data-display' default
+    case 'status':
+      return dominanceRatio > 0.5 ? 'status-indicator' : undefined;
+    case 'metrics':
+      // Even with dominance, multi-field groups are containers — use data-display
+      // which prefers Card/Stack. Only single-field slots get metrics-display.
+      if (totalFields <= 2 && dominanceRatio > 0.5) return 'metrics-display';
+      return undefined;
+    case 'temporal':
+      return dominanceRatio > 0.3 ? 'metadata-display' : undefined;
+    case 'metadata':
+      return dominanceRatio > 0.3 ? 'metadata-display' : undefined;
+    default:
+      return undefined;
   }
 }
 

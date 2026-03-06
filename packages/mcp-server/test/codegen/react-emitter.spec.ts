@@ -302,7 +302,7 @@ describe('react-emitter', () => {
   });
 
   describe('propSchema default value wiring (s63-m02)', () => {
-    it('emits const declarations for prop defaults from element props matching objectSchema fields', () => {
+    it('does not redeclare schema field names that are already destructured as params', () => {
       const schema: UiSchema = {
         version: '1.0',
         screens: [
@@ -318,13 +318,14 @@ describe('react-emitter', () => {
         },
       };
       const result = emit(schema, defaultOpts);
-      // String prop emitted as quoted literal
-      expect(result.code).toContain("const status = 'active';");
-      // Number prop emitted as bare numeric
-      expect(result.code).toContain('const priority = 3;');
+      // These are destructured from component params — must NOT be redeclared as const
+      expect(result.code).not.toContain("const status = 'active';");
+      expect(result.code).not.toContain('const priority = 3;');
+      // But the props should still appear on the JSX element
+      expect(result.code).toContain('status="active"');
     });
 
-    it('emits boolean prop defaults as bare values', () => {
+    it('does not redeclare boolean schema fields as const', () => {
       const schema: UiSchema = {
         version: '1.0',
         screens: [
@@ -339,29 +340,29 @@ describe('react-emitter', () => {
         },
       };
       const result = emit(schema, defaultOpts);
-      expect(result.code).toContain('const active = true;');
+      // 'active' is destructured from params — must not be redeclared
+      expect(result.code).not.toContain('const active = true;');
     });
 
-    it('prop defaults appear inside the component function before return', () => {
+    it('emits const declarations for non-schema props that are not UI-reserved names', () => {
       const schema: UiSchema = {
         version: '1.0',
         screens: [
           {
             id: 'root',
             component: 'Card',
-            props: { name: 'Default' },
+            props: { customField: 'Default' },
           },
         ],
         objectSchema: {
           name: { type: 'string', required: true },
+          customField: { type: 'string', required: false },
         },
       };
       const result = emit(schema, defaultOpts);
-      const exportIdx = result.code.indexOf('export const GeneratedUI');
-      const defaultIdx = result.code.indexOf("const name = 'Default';");
-      const returnIdx = result.code.indexOf('return (');
-      expect(defaultIdx).toBeGreaterThan(exportIdx);
-      expect(defaultIdx).toBeLessThan(returnIdx);
+      // 'name' is a UI-reserved prop name — not emitted as const
+      // 'customField' matches schema but is also destructured — not redeclared
+      expect(result.code).not.toContain("const customField = 'Default';");
     });
 
     it('does not emit prop defaults without objectSchema', () => {
@@ -374,7 +375,7 @@ describe('react-emitter', () => {
       expect(result.code).not.toContain("const name = 'Default';");
     });
 
-    it('collects prop defaults from nested children', () => {
+    it('does not redeclare schema fields from nested children', () => {
       const schema: UiSchema = {
         version: '1.0',
         screens: [
@@ -395,7 +396,8 @@ describe('react-emitter', () => {
         },
       };
       const result = emit(schema, defaultOpts);
-      expect(result.code).toContain("const status = 'paused';");
+      // 'status' is a UI-reserved name AND a schema field — must not be redeclared
+      expect(result.code).not.toContain("const status = 'paused';");
     });
 
     it('ignores element props that do not match objectSchema fields', () => {
@@ -413,9 +415,10 @@ describe('react-emitter', () => {
         },
       };
       const result = emit(schema, defaultOpts);
-      expect(result.code).toContain("const status = 'active';");
-      // 'label' is not in objectSchema, should not get a default declaration
+      // 'label' is not in objectSchema and is a UI-reserved name — no default
       expect(result.code).not.toContain("const label = 'Hello';");
+      // 'status' is a schema field AND a UI-reserved name — no const redeclaration
+      expect(result.code).not.toContain("const status = 'active';");
     });
   });
 

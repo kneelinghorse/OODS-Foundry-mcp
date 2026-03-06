@@ -175,6 +175,102 @@
       "approval": "optional",
       "allow": ["designer", "maintainer"],
       "ratePerMinute": 20
+    },
+    {
+      "name": "health",
+      "description": "MCP server readiness and subsystem status",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 30
+    },
+    {
+      "name": "object.list",
+      "description": "List OODS objects with optional filtering",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "object.show",
+      "description": "Show full OODS object definition including traits and view extensions",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "schema.save",
+      "description": "Persist a composed UiSchema by name from schemaRef",
+      "modes": ["dry-run", "apply"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "schema.load",
+      "description": "Load a previously saved schema by name",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "schema.list",
+      "description": "List saved schema metadata with optional filtering",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "schema.delete",
+      "description": "Delete a saved schema by name",
+      "modes": ["dry-run", "apply"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 12
+    },
+    {
+      "name": "map.create",
+      "description": "Create component-to-trait mapping between external design system and OODS",
+      "modes": ["dry-run", "apply"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "map.list",
+      "description": "List component-to-trait mappings with optional filtering",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "map.resolve",
+      "description": "Resolve external component to OODS trait mapping with property translations",
+      "modes": ["dry-run"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "map.update",
+      "description": "Update an existing component-to-trait mapping by ID",
+      "modes": ["dry-run", "apply"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 20
+    },
+    {
+      "name": "map.delete",
+      "description": "Delete a component-to-trait mapping by ID",
+      "modes": ["dry-run", "apply"],
+      "approval": "optional",
+      "allow": ["designer", "maintainer"],
+      "ratePerMinute": 12
     }
   ],
   "connectors": [
@@ -184,6 +280,7 @@
       "role": "designer",
       "defaultMode": "dry-run",
       "tools": [
+        "health",
         "diag.snapshot",
         "reviewKit.create",
         "brand.apply",
@@ -196,7 +293,18 @@
         "code.generate",
         "design.compose",
         "pipeline",
-        "viz.compose"
+        "viz.compose",
+        "object.list",
+        "object.show",
+        "schema.save",
+        "schema.load",
+        "schema.list",
+        "schema.delete",
+        "map.create",
+        "map.list",
+        "map.resolve",
+        "map.update",
+        "map.delete"
       ],
       "notes": "Apply requests must include the approval header value defined above."
     },
@@ -205,7 +313,7 @@
       "provider": "openai",
       "role": "designer",
       "defaultMode": "dry-run",
-      "tools": ["diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render", "catalog.list", "code.generate", "design.compose", "pipeline", "viz.compose"],
+      "tools": ["health", "diag.snapshot", "brand.apply", "reviewKit.create", "structuredData.fetch", "repl.validate", "repl.render", "catalog.list", "code.generate", "design.compose", "pipeline", "viz.compose", "object.list", "object.show", "schema.save", "schema.load", "schema.list", "schema.delete", "map.create", "map.list", "map.resolve", "map.update", "map.delete"],
       "notes": "Apply requires approval token and is rate limited to prevent context overrun."
     }
   ]
