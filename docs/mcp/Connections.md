@@ -60,21 +60,21 @@ Copy the config from `configs/agents/cursor.stdio-mcp.json` into `.cursor/mcp.js
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `MCP_TOOLSET` | `default` | `default` = 11 auto tools; `all` = all 20 tools |
+| `MCP_TOOLSET` | `default` | `default` = 22 auto tools; `all` = all 31 tools |
 | `MCP_EXTRA_TOOLS` | (none) | Comma-separated on-demand tools (e.g., `a11y.scan,vrt.run`) |
 | `MCP_ROLE` | `designer` | Role for policy enforcement (`designer` or `maintainer`) |
 | `OODS_NODE_PATH` | `process.execPath` | Override the Node binary for spawning the native server |
 
 ### Adapter Features
 
-- 20 tools with human-readable descriptions and typed JSON Schema input parameters
+- 31 tools with human-readable descriptions and typed JSON Schema input parameters
 - MCP annotations (readOnlyHint, destructiveHint) derived from server policy
 - Dynamic tool registration from server registry.json — zero adapter changes for new tools
 - Structured error messages with actionable fix guidance for server spawn failures
 
 ### Fresh-Install Smoke Check
 
-The fresh-install smoke check installs the adapter into a clean temp directory (outside the workspace) and confirms `tools/list` returns all 20 tools. This catches phantom dependencies and hardcoded path regressions.
+The fresh-install smoke check installs the adapter into a clean temp directory (outside the workspace) and confirms `tools/list` returns the full enabled tool surface. With `MCP_TOOLSET=all`, that is currently 31 tools. This catches phantom dependencies and hardcoded path regressions.
 
 Run it locally:
 
@@ -91,8 +91,11 @@ Set `KEEP_FRESH_INSTALL=1` to preserve the temp directory for debugging.
 For clients that only support HTTP transport (OpenAI Agents, custom integrations), use the HTTP bridge:
 
 ```bash
-# Start the bridge (spawns the server subprocess automatically)
+# Start the bridge with the default 22 auto tools
 pnpm --filter @oods/mcp-bridge run dev
+
+# Example: add an on-demand diagnostic tool without enabling everything
+MCP_EXTRA_TOOLS=diag.snapshot pnpm --filter @oods/mcp-bridge run dev
 ```
 
 The bridge defaults to port `4466`. Set `MCP_BRIDGE_PORT=<port>` to change it. Optional: export `BRIDGE_TOKEN` to enforce the `X-Bridge-Token` header.
@@ -128,6 +131,8 @@ Key points:
 - Function tool definition: `diag_snapshot` (maps to internal MCP tool `diag.snapshot`)
 - Request template: `POST /run` with `{"tool":"diag_snapshot","input":{"apply":false}}`
 
+Because `diag.snapshot` is on-demand, start the bridge with `MCP_EXTRA_TOOLS=diag.snapshot` or `MCP_TOOLSET=all` before using this profile.
+
 Integrate it by:
 
 1. Loading the JSON and registering the function schema with the Responses/Agents API.
@@ -162,6 +167,8 @@ Behaviour:
 - Reads `BRIDGE_URL`, `BRIDGE_TOKEN`, and `BRIDGE_APPROVAL` (defaults: `http://127.0.0.1:4466`, no token, no approval).
 - Checks `/health`, lists tools, then runs `diag.snapshot` with `apply:false`.
 - Prints artifact paths, bundle index, and diagnostics summary to verify the toolchain.
+
+If you keep the default 22-tool bridge surface, either start the bridge with `MCP_EXTRA_TOOLS=diag.snapshot` or run the harness against a default tool with `--tool structuredData_fetch`.
 
 When the bridge picks an ephemeral port, start the harness with `BRIDGE_URL=http://127.0.0.1:<actualPort> pnpm --filter @oods/agents-smoke run`.
 `diag.snapshot` can take up to two minutes to collect diagnostics; extend the wait with `BRIDGE_TIMEOUT=120000` (default) or higher if your environment is slower.

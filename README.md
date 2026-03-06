@@ -13,7 +13,7 @@ Design system Storybook: https://kneelinghorse.github.io/OODS-Foundry/
 
 - Query structured exports of the design system (components, traits, objects, tokens).
 - Use `structuredData.fetch` for raw datasets and `catalog.list` for an agent-friendly component catalog.
-- Current inventory (structured-data version `2026-02-24`): **73 components**, **35 traits**, **12 objects**.
+- Current inventory (`structuredData.fetch`, version `2026-03-06`): **101 components**, **41 traits**, **12 objects**.
 
 ### 2) Validate (schema checking + accessibility)
 
@@ -30,14 +30,17 @@ Design system Storybook: https://kneelinghorse.github.io/OODS-Foundry/
 ### 4) Compose (intent-driven UI generation)
 
 - Describe what you want in natural language and get a valid UiSchema back.
-- Use `design.compose` with layout templates (dashboard, form, detail, list) and a deterministic component selection engine with 13 intent mappings.
+- Use `design.compose` for general UI, `viz.compose` for chart schemas, and `pipeline` when you want compose → validate → render → code generation in one call.
+- `schemaRef` values returned by `design.compose`, `viz.compose`, `pipeline`, and `schema.load` expire after 30 minutes unless you persist them with `schema.save`.
 - Auto-validates generated schemas via `repl.validate`.
 
-### 5) Export (code generation + mapping)
+### 5) Export + interoperate
 
 - Generate framework-specific code from validated schemas.
 - Use `code.generate` for React/TSX, Vue SFC, or standalone HTML output.
-- Use `map.create`, `map.list`, and `map.resolve` to map external design system components (Material UI, Ant Design, etc.) to OODS traits with prop translations and coercion strategies.
+- Use the `map.*` tools (`create`, `list`, `resolve`, `update`, `delete`) to map external design system components (Material UI, Ant Design, etc.) to OODS traits with prop translations and coercion strategies.
+- Use `schema.save`, `schema.load`, `schema.list`, and `schema.delete` to persist and reuse schema work across sessions.
+- Use `object.list`, `object.show`, and `health` to inspect object definitions and live server readiness.
 
 ## Two repos, two roles
 
@@ -62,23 +65,25 @@ Design system Storybook: https://kneelinghorse.github.io/OODS-Foundry/
    ```
 5. Connect an MCP client (Cursor/Claude/Desktop/etc) using `docs/mcp/Connections.md`.
 
-## MCP tool surface (20 tools)
+## Cross-tool semantics
 
-**Auto-registered (11 tools)** — available by default:
+- `schemaRef` TTL: refs returned by `design.compose`, `viz.compose`, `pipeline`, and `schema.load` last 30 minutes. Persist them with `schema.save` when the workflow spans sessions or multiple review loops.
+- `apply`: write-capable tools default to dry-run/preview behavior. Set `apply: true` only when you want artifacts written or heavy outputs returned. For `repl.render`, HTML/fragments are returned only when `apply: true`.
+- `compact`: `pipeline` defaults to compact render output and returns `tokenCssRef` instead of inlining token CSS. `repl.render` keeps full token CSS by default; opt into compact behavior with `output.compact: true`.
+- Trait names: `catalog.list` and `map.*` use canonical structured-data trait names such as `Stateful` or `Priceable`. `object.list` accepts full or suffix-matched namespaced object traits such as `lifecycle/Stateful` or `Stateful`. `viz.compose` explicit traits use hyphenated viz IDs such as `mark-bar` and `encoding-position-x`.
 
-| Tool | Purpose |
-|------|---------|
-| `tokens.build` | Build token artifacts |
-| `structuredData.fetch` | Read structured data registry (with versioned access) |
-| `repl.validate` | Validate UiSchema trees (with optional WCAG a11y checks) |
-| `repl.render` | Render UiSchema to HTML (document or fragment mode) |
-| `brand.apply` | Apply governed brand token overlays |
-| `catalog.list` | List component catalog entries |
-| `code.generate` | Generate React/Vue/HTML from validated schemas |
-| `design.compose` | Generate UiSchema from natural-language intent |
-| `map.create` | Create external component-to-trait mappings |
-| `map.list` | List component-to-trait mappings |
-| `map.resolve` | Resolve an external component to OODS traits |
+## MCP tool surface (31 tools)
+
+Registry source of truth: `packages/mcp-server/src/tools/registry.json`.
+
+**Auto-registered (22 tools)** — available by default:
+
+| Group | Tools |
+|------|-------|
+| Core design/runtime | `tokens.build`, `structuredData.fetch`, `repl.validate`, `repl.render`, `brand.apply`, `catalog.list`, `health` |
+| Composition + generation | `design.compose`, `viz.compose`, `pipeline`, `code.generate` |
+| Mapping + schema persistence | `map.create`, `map.list`, `map.resolve`, `map.update`, `map.delete`, `schema.save`, `schema.load`, `schema.list`, `schema.delete` |
+| Registry inspection | `object.list`, `object.show` |
 
 **On-demand (9 tools)** — enable with `MCP_TOOLSET=all` or `MCP_EXTRA_TOOLS=...`:
 
@@ -94,7 +99,7 @@ Design system Storybook: https://kneelinghorse.github.io/OODS-Foundry/
 | `release.verify` | Package reproducibility verification (maintainer only) |
 | `release.tag` | Git tag creation (maintainer only) |
 
-Full contracts: `docs/mcp/Tool-Specs.md`
+Full contracts: `docs/mcp/Tool-Specs.md` and `docs/api/README.md`
 
 ## Repo layout (agent-first)
 

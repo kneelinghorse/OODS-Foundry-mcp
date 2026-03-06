@@ -128,6 +128,47 @@ describe('fillSlotsWithObject — position heuristics', () => {
     expect(metaPlacement).toBeDefined();
     expect(metaPlacement!.components).toContain('FilterPanel');
   });
+
+  it('respects explicit target slots for projected dashboard entries', () => {
+    resetIdCounter();
+    const template = dashboardTemplate({});
+    const projectedPlan: SlotPlan[] = [
+      {
+        component: 'CycleProgressCard',
+        sourceTrait: 'financial/Billable',
+        position: 'main',
+        targetSlot: 'metrics',
+        priority: 70,
+        props: { progressField: 'current_period_progress' },
+      },
+      {
+        component: 'PaymentTimeline',
+        sourceTrait: 'financial/Billable',
+        position: 'main',
+        targetSlot: 'main-content',
+        priority: 60,
+        props: { lastPaymentField: 'last_payment_at' },
+      },
+      {
+        component: 'StatusBadge',
+        sourceTrait: 'lifecycle/Stateful',
+        position: 'before',
+        targetSlot: 'sidebar',
+        priority: 0,
+        props: { field: 'status' },
+      },
+    ];
+
+    const result = fillSlotsWithObject(template, projectedPlan, catalog);
+
+    expect(result.warnings).toEqual([]);
+    expect(result.placements.find((p) => p.slotName === 'metrics')?.components)
+      .toContain('CycleProgressCard');
+    expect(result.placements.find((p) => p.slotName === 'main-content')?.components)
+      .toContain('PaymentTimeline');
+    expect(result.placements.find((p) => p.slotName === 'sidebar')?.components)
+      .toContain('StatusBadge');
+  });
 });
 
 /* ------------------------------------------------------------------ */

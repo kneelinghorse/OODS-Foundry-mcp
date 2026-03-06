@@ -40,8 +40,8 @@ interface PositionProfile {
 const COMPONENT_POSITION_MAP: Record<string, PositionProfile> = {
   // Search-like components → header/sidebar
   SearchInput: { boost: ['header', 'sidebar'], penalty: ['footer', 'tab'] },
-  Input: { boost: ['header', 'sidebar', 'main'], penalty: ['footer'] },
-  Select: { boost: ['header', 'sidebar'], penalty: ['footer'] },
+  Input: { boost: ['header', 'sidebar'], penalty: ['footer'] },
+  Select: { boost: ['header', 'sidebar', 'main', 'tab'], penalty: ['footer'] },
   FilterPanel: { boost: ['header', 'sidebar'], penalty: ['footer', 'tab'] },
 
   // Pagination → footer
@@ -81,6 +81,7 @@ const COMPONENT_POSITION_MAP: Record<string, PositionProfile> = {
   // Form components → main/tab
   Toggle: { boost: ['main', 'tab'], penalty: ['header', 'footer'] },
   Checkbox: { boost: ['main', 'tab'], penalty: ['header', 'footer'] },
+  Textarea: { boost: ['main', 'tab'], penalty: ['header', 'footer'] },
   DatePicker: { boost: ['main', 'tab', 'header'], penalty: ['footer'] },
 };
 

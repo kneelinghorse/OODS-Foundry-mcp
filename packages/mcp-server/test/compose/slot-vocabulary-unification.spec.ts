@@ -36,4 +36,28 @@ describe('slot vocabulary unification', () => {
     expect(components).toContain('SearchInput');
     expect(components).toContain('Button');
   });
+
+  it('maps Subscription list secondary billing placement without OODS-V120 warnings', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'list',
+      layout: 'list',
+      options: { validate: false },
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.warnings.filter((warning) => warning.code === 'OODS-V120')).toHaveLength(0);
+    const toolbarSelection = result.selections.find(
+      (selection) => selection.slotName === 'toolbar-actions',
+    );
+
+    expect(toolbarSelection?.selectedComponent).toBe('Button');
+    expect(toolbarSelection?.candidates.map((candidate) => candidate.name)).toContain('PriceBadge');
+
+    const components = collectComponents(result.schema);
+    expect(components).toContain('Button');
+    expect(components).toContain('PriceBadge');
+    expect(components).toContain('StatusBadge');
+    expect(components).toContain('RelativeTimestamp');
+  });
 });

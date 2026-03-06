@@ -236,7 +236,7 @@ export function fillSlotsWithObject(
   const otherEntries: SlotPlan[] = [];
 
   for (const entry of slotPlan) {
-    if (entry.position === 'main' && tabSlots.length > 0) {
+    if (!entry.targetSlot && entry.position === 'main' && tabSlots.length > 0) {
       mainEntries.push(entry);
     } else {
       otherEntries.push(entry);
@@ -278,10 +278,15 @@ export function fillSlotsWithObject(
 
   // Place other (non-main) entries by position heuristic
   for (const entry of otherEntries) {
-    const targetSlot = matchPositionToSlot(entry.position, slotSet);
+    const targetSlot = entry.targetSlot
+      ? (slotSet.has(entry.targetSlot) ? entry.targetSlot : undefined)
+      : matchPositionToSlot(entry.position, slotSet);
     if (!targetSlot) {
+      const targetDescription = entry.targetSlot
+        ? `slot "${entry.targetSlot}"`
+        : `position "${entry.position}"`;
       warnings.push(
-        `No matching slot for position "${entry.position}" from ${entry.sourceTrait}/${entry.component}.`,
+        `No matching slot for ${targetDescription} from ${entry.sourceTrait}/${entry.component}.`,
       );
       continue;
     }

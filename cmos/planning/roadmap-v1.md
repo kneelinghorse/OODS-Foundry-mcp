@@ -51,18 +51,18 @@
 
 | Item | Latest evidence | Notes |
 |------|-----------------|-------|
-| Form field differentiation latest-dist score refresh | Not re-scored in the Sprint 76 targeted retest | Keep on the watchlist until the latest dist explicitly revalidates field-type specialization quality |
-| Dashboard object view extension depth | Latest Sprint 76 retest removed incidental object attachment, but did not add richer object-backed dashboard extensions | Still a quality-depth gap, not a runtime blocker |
-| Toolbar/secondary placement semantics beyond current list cases | Sprint 76 validated the `User` list path | Broader layout-specific placement polish can now be treated as refinement work |
+| Form field differentiation latest-dist score refresh | `s77-m02` latest-dist validation now confirms `enum-input` → `Select`, `boolean-input` → `Checkbox`, `date-input` → `DatePicker`, and `long-text-input` → `Textarea` on the representative `Subscription` form path | Watchlist narrowed to planned billing form widgets that still emit `OODS-V120`; see `cmos/reports/s77-m02-form-differentiation-revalidation-2026-03-06.md` |
+| Dashboard object view extension depth | Closed by `s77-m01`: source tests + latest-dist validation now project `PriceSummary`, `StatusTimeline`, `StatusBadge`, and `CancellationSummary` for the representative `Subscription` dashboard path without `OODS-V119` | See `cmos/reports/s77-m01-object-dashboard-depth-2026-03-06.md` |
+| Toolbar/secondary placement semantics beyond current list cases | Closed by `s77-m03`: `Subscription` list now emits no `OODS-V120` on source or latest dist while retaining `Button` as the primary toolbar control and `PriceBadge` as colocated secondary summary content | Expanded placement coverage now includes explicit target-slot detail behavior plus dashboard projection evidence; see `cmos/reports/s77-m03-placement-semantics-expansion-2026-03-06.md` |
 
 ### P2 — Platform Polish
 
 | Item | Notes |
 |------|-------|
-| SchemaRef TTL documentation | TTL is visible in responses but still under-documented |
-| `apply` pattern consistency | Persistence/output semantics still vary across tools |
-| Compact mode outside pipeline | `repl.render` and `code.generate` still lag pipeline compact ergonomics |
-| Trait-name format docs for mapping | Namespace expectations are still easy to miss |
+| SchemaRef TTL documentation | Closed by `s77-m04`: README + MCP docs now document the 30-minute TTL and the `schema.save` / `schema.load` persistence path; see `cmos/reports/s77-m04-docs-tool-surface-alignment-2026-03-06.md` |
+| `apply` pattern consistency | Documentation gap closed by `s77-m04`: README + MCP docs now explain per-tool apply behavior, including apply-gated `repl.render` output; runtime ergonomics still vary by tool family |
+| Compact mode outside pipeline | Documentation gap closed by `s77-m04`: docs now distinguish `pipeline` compact-by-default behavior from `repl.render` opt-in compact mode; runtime ergonomics still differ |
+| Trait-name format docs for mapping | Closed by `s77-m04`: README + MCP docs now distinguish structured-data trait names, namespaced object traits, and viz trait ids; see `cmos/reports/s77-m04-docs-tool-surface-alignment-2026-03-06.md` |
 
 ## Score Snapshot
 
@@ -74,14 +74,15 @@
 | Pipeline & Persistence | 15 | 14 | Artifact apply paths now reliable |
 | Error Handling & DX | 10 | 10 | Better metadata and fewer trust-breaking runtime surprises |
 | Visualization | 10 | 9 | Latest-dist viz path validates cleanly |
-| Documentation & Discoverability | 5 | 4 | Retest docs updated; broader docs alignment still open |
-| **Total** | **100** | **84** | |
+| Documentation & Discoverability | 5 | 5 | README + core MCP docs now align to the live 31-tool surface and current cross-tool semantics |
+| **Total** | **100** | **85** | |
 
 ## Latest Reports
 
 | Date | Agent | Score | Scope | Report |
 |------|-------|-------|-------|--------|
 | 2026-03-06 | Codex GPT-5 | 84/100 | Sprint 76 latest-dist retest | `cmos/reports/s76-retest-latest-dist.md` |
+| 2026-03-06 | Codex GPT-5 | Docs aligned | README + MCP tool-surface alignment | `cmos/reports/s77-m04-docs-tool-surface-alignment-2026-03-06.md` |
 | 2026-03-06 | Codex GPT-5 | 75/100 | Sprint 75 latest-dist retest | `cmos/reports/s75-m05-latest-dist-retest-2026-03-06.md` |
 | 2026-03-06 | Codex GPT-5 | 6.5/10 UX | Full user test | `cmos/reports/oods-foundry-mcp-full-user-test-2026-03-06-codex.md` |
 | 2026-03-05 | Claude Opus 4.6 | 68/100 | E2E retest | `cmos/reports/oods-foundry-mcp-e2e-retest-2026-03-05.md` |
