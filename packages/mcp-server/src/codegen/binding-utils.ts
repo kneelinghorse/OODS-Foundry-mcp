@@ -142,8 +142,19 @@ export function formatPropValue(
 }
 
 /**
- * Collect prop default values from UiElements that have both a `props.field`
- * matching an objectSchema field and a default value on the element's props.
+ * Well-known UI prop names that should NOT be treated as schema field defaults.
+ * These are generic component props (label text, placeholder text, etc.) that
+ * may coincidentally share names with schema fields.
+ */
+const UI_PROP_NAMES = new Set([
+  'label', 'placeholder', 'title', 'description', 'name', 'type', 'value',
+  'disabled', 'required', 'options', 'variant', 'size', 'icon', 'status',
+]);
+
+/**
+ * Collect prop default values from UiElements that have an explicit `props.field`
+ * binding to an objectSchema field. Only the field's own value props are captured,
+ * not generic UI props that coincidentally share names with schema fields.
  * Returns a map of camelCase prop name → formatted value.
  */
 export function collectPropDefaults(
@@ -158,8 +169,11 @@ export function collectPropDefaults(
     const node = stack.pop()!;
     if (node.props && typeof node.props === 'object') {
       const props = node.props as Record<string, unknown>;
-      // Check each prop key — if it matches a schema field, capture the value
       for (const [key, value] of Object.entries(props)) {
+        // Skip well-known UI props — these are component display props, not field defaults
+        if (UI_PROP_NAMES.has(key)) continue;
+        // Skip 'field' itself — it's a binding reference, not a value
+        if (key === 'field') continue;
         if (schemaFields.has(key) && value !== undefined && !defaults.has(snakeToCamel(key))) {
           defaults.set(snakeToCamel(key), formatPropValue(value, key, objectSchema));
         }
@@ -286,15 +300,22 @@ export function resolveChildContent(
   if (strategy === 'none') return null;
 
   const fieldName = snakeToCamel(fieldProp);
+  const existing = (node.props as Record<string, unknown>) ?? {};
 
   switch (strategy) {
     case 'children':
       return { strategy, fieldName, isChildren: true };
     case 'value-prop':
+      // Don't override an explicitly set value prop
+      if (existing.value !== undefined) return null;
       return { strategy, fieldName, propName: 'value', isChildren: false };
     case 'label-prop':
+      // Don't override an explicitly set label prop
+      if (existing.label !== undefined) return null;
       return { strategy, fieldName, propName: 'label', isChildren: false };
     case 'status-prop':
+      // Don't override an explicitly set status prop
+      if (existing.status !== undefined) return null;
       return { strategy, fieldName, propName: 'status', isChildren: false };
     default:
       return null;

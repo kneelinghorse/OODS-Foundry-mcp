@@ -149,8 +149,8 @@ const INTENT_MAP: Record<string, IntentSignals> = {
     regions: ['main', 'list'],
   },
   'metrics-display': {
-    preferredComponents: ['Card', 'Badge', 'Text'],
-    tags: ['container', 'surface', 'status'],
+    preferredComponents: ['Card', 'Text', 'Stack'],
+    tags: ['container', 'surface', 'data'],
     contexts: ['card', 'detail'],
     regions: ['card', 'main'],
   },
@@ -186,7 +186,7 @@ const INTENT_MAP: Record<string, IntentSignals> = {
     regions: ['actions'],
   },
   'metadata-display': {
-    preferredComponents: ['Stack', 'Text', 'Badge'],
+    preferredComponents: ['Stack', 'Text', 'Card'],
     tags: ['metadata', 'summary'],
     contexts: ['detail'],
     regions: ['detail', 'contextPanel'],

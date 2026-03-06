@@ -179,7 +179,7 @@ describe('vue-emitter — typed defineProps (s63-m03)', () => {
 });
 
 describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
-  it('emits const declarations for prop defaults from element props matching objectSchema fields', () => {
+  it('does not redeclare schema field names already declared via defineProps or ref()', () => {
     const schema: UiSchema = {
       version: '1.0',
       screens: [
@@ -195,11 +195,14 @@ describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
       },
     };
     const result = emit(schema, defaultOpts);
-    expect(result.code).toContain("const status = 'active';");
-    expect(result.code).toContain('const priority = 3;');
+    // These are declared via defineProps or ref() — must NOT be redeclared as const
+    expect(result.code).not.toContain("const status = 'active';");
+    expect(result.code).not.toContain('const priority = 3;');
+    // But the props should still appear on the template element
+    expect(result.code).toContain('status="active"');
   });
 
-  it('emits boolean prop defaults as bare values', () => {
+  it('does not redeclare boolean schema fields as const', () => {
     const schema: UiSchema = {
       version: '1.0',
       screens: [
@@ -214,10 +217,11 @@ describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
       },
     };
     const result = emit(schema, defaultOpts);
-    expect(result.code).toContain('const active = true;');
+    // 'active' is declared via ref() — must not be redeclared
+    expect(result.code).not.toContain('const active = true;');
   });
 
-  it('prop defaults appear inside script setup block', () => {
+  it('does not redeclare schema fields in script setup', () => {
     const schema: UiSchema = {
       version: '1.0',
       screens: [
@@ -232,11 +236,8 @@ describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
       },
     };
     const result = emit(schema, defaultOpts);
-    const scriptStart = result.code.indexOf('<script setup');
-    const defaultIdx = result.code.indexOf("const name = 'Default';");
-    const scriptEnd = result.code.indexOf('</script>');
-    expect(defaultIdx).toBeGreaterThan(scriptStart);
-    expect(defaultIdx).toBeLessThan(scriptEnd);
+    // 'name' is a UI-reserved prop name AND a schema field — no const redeclaration
+    expect(result.code).not.toContain("const name = 'Default';");
   });
 
   it('does not emit prop defaults without objectSchema', () => {
@@ -249,7 +250,7 @@ describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
     expect(result.code).not.toContain("const name = 'Default';");
   });
 
-  it('collects prop defaults from nested children', () => {
+  it('does not redeclare schema fields from nested children', () => {
     const schema: UiSchema = {
       version: '1.0',
       screens: [
@@ -270,7 +271,8 @@ describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
       },
     };
     const result = emit(schema, defaultOpts);
-    expect(result.code).toContain("const status = 'paused';");
+    // 'status' is a UI-reserved name AND a schema field — must not be redeclared
+    expect(result.code).not.toContain("const status = 'paused';");
   });
 
   it('ignores element props that do not match objectSchema fields', () => {
@@ -288,8 +290,10 @@ describe('vue-emitter — propSchema default value wiring (s63-m02)', () => {
       },
     };
     const result = emit(schema, defaultOpts);
-    expect(result.code).toContain("const status = 'active';");
+    // 'label' is not in objectSchema and is a UI-reserved name — no default
     expect(result.code).not.toContain("const label = 'Hello';");
+    // 'status' is a schema field AND a UI-reserved name — no const redeclaration
+    expect(result.code).not.toContain("const status = 'active';");
   });
 });
 

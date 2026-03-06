@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-06T06:41:04.536Z",
+  "updatedAt": "2026-03-06T15:44:50.252Z",
   "schemas": [
     {
       "name": "tier1-acceptance-sub-detail",
@@ -13,11 +13,11 @@
     },
     {
       "name": "test-tagged-schema",
-      "schemaRef": "compose-08265803",
+      "schemaRef": "compose-a9757628",
       "object": "Product",
-      "version": 21,
+      "version": 30,
       "createdAt": "2026-03-05T23:29:45.932Z",
-      "updatedAt": "2026-03-06T06:41:04.501Z",
+      "updatedAt": "2026-03-06T15:44:50.235Z",
       "tags": [
         "test",
         "sprint74"

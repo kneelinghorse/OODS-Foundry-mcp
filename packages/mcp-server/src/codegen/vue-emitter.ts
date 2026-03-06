@@ -341,8 +341,44 @@ function emitTemplateNode(
       if (fieldContent.isChildren) {
         return `<${tag}${attrs}>{{ ${fieldContent.fieldName} }}</${tag}>`;
       }
+      // Rebuild attrs without the conflicting static prop
+      // to avoid emitting both prop="static" and :prop="dynamic"
+      let cleanAttrs = attrs;
+      if (fieldContent.propName && propsObject?.[fieldContent.propName] !== undefined) {
+        delete propsObject[fieldContent.propName];
+        const rebuiltAttrParts: string[] = [];
+        rebuiltAttrParts.push(`id="${node.id}"`);
+        rebuiltAttrParts.push(`data-oods-component="${tag}"`);
+        if (node.layout?.type) rebuiltAttrParts.push(`data-layout="${node.layout.type}"`);
+        if (propsObject) {
+          const propsStr = propsToVueAttrs(propsObject, options.styling === 'tailwind');
+          if (propsStr) rebuiltAttrParts.push(propsStr);
+        }
+        if (FORM_INPUT_COMPONENTS.has(tag) && propsObject?.field && typeof propsObject.field === 'string') {
+          const fieldName = snakeToCamel(propsObject.field as string);
+          rebuiltAttrParts.push(`v-model="${fieldName}"`);
+        }
+        if (node.bindings && typeof node.bindings === 'object') {
+          for (const [eventKey, handlerName] of Object.entries(node.bindings).sort(([a], [b]) => a.localeCompare(b))) {
+            const vueEvent = eventKey.replace(/^on([A-Z])/, (_, c: string) => c.toLowerCase());
+            rebuiltAttrParts.push(`@${vueEvent}="${handlerName}"`);
+          }
+        }
+        if (options.styling === 'tailwind') {
+          const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
+          const baseClasses = buildTailwindStaticClasses(node, computedStyle, { includeVariantFallback: !tailwindVariant });
+          const responsive = responsiveLayoutClasses(node.layout);
+          const staticClasses = responsive ? `${baseClasses} ${responsive}`.trim() : baseClasses;
+          const classAttr = buildVueClassAttr(staticClasses, variantExpression);
+          if (classAttr) rebuiltAttrParts.push(classAttr);
+        } else {
+          const inlineStyle = declToInlineStyle(computedStyle);
+          if (inlineStyle) rebuiltAttrParts.push(`style="${inlineStyle}"`);
+        }
+        cleanAttrs = rebuiltAttrParts.length > 0 ? ` ${rebuiltAttrParts.join(' ')}` : '';
+      }
       const propAttr = `:${fieldContent.propName}="${fieldContent.fieldName}"`;
-      return `<${tag}${attrs} ${propAttr} />`;
+      return `<${tag}${cleanAttrs} ${propAttr} />`;
     }
     return `<${tag}${attrs} />`;
   }
@@ -562,12 +598,15 @@ function buildScriptSetup(
     }
   }
 
-  // Prop default declarations from objectSchema field values on elements
+  // Prop default declarations — skip names already declared as ref() or defineProps
   if (hasObjectSchema && screens) {
+    const declaredNames = new Set(Object.keys(objectSchema!).map(snakeToCamel));
     const propDefaults = collectPropDefaults(screens, objectSchema!);
     if (propDefaults.size > 0) {
-      lines.push('');
+      let emittedAny = false;
       for (const [propName, { formatted, isExpression }] of propDefaults) {
+        if (declaredNames.has(propName)) continue;
+        if (!emittedAny) { lines.push(''); emittedAny = true; }
         const rhs = isExpression ? formatted : `'${formatted.replace(/'/g, "\\'")}'`;
         lines.push(`const ${propName} = ${rhs};`);
       }
