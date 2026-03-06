@@ -10,7 +10,15 @@ export interface RendererSelectionOptions {
 
 export interface RendererSelectionResult {
   readonly renderer: VizRendererId;
-  readonly reason: 'user-preference' | 'spec-preference' | 'layout' | 'data-volume' | 'temporal' | 'default';
+  readonly reason:
+    | 'user-preference'
+    | 'spec-preference'
+    | 'layout'
+    | 'data-volume'
+    | 'temporal'
+    | 'spatial'
+    | 'network-flow'
+    | 'default';
 }
 
 export class RendererSelectionError extends Error {
@@ -33,10 +41,7 @@ export function selectVizRenderer(
     throw new RendererSelectionError('No renderer targets provided.');
   }
 
-  // Handle Network Flow Checking strictly requiring ECharts above any specs
-  const isNetworkFlow = spec.marks && spec.marks.length > 0 && ['sankey', 'force_graph', 'treemap', 'sunburst'].includes(spec.marks[0].type || '');
-  const isMarkNetworkFlow = (spec as any).mark && ['sankey', 'force_graph', 'treemap', 'sunburst'].includes((spec as any).mark.type || '');
-  if (isNetworkFlow || isMarkNetworkFlow) {
+  if (hasNetworkFlowHints(spec)) {
     if (pool.includes('echarts')) {
       return { renderer: 'echarts', reason: 'network-flow' };
     }
@@ -57,14 +62,13 @@ export function selectVizRenderer(
   }
 
   const valuesCount = Array.isArray(spec.data.values) ? spec.data.values.length : 0;
-  const isStreaming = (spec as any).streaming?.enabled;
+  const isStreaming = hasStreamingEnabled(spec);
 
-  // Handle spatial checking
-  const isSpatial = spec.type === 'spatial' || (spec.marks && spec.marks.some(m => m.type && m.type.includes('geoshape')));
-  const portablePriority = (spec as any).portability?.priority;
+  const isSpatial = hasSpatialHints(spec);
+  const portablePriority = getPortabilityPriority(spec);
   if (isSpatial) {
-    if (specPreferred && pool.includes(specPreferred as VizRendererId)) {
-      return { renderer: specPreferred as VizRendererId, reason: 'spatial' };
+    if (specPreferred && pool.includes(specPreferred)) {
+      return { renderer: specPreferred, reason: 'spatial' };
     }
     if (portablePriority === 'high' && pool.includes('vega-lite')) {
       return { renderer: 'vega-lite', reason: 'spatial' };
@@ -134,10 +138,11 @@ function selectLayoutRenderer(spec: NormalizedVizSpec, pool: VizRendererId[]): V
 
   return undefined;
 }
+
 function hasTemporalEncodings(spec: NormalizedVizSpec): boolean {
   const channelMaps = [
     spec.encoding,
-    ...(spec.marks || []).map((mark) => mark.encodings),
+    ...readMarks(spec).map((mark) => mark.encodings),
   ].filter((map): map is NormalizedVizSpec['encoding'] => Boolean(map));
 
   for (const map of channelMaps) {
@@ -155,4 +160,78 @@ function hasTemporalEncodings(spec: NormalizedVizSpec): boolean {
   }
 
   return false;
+}
+
+function hasNetworkFlowHints(spec: NormalizedVizSpec): boolean {
+  return readLegacyMarkTypes(spec).some((markType) => isNetworkFlowMarkType(markType));
+}
+
+function hasSpatialHints(spec: NormalizedVizSpec): boolean {
+  return readSpecType(spec) === 'spatial' || readLegacyMarkTypes(spec).some((markType) => markType.includes('geoshape'));
+}
+
+function hasStreamingEnabled(spec: NormalizedVizSpec): boolean {
+  if (!('streaming' in spec)) {
+    return false;
+  }
+
+  const streaming = spec.streaming;
+  return Boolean(
+    streaming &&
+      typeof streaming === 'object' &&
+      'enabled' in streaming &&
+      streaming.enabled === true
+  );
+}
+
+function getPortabilityPriority(spec: NormalizedVizSpec): string | undefined {
+  const portability = spec.portability as (NormalizedVizSpec['portability'] & { priority?: string }) | undefined;
+  return portability?.priority;
+}
+
+function readSpecType(spec: NormalizedVizSpec): string | undefined {
+  if (!('type' in spec)) {
+    return undefined;
+  }
+
+  return typeof spec.type === 'string' ? spec.type : undefined;
+}
+
+function readLegacyMarkTypes(spec: NormalizedVizSpec): string[] {
+  const markTypes = readMarks(spec)
+    .map((mark) => readLegacyMarkType(mark))
+    .filter((markType): markType is string => typeof markType === 'string');
+
+  if ('mark' in spec) {
+    const singleMarkType = readLooseType(spec.mark);
+    if (singleMarkType) {
+      markTypes.push(singleMarkType);
+    }
+  }
+
+  return markTypes;
+}
+
+function readMarks(spec: NormalizedVizSpec): Array<NormalizedVizSpec['marks'][number]> {
+  if (!('marks' in spec) || !Array.isArray(spec.marks)) {
+    return [];
+  }
+
+  return spec.marks as Array<NormalizedVizSpec['marks'][number]>;
+}
+
+function readLegacyMarkType(mark: NormalizedVizSpec['marks'][number]): string | undefined {
+  return readLooseType(mark);
+}
+
+function readLooseType(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object' || !('type' in value)) {
+    return undefined;
+  }
+
+  return typeof value.type === 'string' ? value.type : undefined;
+}
+
+function isNetworkFlowMarkType(markType: string): boolean {
+  return ['sankey', 'force_graph', 'treemap', 'sunburst'].includes(markType);
 }

@@ -61,10 +61,13 @@ export const UserWithAuthableExample: User = {
   preference_version: preferenceDocument.version,
   preference_namespaces: [...preferenceStore.getNamespaces()],
   preference_mutations: 4,
+  channel_catalog: [],
+  delivery_policies: [],
   membership_records: membershipRecords,
   role_catalog: authableTrait.listRoles(),
   permission_catalog: authableTrait.listPermissions(),
   role_permissions: cloneRolePermissions(AUTHZ_SAMPLE_DATASET.rolePermissions),
   role_hierarchy_edges: authableTrait.listHierarchyEdges(),
   session_roles: [...(sampleUserRecord?.sessionRoles ?? [])],
+  template_catalog: [],
 };

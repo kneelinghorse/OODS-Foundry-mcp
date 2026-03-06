@@ -1,6 +1,6 @@
 {
   "name": "test-tagged-schema",
-  "schemaRef": "compose-1da67296",
+  "schemaRef": "compose-40526e18",
   "schema": {
     "version": "2026.02",
     "screens": [
@@ -57,9 +57,7 @@
                     "props": {
                       "field": "searchQuery",
                       "placeholderParameter": "placeholder",
-                      "clearableParameter": "clearable",
-                      "label": "The current search query string entered by the user.",
-                      "placeholder": "Enter searchQuery"
+                      "clearableParameter": "clearable"
                     }
                   },
                   {
@@ -133,8 +131,7 @@
                           "label": "tab-1"
                         },
                         "props": {
-                          "field": "inventory_status",
-                          "label": "Availability state synchronized with inventory service."
+                          "field": "inventory_status"
                         }
                       }
                     ]
@@ -158,8 +155,7 @@
                           "label": "tab-2"
                         },
                         "props": {
-                          "field": "created_at",
-                          "label": "Timestamp recording when the entity was first created."
+                          "field": "created_at"
                         }
                       }
                     ]
@@ -261,7 +257,7 @@
                     "children": [
                       {
                         "id": "slot-tab-7-23",
-                        "component": "Stack",
+                        "component": "Card",
                         "meta": {
                           "intent": "slot:tab-7",
                           "label": "tab-7"
@@ -571,9 +567,9 @@
     }
   },
   "object": "Product",
-  "version": 5,
+  "version": 8,
   "createdAt": "2026-03-06T04:46:17.426Z",
-  "updatedAt": "2026-03-06T05:04:03.490Z",
+  "updatedAt": "2026-03-06T17:54:20.904Z",
   "tags": [
     "test",
     "sprint74"

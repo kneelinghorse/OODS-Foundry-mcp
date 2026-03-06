@@ -812,6 +812,24 @@ function inferIntentFieldHint(phrase: string): FieldHint {
   return { type: 'string' };
 }
 
+function inferSlotIntentFromFieldHint(hint: FieldHint): string {
+  if (hint.semanticType === 'preferences.toggle' || hint.type === 'boolean') {
+    return 'boolean-input';
+  }
+
+  if (hint.enum && hint.enum.length > 0) {
+    return 'enum-input';
+  }
+
+  if (hint.type === 'datetime' || hint.type === 'date' || hint.semanticType === 'timestamp') {
+    return 'date-input';
+  }
+
+  if (hint.type === 'email') {
+    return 'email-input';
+  }
+
+  return 'form-input';
 function fieldHintToSlotIntent(hint: FieldHint): string | undefined {
   if (hint.enum && hint.enum.length > 0) return 'enum-input';
   if (hint.type === 'boolean') return 'boolean-input';
@@ -1225,6 +1243,9 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     for (const [slotName, descriptor] of inferredFormDescriptors) {
       fieldHints.set(slotName, descriptor.hint);
       slotContextOverrides.set(slotName, descriptor.context);
+      const slot = slots.find((candidate) => candidate.name === slotName);
+      if (slot) {
+        slot.intent = inferSlotIntentFromFieldHint(descriptor.hint);
       // Update slot intent to match the inferred field type
       const slot = slots.find((s) => s.name === slotName);
       if (slot && slot.intent === 'form-input') {

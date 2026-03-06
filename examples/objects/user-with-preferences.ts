@@ -62,10 +62,13 @@ export const UserWithPreferencesExample: User = {
   preference_version: preferenceDocument.version,
   preference_namespaces: [...store.getNamespaces()],
   preference_mutations: 5,
+  channel_catalog: [],
+  delivery_policies: [],
   membership_records: [],
   permission_catalog: [],
   role_catalog: [],
   role_permissions: {},
   role_hierarchy_edges: [],
   session_roles: [],
+  template_catalog: [],
 };

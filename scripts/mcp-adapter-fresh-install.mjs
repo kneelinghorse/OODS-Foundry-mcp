@@ -85,13 +85,17 @@ async function main() {
       cwd: tempRoot,
     });
 
-    const tempServerRoot = path.join(nodeModulesRoot, 'packages', 'mcp-server');
-    const tempServerDist = path.join(tempServerRoot, 'dist');
     const tempPlanningDir = path.join(nodeModulesRoot, 'cmos', 'planning');
+    const tempServerRoots = [
+      path.join(nodeModulesRoot, 'packages', 'mcp-server'),
+      path.join(nodeModulesRoot, '@oods', 'mcp-server'),
+    ];
 
     console.log('> stage mcp-server dist');
-    await mkdir(tempServerRoot, { recursive: true });
-    await cp(SERVER_DIST, tempServerDist, { recursive: true });
+    for (const tempServerRoot of tempServerRoots) {
+      await mkdir(tempServerRoot, { recursive: true });
+      await cp(SERVER_DIST, path.join(tempServerRoot, 'dist'), { recursive: true });
+    }
 
     console.log('> stage required planning files');
     await mkdir(tempPlanningDir, { recursive: true });

@@ -148,6 +148,8 @@ export const UserWithAddressesExample: User = {
   preference_version: '2.0.0',
   preference_namespaces: ['theme', 'notifications', 'display', 'privacy'],
   preference_mutations: 3,
+  channel_catalog: [],
+  delivery_policies: [],
   membership_records: [],
   permission_catalog: [],
   role_catalog: [],
@@ -157,4 +159,5 @@ export const UserWithAddressesExample: User = {
   address_roles: ['home', 'billing', 'shipping'],
   default_address_role: 'home',
   addresses: userAddressEntries,
+  template_catalog: [],
 };

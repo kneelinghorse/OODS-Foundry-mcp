@@ -1,6 +1,7 @@
 import type { Organization } from '../../generated/objects/Organization';
 import type { AddressableEntry } from '@/traits/addressable/address-entry.js';
 import { normalizeAddress } from '@/schemas/address.js';
+import { PreferenceStore } from '@/traits/preferenceable/preference-store.js';
 
 const locationEntries: AddressableEntry[] = [
   {
@@ -86,6 +87,24 @@ const locationEntries: AddressableEntry[] = [
   },
 ];
 
+const organizationPreferenceStore = new PreferenceStore(
+  {},
+  {
+    namespaces: ['theme', 'notifications', 'display', 'privacy'],
+    schemaVersion: '2.0.0',
+  }
+);
+
+organizationPreferenceStore.setPreference(['theme', 'mode'], 'light');
+organizationPreferenceStore.setPreference(['notifications', 'digest'], {
+  enabled: true,
+  frequency: 'daily',
+});
+organizationPreferenceStore.setPreference(['display', 'timezone'], 'America/Chicago');
+organizationPreferenceStore.setPreference(['privacy', 'region'], 'us');
+
+const organizationPreferenceDocument = organizationPreferenceStore.toDocument();
+
 /**
  * Example organization snapshot showing core + Addressable trait parity.
  */
@@ -118,10 +137,17 @@ export const OrganizationWithLocationsExample: Organization = {
   address_roles: ['headquarters', 'office', 'warehouse', 'branch'],
   default_address_role: 'headquarters',
   addresses: locationEntries,
+  channel_catalog: [],
+  delivery_policies: [],
+  preference_document: organizationPreferenceDocument,
+  preference_metadata: organizationPreferenceDocument.metadata,
+  preference_version: organizationPreferenceDocument.version,
+  preference_namespaces: [...organizationPreferenceStore.getNamespaces()],
   membership_records: [],
   role_catalog: [],
   permission_catalog: [],
   role_permissions: {},
   role_hierarchy_edges: [],
   session_roles: [],
+  template_catalog: [],
 };

@@ -12,7 +12,7 @@ import {
   type ChartPanelDefinition,
 } from '../../src/contexts/regions/chart-regions.js';
 import { Text } from '../../src/components/base/Text.js';
-import activeSubscription from '../../src/fixtures/subscription/active.json' assert { type: 'json' };
+import activeSubscription from '../../src/fixtures/subscription/active.json';
 import type { DashboardExample } from './user-adoption.js';
 import { createSubscriptionStatefulTraitAdapter } from '../../src/traits/Stateful/view.js';
 import { createCancellableTraitAdapter } from '../../src/traits/Cancellable/view.js';

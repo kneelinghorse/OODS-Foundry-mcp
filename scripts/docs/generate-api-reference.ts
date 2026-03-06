@@ -205,7 +205,7 @@ function buildErrorCodes(toolName: string): string {
   return lines.join('\n') + '\n';
 }
 
-function buildExampleBlock(toolName: string, inputSchema: JsonSchema): string {
+function buildExampleBlock(inputSchema: JsonSchema): string {
   // Build a minimal example from schema properties
   const example: Record<string, unknown> = {};
 
@@ -257,7 +257,7 @@ function generateToolDoc(
   lines.push(buildErrorCodes(toolName));
 
   lines.push(`## Example Request\n`);
-  lines.push(buildExampleBlock(toolName, inputSchema));
+  lines.push(buildExampleBlock(inputSchema));
 
   return lines.join('\n');
 }
