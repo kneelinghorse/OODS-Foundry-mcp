@@ -30,6 +30,47 @@
       "enum": ["dashboard", "form", "detail", "list", "auto"],
       "description": "Layout template to use."
     },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "theme": {
+          "type": "string",
+          "description": "Theme token (e.g., 'light', 'dark')."
+        },
+        "metricColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Number of metric columns for dashboard layout."
+        },
+        "fieldGroups": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Number of field groups for form layout."
+        },
+        "tabCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of tabs for detail layout."
+        },
+        "tabLabels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Custom tab labels for detail layout."
+        },
+        "componentOverrides": {
+          "type": "object",
+          "description": "Slot-name to component-name overrides (e.g., { 'items': 'Table' }).",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "framework": {
       "type": "string",
       "enum": ["react", "vue", "html"],

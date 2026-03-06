@@ -13,6 +13,13 @@
 | `intent` | string | No |  | Natural-language description of the desired UI. |
 | `context` | `detail` \| `list` \| `form` \| `timeline` \| `card` \| `inline` | No |  | View context for object-aware composition. |
 | `layout` | `dashboard` \| `form` \| `detail` \| `list` \| `auto` | No |  | Layout template to use. |
+| `preferences` | object | No |  |  |
+| `preferences.theme` | string | No |  | Theme token (e.g., 'light', 'dark'). |
+| `preferences.metricColumns` | integer | No |  | Number of metric columns for dashboard layout. |
+| `preferences.fieldGroups` | integer | No |  | Number of field groups for form layout. |
+| `preferences.tabCount` | integer | No |  | Number of tabs for detail layout. |
+| `preferences.tabLabels` | string[] | No |  | Custom tab labels for detail layout. |
+| `preferences.componentOverrides` | Record<string, string> | No |  | Slot-name to component-name overrides (e.g., { 'items': 'Table' }). |
 | `framework` | `react` \| `vue` \| `html` | No |  | Target framework for code generation. |
 | `styling` | `inline` \| `tokens` \| `tailwind` | No |  | Styling strategy for code generation. |
 | `save` | any | No |  | Optional schema save config. String for name-only, or { name, tags } for full control. |

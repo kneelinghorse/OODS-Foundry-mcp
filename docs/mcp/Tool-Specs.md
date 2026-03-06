@@ -464,6 +464,9 @@ Example output:
       "slotName": "metrics",
       "intent": "metrics display",
       "selectedComponent": "MetricCard",
+      "confidence": 0.92,
+      "confidenceLevel": "high",
+      "explanation": "MetricCard was selected for slot \"metrics\" because Direct intent match for metrics. Confidence is high (0.92).",
       "candidates": [
         { "name": "MetricCard", "confidence": 0.92, "reason": "Direct intent match for metrics" },
         { "name": "StatSummary", "confidence": 0.78, "reason": "Summary statistics display" }
@@ -472,7 +475,16 @@ Example output:
   ],
   "validation": { "status": "ok", "errors": [], "warnings": [] },
   "warnings": [],
-  "meta": { "intentParsed": "dashboard with metrics and sidebar navigation", "layoutDetected": "dashboard", "slotCount": 4, "nodeCount": 8 }
+  "meta": {
+    "intentParsed": "dashboard with metrics and sidebar navigation",
+    "layoutDetected": "dashboard",
+    "slotCount": 4,
+    "nodeCount": 8,
+    "intelligence": {
+      "compositionConfidence": 0.84,
+      "lowConfidenceSlotNames": ["sidebar"]
+    }
+  }
 }
 ```
 
@@ -504,6 +516,15 @@ Output fields:
 | `warnings` | issue[] | Non-fatal issues |
 | `meta` | object | intentParsed, layoutDetected, slotCount, nodeCount |
 
+Selection explainability:
+- `selections[].confidenceLevel` gives a quick `high` / `medium` / `low` review band.
+- `selections[].explanation` summarizes the winning rationale in plain language.
+- `selections[].reviewHint` appears on low-confidence selections and points to `preferences.componentOverrides` as the escape hatch.
+
+Override guidance:
+- Use `preferences.componentOverrides` when you want to pin a specific slot after a low-confidence selection; overrides are slot-scoped and leave default ranking intact for every other slot.
+- Copyable example: `{ "object": "Subscription", "context": "detail", "preferences": { "componentOverrides": { "tab-0": "Card" } } }`
+
 ---
 
 ### `map.create`
@@ -520,8 +541,8 @@ Example input:
   "externalComponent": "Button",
   "oodsTraits": ["Stateful", "Labelled"],
   "propMappings": [
-    { "externalProp": "variant", "oodsProp": "appearance", "coercion": { "type": "enum-map", "values": { "contained": "primary", "outlined": "secondary", "text": "ghost" } } },
-    { "externalProp": "disabled", "oodsProp": "isDisabled" }
+    { "externalProp": "variant", "oodsProp": "appearance", "coercion": { "type": "enum", "mapping": { "contained": "primary", "outlined": "secondary", "text": "ghost" } } },
+    { "externalProp": "disabled", "oodsProp": "disabled", "coercion": { "type": "identity" } }
   ],
   "confidence": "manual",
   "apply": true
@@ -561,7 +582,7 @@ Input fields:
 | `externalComponent` | string | Yes | Component name in the external system |
 | `oodsTraits` | string[] | Yes | OODS traits this component maps to |
 | `propMappings` | array | No | Property translations with optional coercion |
-| `propMappings[].coercion.type` | `"enum-map"` \| `"boolean-invert"` \| `"string-template"` \| `"type-cast"` | No | Coercion strategy |
+| `propMappings[].coercion.type` | `"enum"` \| `"boolean_to_string"` \| `"template"` \| `"identity"` | No | Coercion strategy |
 | `confidence` | `"auto"` \| `"manual"` | No (default `"manual"`) | Mapping provenance |
 | `apply` | boolean | No | Write to disk when true |
 
@@ -583,7 +604,7 @@ Example output:
 ```json
 {
   "mappings": [
-    { "id": "material__Button", "externalSystem": "material", "externalComponent": "Button", "oodsTraits": ["Stateful", "Labelled"], "..." : "..." }
+    { "id": "material-button", "externalSystem": "material", "externalComponent": "Button", "oodsTraits": ["Stateful", "Labelled"], "..." : "..." }
   ],
   "totalCount": 3,
   "stats": { "mappingCount": 3, "systemCount": 1 },
@@ -609,10 +630,10 @@ Example output (found):
 ```json
 {
   "status": "ok",
-  "mapping": { "id": "material__Button", "..." : "..." },
+  "mapping": { "id": "material-button", "..." : "..." },
   "propTranslations": [
-    { "externalProp": "variant", "oodsProp": "appearance", "coercionType": "enum-map", "coercionDetail": { "values": { "contained": "primary", "outlined": "secondary" } } },
-    { "externalProp": "disabled", "oodsProp": "isDisabled", "coercionType": null, "coercionDetail": null }
+    { "externalProp": "variant", "oodsProp": "appearance", "coercionType": "enum", "coercionDetail": { "type": "enum", "mapping": { "contained": "primary", "outlined": "secondary" } } },
+    { "externalProp": "disabled", "oodsProp": "disabled", "coercionType": "identity", "coercionDetail": { "type": "identity" } }
   ]
 }
 ```
@@ -622,6 +643,45 @@ Example output (not found):
 {
   "status": "not_found",
   "message": "No mapping found for material/TextField"
+}
+```
+
+Notes:
+- Successful lookups return `status: "ok"` with `mapping` + `propTranslations`; only misses return `status: "not_found"`.
+- `coercionType` values mirror the runtime coercion model: `enum`, `boolean_to_string`, `template`, or `identity`.
+
+---
+
+### `map.delete`
+
+- **Input schema**: `packages/mcp-server/src/schemas/map.delete.input.json`
+- **Output schema**: `packages/mcp-server/src/schemas/map.delete.output.json`
+- **Policy**: designer, maintainer | writes `artifacts/structured-data/component-mappings.json` | timeout 30s | rate 30/min | concurrency 1
+- **Purpose**: Delete a component-to-trait mapping by id.
+
+Example input:
+```json
+{ "id": "material-button" }
+```
+
+Example output (deleted):
+```json
+{
+  "status": "ok",
+  "deleted": {
+    "id": "material-button",
+    "externalSystem": "material",
+    "externalComponent": "Button"
+  },
+  "etag": "a1b2c3..."
+}
+```
+
+Example output (not found):
+```json
+{
+  "status": "error",
+  "message": "No mapping found with id 'material-button'. Use map.list to see available mappings."
 }
 ```
 

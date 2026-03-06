@@ -1,6 +1,6 @@
 import type { ReplIssue, UiSchema } from '../schemas/generated.js';
 import type { CodegenFramework, CodegenIssue, CodegenStyling } from './types.js';
-import { handle as composeHandle } from './design.compose.js';
+import { handle as composeHandle, type DesignComposeInput } from './design.compose.js';
 import { handle as validateHandle } from './repl.validate.js';
 import { handle as renderHandle } from './repl.render.js';
 import { handle as codeGenerateHandle } from './code.generate.js';
@@ -14,6 +14,7 @@ export type PipelineInput = {
   intent?: string;
   context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
   layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
+  preferences?: DesignComposeInput['preferences'];
   framework?: CodegenFramework;
   styling?: CodegenStyling;
   save?: string | { name: string; tags?: string[] };
@@ -225,6 +226,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
       intent: input.intent,
       context: input.context,
       layout: input.layout,
+      preferences: input.preferences,
       options: {
         validate: false,
       },

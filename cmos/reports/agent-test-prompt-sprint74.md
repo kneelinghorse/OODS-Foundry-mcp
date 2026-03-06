@@ -224,12 +224,11 @@ viz.compose({ "object": "Transaction", "chartType": "line" })
 map.create({
   "externalSystem": "material-ui",
   "externalComponent": "MuiDataGrid",
-  "oodsComponent": "Table",
-  "oodsTraits": ["behavioral/Sortable", "behavioral/Filterable"],
-  "propMappings": {
-    "rows": "data",
-    "columns": "columnDefs"
-  },
+  "oodsTraits": ["Sortable", "Filterable"],
+  "propMappings": [
+    { "externalProp": "rows", "oodsProp": "data", "coercion": { "type": "identity" } },
+    { "externalProp": "columns", "oodsProp": "columnDefs", "coercion": { "type": "identity" } }
+  ],
   "confidence": "manual",
   "metadata": { "notes": "MUI Data Grid maps to OODS Table with sorting and filtering" },
   "apply": true
@@ -244,16 +243,15 @@ map.resolve({
   "externalComponent": "MuiDataGrid"
 })
 ```
-**Expect:** `status: "found"`, prop translations returned.
+**Expect:** `status: "ok"`, prop translations returned.
 
 ### 8.3 Delete the mapping
 ```json
 map.delete({
-  "externalSystem": "material-ui",
-  "externalComponent": "MuiDataGrid"
+  "id": "material-ui-mui-data-grid"
 })
 ```
-**Expect:** `deleted: true`.
+**Expect:** `status: "ok"`, `deleted: { id, externalSystem, externalComponent }`.
 
 ---
 

@@ -229,6 +229,7 @@ export type UiStyle = UiSchemaSchema.Style;
 export type UiProps = UiSchemaSchema.Props;
 export type UiBindings = UiSchemaSchema.Bindings;
 export type UiMeta = UiSchemaSchema.Meta;
+export type FieldSchemaEntry = UiSchemaSchema.FieldSchemaEntry;
 
 export type ReplJsonPatchOperation = ReplPatchSchema.JsonPatchOp;
 export type ReplNodePatch = ReplPatchSchema.NodePatch;

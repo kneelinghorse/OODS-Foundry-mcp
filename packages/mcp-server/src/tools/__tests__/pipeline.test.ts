@@ -174,6 +174,23 @@ describe('pipeline orchestration', () => {
         }),
       );
     });
+
+    it('passes componentOverrides through to compose', async () => {
+      await handle({
+        object: 'Subscription',
+        context: 'detail',
+        preferences: { componentOverrides: { 'tab-0': 'Card' } },
+      });
+
+      expect(mockComposeHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          object: 'Subscription',
+          context: 'detail',
+          preferences: { componentOverrides: { 'tab-0': 'Card' } },
+          options: { validate: false },
+        }),
+      );
+    });
   });
 
   // ── schemaRef TTL propagation ───────────────────────────────────
@@ -567,6 +584,37 @@ describe('pipeline orchestration', () => {
           options: expect.objectContaining({ typescript: false }),
         }),
       );
+    });
+
+    it('passes nested framework and typescript together to codegen', async () => {
+      const result = await handle({
+        object: 'Subscription',
+        options: { framework: 'vue', typescript: false },
+      });
+
+      expect(mockCodeGenerateHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          framework: 'vue',
+          options: expect.objectContaining({ typescript: false }),
+        }),
+      );
+      expect(result.code!.framework).toBe('vue');
+    });
+
+    it('top-level framework override keeps nested typescript setting', async () => {
+      const result = await handle({
+        object: 'Subscription',
+        framework: 'html',
+        options: { framework: 'vue', typescript: false },
+      });
+
+      expect(mockCodeGenerateHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          framework: 'html',
+          options: expect.objectContaining({ typescript: false }),
+        }),
+      );
+      expect(result.code!.framework).toBe('html');
     });
   });
 

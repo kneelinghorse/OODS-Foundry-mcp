@@ -70,6 +70,18 @@ export namespace A11yScanInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -105,6 +117,28 @@ export namespace A11yScanInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+  }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
   }
 }
 export type A11yScanInput = A11yScanInputSchema.A11YScanInput;
@@ -154,7 +188,12 @@ export type BillingSwitchFixturesInput = BillingSwitchFixturesInputSchema.Billin
 
 // Source: brand.apply.input.json
 export namespace BrandApplyInputSchema {
-  export interface BrandApplyInput {
+  export type BrandApplyInput = BrandApplyInput1 & BrandApplyInput2;
+  export type BrandApplyInput1 = {
+    [k: string]: any;
+  };
+
+  export interface BrandApplyInput2 {
     /**
      * Target brand identifier.
      */
@@ -167,9 +206,9 @@ export namespace BrandApplyInputSchema {
           [k: string]: any;
         }
       | {
-          op: string;
+          op: 'add' | 'remove' | 'replace';
           path: string;
-          [k: string]: any;
+          value?: any;
         }[];
     /**
      * Alias strategy rewrites token values; patch applies RFC 6902 operations.
@@ -252,6 +291,10 @@ export namespace CatalogListInputSchema {
      */
     context?: string;
     /**
+     * Filter by component status. 'stable' = has renderer, 'planned' = not yet implemented.
+     */
+    status?: 'stable' | 'beta' | 'planned';
+    /**
      * Response detail level. Defaults to summary for unfiltered calls, full when filters are provided.
      */
     detail?: 'summary' | 'full';
@@ -302,6 +345,18 @@ export namespace CatalogListOutputSchema {
        * List of trait capabilities (e.g., ['Editable', 'Searchable'])
        */
       traits: string[];
+      /**
+       * Component implementation status. 'stable' = has renderer, 'planned' = not yet implemented.
+       */
+      status: 'stable' | 'beta' | 'planned';
+      /**
+       * Maturity indicator derived from the source trait (e.g., 'stable', 'beta', 'draft').
+       */
+      maturity?: string;
+      /**
+       * DSL version since which this component is deprecated. When set, tools surface deprecation warnings in meta.warnings.
+       */
+      deprecated_since?: string;
       /**
        * Component prop schema with types and defaults (detail=full only).
        */
@@ -381,7 +436,15 @@ export namespace CatalogListOutputSchema {
        * Total traits available
        */
       traitCount: number;
+      /**
+       * Total components matching the active filters
+       */
+      filteredCount?: number;
     };
+    /**
+     * All available category values that can be used for filtering. Sorted alphabetically.
+     */
+    availableCategories: string[];
     /**
      * Suggested filter values when a query returns zero results.
      */
@@ -406,6 +469,10 @@ export namespace CodeGenerateInputSchema {
   };
 
   export interface CodeGenerateInput2 {
+    /**
+     * DSL version to use for this request. Defaults to the current version (1.0).
+     */
+    dslVersion?: string;
     schema?: AgenticREPLUISchema;
     /**
      * Reference to a cached UiSchema returned by design.compose.
@@ -421,9 +488,9 @@ export namespace CodeGenerateInputSchema {
        */
       typescript?: boolean;
       /**
-       * Styling strategy: inline style objects or design-token CSS variables.
+       * Styling strategy: inline style objects, design-token CSS variables, or Tailwind utility classes.
        */
-      styling?: 'inline' | 'tokens';
+      styling?: 'inline' | 'tokens' | 'tailwind';
     };
   }
   /**
@@ -438,6 +505,18 @@ export namespace CodeGenerateInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -473,6 +552,28 @@ export namespace CodeGenerateInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+  }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
   }
 }
 export type CodeGenerateInput = CodeGenerateInputSchema.CodeGenerateInput;
@@ -528,6 +629,53 @@ export type CodeGenerateOutput = CodeGenerateOutputSchema.CodeGenerateOutput;
 
 // Source: component-mapping.schema.json
 export namespace ComponentMappingSchemaSchema {
+  /**
+   * Typed coercion transform. Discriminated union on the 'type' field.
+   */
+  export type CoercionDef =
+    | {
+        /**
+         * Enum value mapping: source value lookup to target value.
+         */
+        type: 'enum';
+        /**
+         * Source value to target value mapping.
+         */
+        mapping: {
+          [k: string]: string;
+        };
+      }
+    | {
+        /**
+         * Convert boolean to string representation.
+         */
+        type: 'boolean_to_string';
+        /**
+         * String value when source is true.
+         */
+        trueValue: string;
+        /**
+         * String value when source is false.
+         */
+        falseValue: string;
+      }
+    | {
+        /**
+         * String interpolation using {{value}} placeholder.
+         */
+        type: 'template';
+        /**
+         * Template pattern with {{value}} placeholder.
+         */
+        pattern: string;
+      }
+    | {
+        /**
+         * Pass-through, no transformation.
+         */
+        type: 'identity';
+      };
+
   /**
    * Schema for external design system component-to-OODS-trait mapping records. Enables onboarding external systems (Material, Ant, Chakra, etc.) into OODS.
    */
@@ -597,27 +745,7 @@ export namespace ComponentMappingSchemaSchema {
     /**
      * Type coercion hint. null for direct pass-through.
      */
-    coercion?: null | CoercionHint;
-  }
-  export interface CoercionHint {
-    /**
-     * Coercion strategy: enum-map (value mapping), boolean-invert (negate), string-template (format transform), type-cast (type conversion).
-     */
-    type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-    /**
-     * For enum-map: external value to OODS value mapping.
-     */
-    values?: {
-      [k: string]: string;
-    };
-    /**
-     * For string-template: template string with {value} placeholder.
-     */
-    template?: string;
-    /**
-     * For type-cast: target type to cast to.
-     */
-    targetType?: 'string' | 'number' | 'boolean';
+    coercion?: null | CoercionDef;
   }
   export interface MappingMetadata {
     /**
@@ -643,13 +771,30 @@ export type ComponentMappingSchema = ComponentMappingSchemaSchema.ComponentMappi
 // Source: design.compose.input.json
 export namespace DesignComposeInputSchema {
   /**
-   * Generate a complete UiSchema from an intent description using layout templates and component selection.
+   * Generate a complete UiSchema from an intent description and/or object definition using layout templates and component selection. Provide at least one of 'intent' or 'object'.
    */
-  export interface DesignComposeInput {
+  export type DesignComposeInput = DesignComposeInput1 & DesignComposeInput2;
+  export type DesignComposeInput1 = {
+    [k: string]: any;
+  };
+
+  export interface DesignComposeInput2 {
+    /**
+     * DSL version to use for this request. Defaults to the current version (1.0). Controls feature availability and deprecation behavior.
+     */
+    dslVersion?: string;
     /**
      * Natural-language description of the desired UI (e.g., 'dashboard with metrics and sidebar', 'user registration form').
      */
-    intent: string;
+    intent?: string;
+    /**
+     * Object name from the OODS registry (e.g., 'Subscription', 'User'). When provided, composition uses trait-driven component placement via view_extensions.
+     */
+    object?: string;
+    /**
+     * View context for object-aware composition. Determines which view_extensions are applied. When object is provided without layout, context infers the layout (detail→detail, list→list, form→form).
+     */
+    context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
     /**
      * Layout template to use. 'auto' infers the best template from intent keywords.
      */
@@ -740,11 +885,100 @@ export namespace DesignComposeOutputSchema {
      * Fatal issues that prevented composition.
      */
     errors?: Issue[];
+    objectUsed?: {
+      /**
+       * Object name from the registry.
+       */
+      name: string;
+      /**
+       * Object version.
+       */
+      version: string;
+      /**
+       * Trait names composed into this object.
+       */
+      traits: string[];
+      /**
+       * Total fields from merged trait schemas.
+       */
+      fieldsComposed: number;
+      /**
+       * Count of view_extensions applied per context.
+       */
+      viewExtensionsApplied: {
+        [k: string]: number;
+      };
+    };
     meta?: {
       intentParsed?: string;
       layoutDetected?: string;
       slotCount?: number;
       nodeCount?: number;
+      /**
+       * Object name auto-detected from intent string.
+       */
+      objectAutoDetected?: string;
+      /**
+       * Context auto-detected from intent string.
+       */
+      contextAutoDetected?: string;
+      /**
+       * True when intent was synthetically generated from object + context.
+       */
+      intentSynthetic?: boolean;
+      /**
+       * Human-readable warning messages from composition.
+       */
+      warnings?: string[];
+      /**
+       * Compositor intelligence indicators (Sprint 73).
+       */
+      intelligence?: {
+        /**
+         * Whether template slots were dynamically expanded.
+         */
+        fieldsExpanded?: boolean;
+        /**
+         * Number of slots added by expansion.
+         */
+        slotsExpanded?: number;
+        /**
+         * Reason for slot expansion.
+         */
+        expansionReason?: string;
+        /**
+         * Number of composite slot patterns applied.
+         */
+        patternsApplied?: number;
+        /**
+         * Whether position-aware scoring was used.
+         */
+        positionAffinityUsed?: boolean;
+        /**
+         * Whether field-type-aware scoring was used.
+         */
+        fieldAffinityUsed?: boolean;
+        /**
+         * Number of intent sections parsed from multi-section prompts.
+         */
+        intentSectionsParsed?: number;
+        /**
+         * Whether section context influenced slot composition.
+         */
+        sectionContextUsed?: boolean;
+        /**
+         * Aggregated composition confidence (0-1, average of per-slot raw confidences).
+         */
+        compositionConfidence?: number;
+        /**
+         * Count of slots with confidence below 0.5 that have alternative candidates.
+         */
+        lowConfidenceSlots?: number;
+        /**
+         * Slot names whose selected component scored below the low-confidence threshold.
+         */
+        lowConfidenceSlotNames?: string[];
+      };
     };
   }
   /**
@@ -759,6 +993,18 @@ export namespace DesignComposeOutputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -795,14 +1041,68 @@ export namespace DesignComposeOutputSchema {
     intent?: string;
     notes?: string;
   }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
+  }
   export interface SlotSelection {
     slotName: string;
     intent: string;
     selectedComponent?: string;
+    /**
+     * Raw confidence score (0-1) before normalization.
+     */
+    confidence?: number;
+    /**
+     * Human-readable confidence band for quick review.
+     */
+    confidenceLevel: 'high' | 'medium' | 'low';
+    /**
+     * One-line rationale describing why this component was selected.
+     */
+    explanation: string;
+    /**
+     * Follow-up guidance when a low-confidence slot should be reviewed or overridden.
+     */
+    reviewHint?: string;
     candidates: {
       name: string;
       confidence: number;
       reason: string;
+      keywordTagMatches?: number;
+      keywordTraitMatches?: number;
+      contextTagMatches?: number;
+      contextTraitMatches?: number;
+    }[];
+    /**
+     * Alternative candidates surfaced when confidence < 0.5.
+     */
+    alternativeCandidates?: {
+      name: string;
+      confidence: number;
+      reason: string;
+      keywordTagMatches?: number;
+      keywordTraitMatches?: number;
+      contextTagMatches?: number;
+      contextTraitMatches?: number;
     }[];
   }
   export interface Issue {
@@ -880,6 +1180,63 @@ export namespace GenericOutputSchema {
   }
 }
 export type GenericOutput = GenericOutputSchema.GenericOutput;
+
+// Source: health.input.json
+export namespace HealthInputSchema {
+  export interface HealthInput {
+    /**
+     * When true, include DSL version changelog in the response.
+     */
+    includeChangelog?: boolean;
+    /**
+     * When provided with includeChangelog, only return changelog entries since this version.
+     */
+    sinceVersion?: string;
+  }
+}
+export type HealthInput = HealthInputSchema.HealthInput;
+
+// Source: health.output.json
+export namespace HealthOutputSchema {
+  export interface HealthOutput {
+    status: 'ok' | 'degraded';
+    server: {
+      version: string;
+      uptime: number;
+    };
+    registry: {
+      components: number;
+      traits: number;
+      objects: number;
+      lastSync: string;
+    };
+    tokens: {
+      built: boolean;
+      theme: string;
+      brand: string;
+    };
+    schemas: {
+      savedCount: number;
+      storeDir: string;
+    };
+    latency: number;
+    warnings?: string[];
+    /**
+     * Current DSL version of this server.
+     */
+    dslVersion?: string;
+    /**
+     * DSL version changelog entries, included when requested via includeChangelog input.
+     */
+    changelog?: {
+      version: string;
+      date: string;
+      changes: string[];
+      breaking: boolean;
+    }[];
+  }
+}
+export type HealthOutput = HealthOutputSchema.HealthOutput;
 
 // Source: json-schema-draft-07.json
 export namespace JsonSchemaDraft07Schema {
@@ -1046,14 +1403,26 @@ export namespace MapCreateInputSchema {
     propMappings?: {
       externalProp: string;
       oodsProp: string;
-      coercion?: null | {
-        type: 'enum-map' | 'boolean-invert' | 'string-template' | 'type-cast';
-        values?: {
-          [k: string]: string;
-        };
-        template?: string;
-        targetType?: 'string' | 'number' | 'boolean';
-      };
+      coercion?:
+        | null
+        | {
+            type: 'enum';
+            mapping: {
+              [k: string]: string;
+            };
+          }
+        | {
+            type: 'boolean_to_string';
+            trueValue: string;
+            falseValue: string;
+          }
+        | {
+            type: 'template';
+            pattern: string;
+          }
+        | {
+            type: 'identity';
+          };
     }[];
     /**
      * 'auto' for machine-generated, 'manual' for human-curated.
@@ -1106,6 +1475,48 @@ export namespace MapCreateOutputSchema {
   }
 }
 export type MapCreateOutput = MapCreateOutputSchema.MapCreateOutput;
+
+// Source: map.delete.input.json
+export namespace MapDeleteInputSchema {
+  /**
+   * Delete a component-to-trait mapping by ID.
+   */
+  export interface MapDeleteInput {
+    /**
+     * Mapping ID to delete (e.g., 'material-button').
+     */
+    id: string;
+  }
+}
+export type MapDeleteInput = MapDeleteInputSchema.MapDeleteInput;
+
+// Source: map.delete.output.json
+export namespace MapDeleteOutputSchema {
+  /**
+   * Result of deleting a component-to-trait mapping.
+   */
+  export interface MapDeleteOutput {
+    status: 'ok' | 'error';
+    /**
+     * Summary of the deleted mapping.
+     */
+    deleted?: {
+      id?: string;
+      externalSystem?: string;
+      externalComponent?: string;
+      [k: string]: any;
+    };
+    /**
+     * SHA256 etag of the mappings file after deletion.
+     */
+    etag?: string;
+    /**
+     * Error message when status=error.
+     */
+    message?: string;
+  }
+}
+export type MapDeleteOutput = MapDeleteOutputSchema.MapDeleteOutput;
 
 // Source: map.list.input.json
 export namespace MapListInputSchema {
@@ -1199,6 +1610,419 @@ export namespace MapResolveOutputSchema {
   }
 }
 export type MapResolveOutput = MapResolveOutputSchema.MapResolveOutput;
+
+// Source: map.update.input.json
+export namespace MapUpdateInputSchema {
+  /**
+   * Partially update an existing component-to-trait mapping.
+   */
+  export interface MapUpdateInput {
+    /**
+     * Mapping ID to update (e.g., 'material-button').
+     */
+    id: string;
+    /**
+     * Fields to update. Only provided fields are changed.
+     */
+    updates: {
+      /**
+       * Replace OODS trait list.
+       *
+       * @minItems 1
+       */
+      oodsTraits?: [string, ...string[]];
+      /**
+       * Update confidence level.
+       */
+      confidence?: 'auto' | 'manual';
+      /**
+       * Replace property mappings.
+       */
+      propMappings?: {
+        externalProp: string;
+        oodsProp: string;
+        coercion?:
+          | null
+          | {
+              type: 'enum';
+              mapping: {
+                [k: string]: string;
+              };
+            }
+          | {
+              type: 'boolean_to_string';
+              trueValue: string;
+              falseValue: string;
+            }
+          | {
+              type: 'template';
+              pattern: string;
+            }
+          | {
+              type: 'identity';
+            };
+      }[];
+      /**
+       * Update notes in metadata.
+       */
+      notes?: string;
+    };
+  }
+}
+export type MapUpdateInput = MapUpdateInputSchema.MapUpdateInput;
+
+// Source: map.update.output.json
+export namespace MapUpdateOutputSchema {
+  /**
+   * Result of updating a component-to-trait mapping.
+   */
+  export interface MapUpdateOutput {
+    status: 'ok' | 'error';
+    /**
+     * The updated mapping record (present when status=ok).
+     */
+    mapping?: {
+      [k: string]: any;
+    };
+    /**
+     * SHA256 etag of the mappings file after update.
+     */
+    etag?: string;
+    /**
+     * List of fields that were changed.
+     */
+    changes?: string[];
+    /**
+     * Error or informational message.
+     */
+    message?: string;
+  }
+}
+export type MapUpdateOutput = MapUpdateOutputSchema.MapUpdateOutput;
+
+// Source: object.list.input.json
+export namespace ObjectListInputSchema {
+  export interface ObjectListInput {
+    /**
+     * Filter to objects in a specific domain (e.g. 'core.identity', 'saas.billing')
+     */
+    domain?: string;
+    /**
+     * Filter by metadata maturity level
+     */
+    maturity?: 'draft' | 'alpha' | 'beta' | 'stable';
+    /**
+     * Filter to objects composing a given trait (e.g. 'Priceable', 'lifecycle/Stateful')
+     */
+    trait?: string;
+  }
+}
+export type ObjectListInput = ObjectListInputSchema.ObjectListInput;
+
+// Source: object.list.output.json
+export namespace ObjectListOutputSchema {
+  export interface ObjectListOutput {
+    objects: {
+      name: string;
+      domain: string;
+      version: string;
+      maturity: string | null;
+      description: string;
+      traits: string[];
+      fieldCount: number;
+      tags: string[];
+    }[];
+    totalCount: number;
+    filters: {
+      domain: string | null;
+      maturity: string | null;
+      trait: string | null;
+    };
+  }
+}
+export type ObjectListOutput = ObjectListOutputSchema.ObjectListOutput;
+
+// Source: object.show.input.json
+export namespace ObjectShowInputSchema {
+  export interface ObjectShowInput {
+    /**
+     * Object name to look up (e.g. 'User', 'Product', 'Invoice')
+     */
+    name: string;
+    /**
+     * Optional: filter view_extensions to a single context (e.g. 'detail', 'list', 'form', 'timeline', 'card', 'inline')
+     */
+    context?: string;
+  }
+}
+export type ObjectShowInput = ObjectShowInputSchema.ObjectShowInput;
+
+// Source: object.show.output.json
+export namespace ObjectShowOutputSchema {
+  export interface ObjectShowOutput {
+    name: string;
+    version: string;
+    domain: string;
+    description: string;
+    tags: string[];
+    maturity: string | null;
+    traits: {
+      name: string;
+      alias: string | null;
+      parameters: {
+        [k: string]: any;
+      } | null;
+    }[];
+    schema: {
+      [k: string]: {
+        type: string;
+        required: boolean;
+        description: string;
+        default?: any;
+        defaultFromParameter?: string;
+        validation?: {
+          [k: string]: any;
+        };
+        [k: string]: any;
+      };
+    };
+    semantics: {
+      [k: string]: {
+        semantic_type: string;
+        token_mapping: string;
+        ui_hints?: {
+          [k: string]: string | boolean | number;
+        };
+      };
+    };
+    viewExtensions: {
+      [k: string]: {
+        component: string;
+        position?: string;
+        priority?: number;
+        props?: {
+          [k: string]: any;
+        };
+      }[];
+    };
+    tokens: {
+      [k: string]: any;
+    };
+    warnings: string[];
+    filePath: string;
+  }
+}
+export type ObjectShowOutput = ObjectShowOutputSchema.ObjectShowOutput;
+
+// Source: pipeline.input.json
+export namespace PipelineInputSchema {
+  /**
+   * Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call.
+   */
+  export interface PipelineInput {
+    /**
+     * DSL version to use for this request. Defaults to the current version (1.0).
+     */
+    dslVersion?: string;
+    /**
+     * Object name from the OODS registry (e.g., Subscription, User).
+     */
+    object?: string;
+    /**
+     * Natural-language description of the desired UI.
+     */
+    intent?: string;
+    /**
+     * View context for object-aware composition.
+     */
+    context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
+    /**
+     * Layout template to use.
+     */
+    layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
+    preferences?: {
+      /**
+       * Theme token (e.g., 'light', 'dark').
+       */
+      theme?: string;
+      /**
+       * Number of metric columns for dashboard layout.
+       */
+      metricColumns?: number;
+      /**
+       * Number of field groups for form layout.
+       */
+      fieldGroups?: number;
+      /**
+       * Number of tabs for detail layout.
+       */
+      tabCount?: number;
+      /**
+       * Custom tab labels for detail layout.
+       */
+      tabLabels?: string[];
+      /**
+       * Slot-name to component-name overrides (e.g., { 'items': 'Table' }).
+       */
+      componentOverrides?: {
+        [k: string]: string;
+      };
+    };
+    /**
+     * Target framework for code generation.
+     */
+    framework?: 'react' | 'vue' | 'html';
+    /**
+     * Styling strategy for code generation.
+     */
+    styling?: 'inline' | 'tokens' | 'tailwind';
+    /**
+     * Optional schema save config. String for name-only, or { name, tags } for full control.
+     */
+    save?:
+      | string
+      | {
+          /**
+           * Schema name to persist.
+           */
+          name: string;
+          /**
+           * Tags to attach to the saved schema.
+           */
+          tags?: string[];
+        };
+    options?: {
+      /**
+       * Skip the validate step (default false).
+       */
+      skipValidation?: boolean;
+      /**
+       * Skip the render step (default false).
+       */
+      skipRender?: boolean;
+      /**
+       * Enable a11y contrast checks in validate (default false).
+       */
+      checkA11y?: boolean;
+      /**
+       * Render with apply=true to include HTML output (default true).
+       */
+      renderApply?: boolean;
+      /**
+       * When true (default), omit token CSS from render output and return tokenCssRef instead. Reduces response size by ~40%.
+       */
+      compact?: boolean;
+      /**
+       * Alias: enable TypeScript output in code generation.
+       */
+      typescript?: boolean;
+      /**
+       * Alias: styling strategy. Overridden by top-level styling if both provided.
+       */
+      styling?: 'inline' | 'tokens' | 'tailwind';
+      /**
+       * Alias: target framework. Overridden by top-level framework if both provided.
+       */
+      framework?: 'react' | 'vue' | 'html';
+    };
+  }
+}
+export type PipelineInput = PipelineInputSchema.PipelineInput;
+
+// Source: pipeline.output.json
+export namespace PipelineOutputSchema {
+  /**
+   * Aggregated pipeline response with partial results and explicit failure step metadata.
+   */
+  export interface PipelineOutput {
+    /**
+     * Schema reference returned by compose, reusable across tools.
+     */
+    schemaRef?: string;
+    /**
+     * ISO timestamp when the schemaRef was created.
+     */
+    schemaRefCreatedAt?: string;
+    /**
+     * ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry.
+     */
+    schemaRefExpiresAt?: string;
+    compose: {
+      object?: string;
+      context?: string;
+      layout: string;
+      componentCount: number;
+    };
+    validation?: {
+      status: 'ok' | 'invalid' | 'skipped';
+      errors: Issue[];
+      warnings: Issue[];
+    };
+    render?: {
+      /**
+       * Rendered HTML when renderApply=true.
+       */
+      html?: string;
+      /**
+       * Reference to token CSS artifact when compact mode is enabled.
+       */
+      tokenCssRef?: string;
+      /**
+       * Render metadata summary.
+       */
+      meta: {
+        [k: string]: any;
+      };
+    };
+    code?: {
+      framework: 'react' | 'vue' | 'html';
+      styling: 'inline' | 'tokens' | 'tailwind';
+      output: string;
+    };
+    saved?: {
+      name: string;
+      version: number;
+    };
+    /**
+     * One-line natural language description of what was generated.
+     */
+    summary?: string;
+    /**
+     * Quality metrics for the pipeline output.
+     */
+    metrics?: {
+      totalNodes?: number;
+      componentsUsed?: number;
+      fieldsBound?: number;
+      responseBytes?: number;
+    };
+    pipeline: {
+      steps: ('compose' | 'validate' | 'render' | 'codegen' | 'save')[];
+      /**
+       * Per-step latency in milliseconds.
+       */
+      stepLatency?: {
+        [k: string]: number;
+      };
+      duration: number;
+    };
+    error?: {
+      step: 'compose' | 'validate' | 'render' | 'codegen' | 'save';
+      code: string;
+      message: string;
+    };
+  }
+  export interface Issue {
+    code: string;
+    message: string;
+    path?: string;
+    hint?: string;
+    severity?: string;
+    nodeId?: string;
+    component?: string;
+  }
+}
+export type PipelineOutput = PipelineOutputSchema.PipelineOutput;
 
 // Source: release.tag.input.json
 export namespace ReleaseTagInputSchema {
@@ -1313,7 +2137,11 @@ export namespace ReplRenderInputSchema {
   export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
 
   export interface ReplRenderInput2 {
-    mode: 'full' | 'patch';
+    /**
+     * DSL version to use for this request. Defaults to the current version (1.0).
+     */
+    dslVersion?: string;
+    mode?: 'full' | 'patch';
     schema?: AgenticREPLUISchema;
     /**
      * Reference to a cached UiSchema returned by design.compose.
@@ -1338,6 +2166,10 @@ export namespace ReplRenderInputSchema {
       strict?: boolean;
       includeCss?: boolean;
       /**
+       * When true, omit the full token CSS from the response and return a tokenCssRef instead. Reduces response size by ~40%. Default false for repl.render, true for pipeline.
+       */
+      compact?: boolean;
+      /**
        * Reserved for v2 fragment-depth controls; currently ignored.
        */
       depth?: number;
@@ -1353,6 +2185,18 @@ export namespace ReplRenderInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1388,6 +2232,28 @@ export namespace ReplRenderInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+  }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
   }
   /**
    * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
@@ -1450,6 +2316,10 @@ export namespace ReplRenderOutputSchema {
      */
     html?: string;
     /**
+     * Reference to the token CSS artifact when compact mode is enabled. Use tokens.build to obtain the full CSS.
+     */
+    tokenCssRef?: string;
+    /**
      * Fragment payload keyed by canonical node id when output.format=fragments.
      */
     fragments?: {
@@ -1472,6 +2342,7 @@ export namespace ReplRenderOutputSchema {
     output?: {
       format: 'document' | 'fragments';
       strict: boolean;
+      compact?: boolean;
     };
     meta?: {
       screenCount?: number;
@@ -1498,6 +2369,18 @@ export namespace ReplRenderOutputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1533,6 +2416,28 @@ export namespace ReplRenderOutputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+  }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
   }
   /**
    * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
@@ -1565,6 +2470,18 @@ export namespace UiSchemaSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1601,6 +2518,28 @@ export namespace UiSchemaSchema {
     intent?: string;
     notes?: string;
   }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
+  }
 }
 export type UiSchema = UiSchemaSchema.UiSchema;
 
@@ -1622,7 +2561,11 @@ export namespace ReplValidateInputSchema {
   export type JsonPatchArray = [JsonPatchOp, ...JsonPatchOp[]];
 
   export interface ReplValidateInput2 {
-    mode: 'full' | 'patch';
+    /**
+     * DSL version to use for this request. Defaults to the current version (1.0).
+     */
+    dslVersion?: string;
+    mode?: 'full' | 'patch';
     schema?: AgenticREPLUISchema;
     /**
      * Reference to a cached UiSchema returned by design.compose.
@@ -1648,6 +2591,18 @@ export namespace ReplValidateInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1683,6 +2638,28 @@ export namespace ReplValidateInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+  }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
   }
   /**
    * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
@@ -1713,6 +2690,18 @@ export namespace ReplValidateInputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
 }
 export type ReplValidateInput = ReplValidateInputSchema.ReplValidateInput;
@@ -1765,6 +2754,18 @@ export namespace ReplValidateOutputSchema {
      * @minItems 1
      */
     screens: [UiElement, ...UiElement[]];
+    /**
+     * Object-level semantic token overrides. Keys are token paths (e.g., 'billing.subscription.status.active'), values are CSS variable references (e.g., 'var(--semantic-success)').
+     */
+    tokenOverrides?: {
+      [k: string]: string;
+    };
+    /**
+     * Object field schema for codegen. Maps field names to type metadata from composed object traits.
+     */
+    objectSchema?: {
+      [k: string]: FieldSchemaEntry;
+    };
   }
   export interface UiElement {
     id: string;
@@ -1801,6 +2802,28 @@ export namespace ReplValidateOutputSchema {
     intent?: string;
     notes?: string;
   }
+  export interface FieldSchemaEntry {
+    /**
+     * Field data type (string, integer, number, boolean, datetime, email, etc.).
+     */
+    type: string;
+    /**
+     * Whether the field is required.
+     */
+    required: boolean;
+    /**
+     * Human-readable field description.
+     */
+    description?: string;
+    /**
+     * Allowed values for enum-constrained fields.
+     */
+    enum?: string[];
+    /**
+     * Semantic type from the object's semantic mapping (e.g., 'billing.subscription.status').
+     */
+    semanticType?: string;
+  }
   /**
    * JSON Patch operation (subset of RFC 6902). Must be used inside an array.
    */
@@ -1820,6 +2843,124 @@ export namespace ReplValidateOutputSchema {
   }
 }
 export type ReplValidateOutput = ReplValidateOutputSchema.ReplValidateOutput;
+
+// Source: schema.delete.input.json
+export namespace SchemaDeleteInputSchema {
+  export interface SchemaDeleteInput {
+    name: string;
+  }
+}
+export type SchemaDeleteInput = SchemaDeleteInputSchema.SchemaDeleteInput;
+
+// Source: schema.delete.output.json
+export namespace SchemaDeleteOutputSchema {
+  export interface SchemaDeleteOutput {
+    deleted: true;
+    schema: {
+      name: string;
+      schemaRef: string;
+      version: number;
+      object?: string;
+      context?: string;
+      author?: string;
+      createdAt: string;
+      updatedAt: string;
+      tags: string[];
+    };
+  }
+}
+export type SchemaDeleteOutput = SchemaDeleteOutputSchema.SchemaDeleteOutput;
+
+// Source: schema.list.input.json
+export namespace SchemaListInputSchema {
+  export interface SchemaListInput {
+    object?: string;
+    context?: string;
+    tags?: string[];
+  }
+}
+export type SchemaListInput = SchemaListInputSchema.SchemaListInput;
+
+// Source: schema.list.output.json
+export namespace SchemaListOutputSchema {
+  export type SchemaListOutput = {
+    name: string;
+    schemaRef: string;
+    version: number;
+    object?: string;
+    context?: string;
+    author?: string;
+    createdAt: string;
+    updatedAt: string;
+    tags: string[];
+  }[];
+}
+export type SchemaListOutput = SchemaListOutputSchema.SchemaListOutput;
+
+// Source: schema.load.input.json
+export namespace SchemaLoadInputSchema {
+  export interface SchemaLoadInput {
+    /**
+     * Saved schema name in slug format.
+     */
+    name: string;
+  }
+}
+export type SchemaLoadInput = SchemaLoadInputSchema.SchemaLoadInput;
+
+// Source: schema.load.output.json
+export namespace SchemaLoadOutputSchema {
+  export interface SchemaLoadOutput {
+    schemaRef: string;
+    name: string;
+    version: number;
+    object?: string;
+    context?: string;
+    author?: string;
+    createdAt: string;
+    updatedAt: string;
+    tags: string[];
+  }
+}
+export type SchemaLoadOutput = SchemaLoadOutputSchema.SchemaLoadOutput;
+
+// Source: schema.save.input.json
+export namespace SchemaSaveInputSchema {
+  export interface SchemaSaveInput {
+    /**
+     * Saved schema name in slug format (letters, numbers, hyphens, underscores).
+     */
+    name: string;
+    /**
+     * Reference to an in-memory schema produced by design.compose.
+     */
+    schemaRef: string;
+    /**
+     * Optional tags for filtering and discovery.
+     */
+    tags?: string[];
+    /**
+     * Optional author metadata.
+     */
+    author?: string;
+  }
+}
+export type SchemaSaveInput = SchemaSaveInputSchema.SchemaSaveInput;
+
+// Source: schema.save.output.json
+export namespace SchemaSaveOutputSchema {
+  export interface SchemaSaveOutput {
+    name: string;
+    version: number;
+    object?: string;
+    context?: string;
+    author?: string;
+    createdAt: string;
+    updatedAt: string;
+    tags: string[];
+  }
+}
+export type SchemaSaveOutput = SchemaSaveOutputSchema.SchemaSaveOutput;
 
 // Source: structuredData.fetch.input.json
 export namespace StructuredDataFetchInputSchema {
@@ -1952,6 +3093,179 @@ export namespace TokensBuildInputSchema {
 }
 export type TokensBuildInput = TokensBuildInputSchema.TokensBuildInput;
 
+// Source: viz.compose.input.json
+export namespace VizComposeInputSchema {
+  /**
+   * Compose a visualization schema from chart type, data bindings, and/or object viz traits. Provide at least one of 'chartType', 'object', or 'traits'.
+   */
+  export type VizComposeInput = VizComposeInput1 & VizComposeInput2;
+  export type VizComposeInput1 = {
+    [k: string]: any;
+  };
+
+  export interface VizComposeInput2 {
+    /**
+     * DSL version to use for this request. Defaults to the current version (1.0).
+     */
+    dslVersion?: string;
+    /**
+     * Object name from the OODS registry. When provided, viz traits are resolved automatically to determine chart type and encodings.
+     */
+    object?: string;
+    /**
+     * Explicit viz trait names (e.g., 'mark-bar', 'encoding-position-x'). Used when composing without an object.
+     *
+     * @minItems 1
+     */
+    traits?: [string, ...string[]];
+    /**
+     * Chart type to compose. Maps to mark traits: bar→mark-bar, line→mark-line, area→mark-area, point→mark-point.
+     */
+    chartType?: 'bar' | 'line' | 'area' | 'point';
+    dataBindings?: {
+      /**
+       * Field name for the x-axis encoding.
+       */
+      x?: string;
+      /**
+       * Field name for the y-axis encoding.
+       */
+      y?: string;
+      /**
+       * Field name for color encoding.
+       */
+      color?: string;
+      /**
+       * Field name for size encoding.
+       */
+      size?: string;
+    };
+    /**
+     * Alias for dataBindings. Maps field names to encoding channels.
+     */
+    data?: {
+      /**
+       * Field name for the x-axis encoding.
+       */
+      x?: string;
+      /**
+       * Field name for the y-axis encoding.
+       */
+      y?: string;
+      /**
+       * Field name for color encoding.
+       */
+      color?: string;
+      /**
+       * Field name for size encoding.
+       */
+      size?: string;
+    };
+    /**
+     * Theme token (e.g., 'light', 'dark').
+     */
+    theme?: string;
+    options?: {
+      /**
+       * Auto-validate the generated schema.
+       */
+      validate?: boolean;
+    };
+  }
+}
+export type VizComposeInput = VizComposeInputSchema.VizComposeInput;
+
+// Source: viz.compose.output.json
+export namespace VizComposeOutputSchema {
+  /**
+   * Visualization schema with component tree, slots, props, and token mappings.
+   */
+  export interface VizComposeOutput {
+    /**
+     * Whether the composition succeeded.
+     */
+    status: 'ok' | 'error';
+    /**
+     * Resolved chart type (bar, line, area, point, or empty on error).
+     */
+    chartType: string;
+    /**
+     * The composed UiSchema tree with viz components.
+     */
+    schema: {
+      [k: string]: any;
+    };
+    /**
+     * Temporary schema reference for pipeline reuse in validate/render/codegen.
+     */
+    schemaRef?: string;
+    /**
+     * ISO timestamp when the schemaRef was created.
+     */
+    schemaRefCreatedAt?: string;
+    /**
+     * ISO timestamp when the schemaRef expires.
+     */
+    schemaRefExpiresAt?: string;
+    /**
+     * Slot assignments mapping viz components to chart regions.
+     */
+    slots: SlotEntry[];
+    /**
+     * Non-fatal issues encountered during composition.
+     */
+    warnings: Issue[];
+    /**
+     * Fatal errors (present when status is 'error').
+     */
+    errors?: Issue[];
+    meta?: {
+      /**
+       * Viz traits that were resolved during composition.
+       */
+      traitsResolved?: string[];
+      /**
+       * Encoding traits applied to axis/scale config.
+       */
+      encodingsApplied?: string[];
+      /**
+       * Number of viz components placed in the schema.
+       */
+      componentCount?: number;
+      /**
+       * Object name if object-based composition was used.
+       */
+      objectUsed?: string;
+      /**
+       * Layout composition strategy: single, layer, facet, or concat.
+       */
+      layoutStrategy?: string;
+      /**
+       * Scale traits resolved (e.g., scale-linear, scale-temporal).
+       */
+      scalesResolved?: string[];
+      /**
+       * Interaction traits resolved (e.g., interaction-tooltip, interaction-highlight).
+       */
+      interactionsResolved?: string[];
+    };
+  }
+  export interface SlotEntry {
+    slotName: string;
+    component: string;
+    props: {
+      [k: string]: any;
+    };
+  }
+  export interface Issue {
+    code: string;
+    message: string;
+    path?: string;
+    hint?: string;
+  }
+}
+export type VizComposeOutput = VizComposeOutputSchema.VizComposeOutput;
+
 // Canonical aliases for shared REPL/UI schema shapes.
 export type UiElement = UiSchemaSchema.UiElement;
 export type UiLayout = UiSchemaSchema.Layout;
@@ -1959,6 +3273,7 @@ export type UiStyle = UiSchemaSchema.Style;
 export type UiProps = UiSchemaSchema.Props;
 export type UiBindings = UiSchemaSchema.Bindings;
 export type UiMeta = UiSchemaSchema.Meta;
+export type FieldSchemaEntry = UiSchemaSchema.FieldSchemaEntry;
 
 export type ReplJsonPatchOperation = ReplPatchSchema.JsonPatchOp;
 export type ReplNodePatch = ReplPatchSchema.NodePatch;
