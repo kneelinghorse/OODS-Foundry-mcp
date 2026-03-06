@@ -21,6 +21,7 @@ import { composeObject } from '../objects/trait-composer.js';
 import {
   resolveVizTraits,
   applyScalesToEncodings,
+  inferDataBindings,
   type VizTraitResolution,
 } from '../compose/viz-trait-resolver.js';
 
@@ -43,6 +44,8 @@ export interface VizComposeInput {
   traits?: string[];
   chartType?: ChartType;
   dataBindings?: DataBindings;
+  /** Alias for dataBindings — accepted for agent ergonomics. */
+  data?: DataBindings;
   theme?: string;
   options?: {
     validate?: boolean;
@@ -289,6 +292,7 @@ export async function handle(input: VizComposeInput): Promise<VizComposeOutput> 
   const errors: VizIssue[] = [];
   let resolvedChartType: ChartType | null = input.chartType ?? null;
   let objectUsed: string | undefined;
+  let autoBindResult: ReturnType<typeof inferDataBindings> | undefined;
   let vizTokens: Record<string, unknown> = {};
   let resolution: VizTraitResolution = {
     chartType: null,
@@ -326,6 +330,22 @@ export async function handle(input: VizComposeInput): Promise<VizComposeOutput> 
       const objectTraitNames = (composed.traits ?? []).map((t) => t.ref.name);
 
       resolution = applyScalesToEncodings(resolveVizTraits(objectTraitNames));
+
+      // Auto-bind object schema fields to chart encodings
+      const userBindings = input.dataBindings ?? input.data;
+      autoBindResult = inferDataBindings(composed.schema, composed.semantics, userBindings);
+      if (autoBindResult.fieldsMapped.length > 0) {
+        // Merge auto-inferred encodings into resolution
+        resolution = {
+          ...resolution,
+          encodings: [...resolution.encodings, ...autoBindResult.encodings],
+          scales: [...resolution.scales, ...autoBindResult.scales],
+          allResolved: [
+            ...resolution.allResolved,
+            ...autoBindResult.fieldsMapped.map(f => `auto:${f}`),
+          ],
+        };
+      }
 
       // Collect viz semantic tokens from composed object
       const vizTokenEntries = Object.entries(composed.tokens ?? {}).filter(
@@ -394,7 +414,8 @@ export async function handle(input: VizComposeInput): Promise<VizComposeOutput> 
     resolvedChartType = 'bar';
   }
 
-  const dataBindings: DataBindings = input.dataBindings ?? {};
+  const dataBindings: DataBindings = autoBindResult?.dataBindings
+    ?? input.dataBindings ?? input.data ?? {};
 
   // Build the viz schema with full trait resolution
   const { schema, slots } = buildVizSchema(resolvedChartType, dataBindings, resolution, input.theme, vizTokens);

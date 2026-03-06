@@ -42,7 +42,7 @@
       "if": { "not": { "required": ["mode"] } },
       "then": { "anyOf": [{ "required": ["schema"] }, { "required": ["schemaRef"] }] }
     },
-    { "if": { "properties": { "mode": { "const": "patch" } } }, "then": { "required": ["patch"] } }
+    { "if": { "properties": { "mode": { "const": "patch" } }, "required": ["mode"] }, "then": { "required": ["patch"] } }
   ],
   "additionalProperties": false
 }

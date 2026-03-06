@@ -10,7 +10,8 @@
  *   - Interaction traits (2): tooltip, highlight → interaction components
  */
 
-import type { ChartType } from '../tools/viz.compose.js';
+import type { ChartType, DataBindings } from '../tools/viz.compose.js';
+import type { FieldDefinition } from '../objects/types.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -211,4 +212,132 @@ export function applyScalesToEncodings(resolution: VizTraitResolution): VizTrait
   });
 
   return { ...resolution, encodings: updatedEncodings };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Object field → encoding auto-binding                              */
+/* ------------------------------------------------------------------ */
+
+const TEMPORAL_TYPES = new Set(['datetime', 'date', 'timestamp']);
+const NUMERIC_TYPES = new Set(['number', 'integer', 'float', 'decimal']);
+
+/** Semantic types that strongly indicate a temporal field. */
+const TEMPORAL_SEMANTICS = new Set(['timestamp', 'datetime', 'date']);
+/** Semantic types that strongly indicate a numeric/metric field. */
+const NUMERIC_SEMANTICS = new Set([
+  'currency', 'percentage', 'rating', 'count', 'metric',
+]);
+/** Semantic types that indicate a categorical field. */
+const CATEGORICAL_SEMANTICS = new Set(['status', 'identifier', 'category']);
+
+export interface AutoBindingResult {
+  dataBindings: DataBindings;
+  encodings: EncodingConfig[];
+  scales: ScaleConfig[];
+  fieldsMapped: string[];
+}
+
+/**
+ * Infer data bindings from object schema fields.
+ *
+ * Rules:
+ *   - First temporal field → x-axis (with temporal scale)
+ *   - First numeric field → y-axis (with linear scale)
+ *   - First enum field → color
+ *   - Second numeric field → size (if available)
+ *
+ * Explicit dataBindings from the user override auto-bound fields.
+ */
+export function inferDataBindings(
+  fields: Record<string, FieldDefinition>,
+  semantics?: Record<string, { semantic_type: string }>,
+  existingBindings?: DataBindings,
+): AutoBindingResult {
+  const bindings: DataBindings = { ...existingBindings };
+  const encodings: EncodingConfig[] = [];
+  const scales: ScaleConfig[] = [];
+  const fieldsMapped: string[] = [];
+
+  const temporalFields: string[] = [];
+  const numericFields: string[] = [];
+  const categoricalFields: string[] = [];
+
+  for (const [name, def] of Object.entries(fields)) {
+    const sem = semantics?.[name]?.semantic_type;
+
+    // Classify by semantic type first, then by field type
+    if (sem && TEMPORAL_SEMANTICS.has(sem) || TEMPORAL_TYPES.has(def.type)) {
+      temporalFields.push(name);
+    } else if (sem && NUMERIC_SEMANTICS.has(sem) || NUMERIC_TYPES.has(def.type)) {
+      numericFields.push(name);
+    } else if (def.validation?.enum && def.validation.enum.length > 0) {
+      categoricalFields.push(name);
+    } else if (sem && CATEGORICAL_SEMANTICS.has(sem)) {
+      categoricalFields.push(name);
+    }
+  }
+
+  // x-axis: prefer temporal, fallback to first categorical
+  if (!bindings.x) {
+    const xField = temporalFields[0] ?? categoricalFields[0];
+    if (xField) {
+      bindings.x = xField;
+      fieldsMapped.push(xField);
+      const isTemporal = TEMPORAL_TYPES.has(fields[xField].type) ||
+        (semantics?.[xField]?.semantic_type && TEMPORAL_SEMANTICS.has(semantics[xField].semantic_type));
+      const scale: ScaleType = isTemporal ? 'temporal' : 'linear';
+      encodings.push({
+        channel: 'x',
+        traitName: 'auto:field-binding',
+        defaultScale: scale,
+        axisTitle: xField.replace(/_/g, ' '),
+      });
+      if (isTemporal) {
+        scales.push({ type: 'temporal', traitName: 'auto:temporal-scale' });
+      }
+    }
+  }
+
+  // y-axis: first numeric field
+  if (!bindings.y && numericFields.length > 0) {
+    const yField = numericFields[0];
+    bindings.y = yField;
+    fieldsMapped.push(yField);
+    encodings.push({
+      channel: 'y',
+      traitName: 'auto:field-binding',
+      defaultScale: 'linear',
+      axisTitle: yField.replace(/_/g, ' '),
+    });
+    scales.push({ type: 'linear', traitName: 'auto:linear-scale' });
+  }
+
+  // color: first categorical (enum) field
+  if (!bindings.color && categoricalFields.length > 0) {
+    // Don't use a field already bound to x
+    const colorField = categoricalFields.find(f => f !== bindings.x);
+    if (colorField) {
+      bindings.color = colorField;
+      fieldsMapped.push(colorField);
+      encodings.push({
+        channel: 'color',
+        traitName: 'auto:field-binding',
+        defaultScale: 'linear',
+      });
+    }
+  }
+
+  // size: second numeric field (if available)
+  if (!bindings.size && numericFields.length > 1) {
+    const sizeField = numericFields[1];
+    bindings.size = sizeField;
+    fieldsMapped.push(sizeField);
+    encodings.push({
+      channel: 'size',
+      traitName: 'auto:field-binding',
+      defaultScale: 'linear',
+    });
+  }
+
+  return { dataBindings: bindings, encodings, scales, fieldsMapped };
 }

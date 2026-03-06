@@ -517,6 +517,59 @@ describe('pipeline orchestration', () => {
     });
   });
 
+  // ── Nested options aliases (s74-m04) ─────────────────────────────
+
+  describe('nested options aliases', () => {
+    it('reads framework from options when not at top level', async () => {
+      const result = await handle({
+        object: 'Subscription',
+        options: { framework: 'vue' },
+      });
+
+      expect(mockCodeGenerateHandle).toHaveBeenCalledWith(
+        expect.objectContaining({ framework: 'vue' }),
+      );
+      expect(result.code!.framework).toBe('vue');
+    });
+
+    it('reads styling from options when not at top level', async () => {
+      const result = await handle({
+        object: 'Subscription',
+        options: { styling: 'tailwind' },
+      });
+
+      expect(mockCodeGenerateHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          options: expect.objectContaining({ styling: 'tailwind' }),
+        }),
+      );
+      expect(result.code!.styling).toBe('tailwind');
+    });
+
+    it('top-level framework overrides options.framework', async () => {
+      const result = await handle({
+        object: 'Subscription',
+        framework: 'html',
+        options: { framework: 'vue' },
+      });
+
+      expect(result.code!.framework).toBe('html');
+    });
+
+    it('passes typescript from options to codegen', async () => {
+      await handle({
+        object: 'Subscription',
+        options: { typescript: false },
+      });
+
+      expect(mockCodeGenerateHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          options: expect.objectContaining({ typescript: false }),
+        }),
+      );
+    });
+  });
+
   // ── Duration tracking ─────────────────────────────────────────────
 
   describe('duration and steps tracking', () => {

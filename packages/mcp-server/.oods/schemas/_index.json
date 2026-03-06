@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-05T16:45:22.933Z",
+  "updatedAt": "2026-03-05T23:37:19.731Z",
   "schemas": [
     {
       "name": "tier1-acceptance-sub-detail",
@@ -10,6 +10,18 @@
       "updatedAt": "2026-03-05T03:43:57.111Z",
       "tags": [],
       "object": "Subscription"
+    },
+    {
+      "name": "test-tagged-schema",
+      "schemaRef": "compose-df48d41e",
+      "object": "Product",
+      "version": 4,
+      "createdAt": "2026-03-05T23:29:45.932Z",
+      "updatedAt": "2026-03-05T23:37:19.703Z",
+      "tags": [
+        "test",
+        "sprint74"
+      ]
     }
   ]
 }

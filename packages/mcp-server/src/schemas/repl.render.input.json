@@ -105,7 +105,8 @@
     },
     {
       "if": {
-        "properties": { "mode": { "const": "patch" } }
+        "properties": { "mode": { "const": "patch" } },
+        "required": ["mode"]
       },
       "then": {
         "required": [

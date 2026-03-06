@@ -479,7 +479,16 @@ export function emit(schema: UiSchema, options: CodegenOptions): CodegenResult {
     ? collectPropDefaults(schema.screens, schema.objectSchema!)
     : null;
 
-  lines.push(`export const GeneratedUI${returnType} = () => {`);
+  // Destructure object schema fields from props for type-safe JSX references
+  if (hasObjectSchema) {
+    const fieldNames = Object.keys(schema.objectSchema!)
+      .map(snakeToCamel)
+      .sort();
+    const destructure = `{ ${fieldNames.join(', ')} }`;
+    lines.push(`export const GeneratedUI${returnType} = (${destructure}) => {`);
+  } else {
+    lines.push(`export const GeneratedUI${returnType} = () => {`);
+  }
 
   if (handlerStubs) {
     lines.push(handlerStubs);

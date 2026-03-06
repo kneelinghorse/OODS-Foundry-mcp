@@ -22,6 +22,9 @@
 | `options.checkA11y` | boolean | No |  | Enable a11y contrast checks in validate (default false). |
 | `options.renderApply` | boolean | No |  | Render with apply=true to include HTML output (default true). |
 | `options.compact` | boolean | No |  | When true (default), omit token CSS from render output and return tokenCssRef instead. Reduces response size by ~40%. |
+| `options.typescript` | boolean | No |  | Alias: enable TypeScript output in code generation. |
+| `options.styling` | `inline` \| `tokens` \| `tailwind` | No |  | Alias: styling strategy. Overridden by top-level styling if both provided. |
+| `options.framework` | `react` \| `vue` \| `html` | No |  | Alias: target framework. Overridden by top-level framework if both provided. |
 
 ## Output Shape
 

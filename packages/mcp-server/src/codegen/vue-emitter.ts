@@ -392,7 +392,10 @@ function buildScriptSetup(
     }
     lines.push('}');
     lines.push('');
-    lines.push(`defineProps<Props>();`);
+    const fieldNames = Object.keys(objectSchema!)
+      .map(snakeToCamel)
+      .sort();
+    lines.push(`const { ${fieldNames.join(', ')} } = defineProps<Props>();`);
   } else if (options.typescript) {
     lines.push('');
     lines.push(`defineProps<{`);

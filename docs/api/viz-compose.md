@@ -17,6 +17,11 @@
 | `dataBindings.y` | string | No |  | Field name for the y-axis encoding. |
 | `dataBindings.color` | string | No |  | Field name for color encoding. |
 | `dataBindings.size` | string | No |  | Field name for size encoding. |
+| `data` | object | No |  | Alias for dataBindings. Maps field names to encoding channels. |
+| `data.x` | string | No |  | Field name for the x-axis encoding. |
+| `data.y` | string | No |  | Field name for the y-axis encoding. |
+| `data.color` | string | No |  | Field name for color encoding. |
+| `data.size` | string | No |  | Field name for size encoding. |
 | `theme` | string | No |  | Theme token (e.g., 'light', 'dark'). |
 | `options` | object | No |  |  |
 | `options.validate` | boolean | No | `true` | Auto-validate the generated schema. |

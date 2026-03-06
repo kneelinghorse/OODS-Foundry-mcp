@@ -82,10 +82,11 @@ describe('codegen prop binding', () => {
   });
 
   describe('HTML emitter', () => {
-    it('injects {{fieldName}} placeholders for field-bound components', () => {
+    it('injects data-bind attributes and placeholder text for field-bound components', () => {
       const result = htmlEmit(schema, defaultOptions);
       expect(result.status).toBe('ok');
-      expect(result.code).toContain('{{name}}');
+      expect(result.code).toContain('data-bind="name"');
+      expect(result.code).toContain('[name]');
     });
   });
 

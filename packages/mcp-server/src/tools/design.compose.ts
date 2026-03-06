@@ -34,7 +34,7 @@ import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 import { loadObject } from '../objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
-import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldProps } from '../compose/object-slot-filler.js';
+import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldProps, applySelectionsToSchema } from '../compose/object-slot-filler.js';
 import { collectViewExtensions } from '../compose/view-extension-collector.js';
 import { expandSlots, type ExpansionContext } from '../compose/slot-expander.js';
 import { inferSlotPosition } from '../compose/position-affinity.js';
@@ -332,6 +332,74 @@ function inferLayoutFromContext(context: string | undefined): LayoutType {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Field group → intent inference                                     */
+/* ------------------------------------------------------------------ */
+
+import type { FieldDefinition, SemanticMapping } from '../objects/types.js';
+
+/**
+ * Infer a differentiated slot intent from the dominant field types/semantics
+ * in a field group. Produces intents like 'status-indicator', 'metrics-display',
+ * 'metadata-display', 'form-input' instead of the generic 'data-display'.
+ */
+function inferSlotIntentFromFields(
+  fieldNames: string[],
+  schema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): string | undefined {
+  if (fieldNames.length === 0) return undefined;
+
+  // Count semantic/type categories
+  const categories: Record<string, number> = {};
+
+  for (const name of fieldNames) {
+    const field = schema[name];
+    if (!field) continue;
+
+    const sem = semantics?.[name]?.semantic_type;
+    if (sem) {
+      if (sem.includes('status') || sem.includes('state')) {
+        categories['status'] = (categories['status'] ?? 0) + 1;
+      } else if (sem.includes('currency') || sem.includes('price') || sem.includes('percentage')) {
+        categories['metrics'] = (categories['metrics'] ?? 0) + 1;
+      } else if (sem.includes('timestamp') || sem.includes('date')) {
+        categories['temporal'] = (categories['temporal'] ?? 0) + 1;
+      }
+    }
+
+    // Type-based inference
+    if (field.type === 'boolean') {
+      categories['form'] = (categories['form'] ?? 0) + 1;
+    } else if (field.type === 'datetime' || field.type === 'date') {
+      categories['temporal'] = (categories['temporal'] ?? 0) + 1;
+    } else if (field.type === 'number' || field.type === 'integer') {
+      categories['metrics'] = (categories['metrics'] ?? 0) + 1;
+    } else if (field.validation?.enum && field.validation.enum.length > 0) {
+      categories['status'] = (categories['status'] ?? 0) + 1;
+    }
+  }
+
+  // Find dominant category
+  let dominant: string | undefined;
+  let maxCount = 0;
+  for (const [cat, count] of Object.entries(categories)) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominant = cat;
+    }
+  }
+
+  // Map category to intent
+  switch (dominant) {
+    case 'status': return 'status-indicator';
+    case 'metrics': return 'metrics-display';
+    case 'temporal': return 'metadata-display';
+    case 'form': return 'form-input';
+    default: return undefined; // Keep 'data-display' default
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Object → objectUsed metadata                                       */
 /* ------------------------------------------------------------------ */
 
@@ -499,6 +567,27 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       schema = template.schema;
       slots = template.slots;
     }
+    // Differentiate tab slot intents based on field group semantics.
+    // This ensures each tab selects a different component instead of
+    // all tabs getting the same 'data-display' → Card result.
+    const fieldGroups = expansionResult?.fieldGroups;
+    if (fieldGroups && composed) {
+      for (const slot of slots) {
+        if (!slot.name.startsWith('tab-')) continue;
+        const groupFields = fieldGroups[slot.name];
+        if (!groupFields || groupFields.length === 0) continue;
+
+        const dominantIntent = inferSlotIntentFromFields(
+          groupFields,
+          composed.schema,
+          composed.semantics,
+        );
+        if (dominantIntent) {
+          slot.intent = dominantIntent;
+          slot.description = `${slot.description} (${dominantIntent})`;
+        }
+      }
+    }
   }
 
   // 3. Load catalog and fill slots
@@ -527,9 +616,14 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   const contextForExtensions = effectiveContext ?? layoutType;
   let patternsApplied = 0;
 
-  // Build field hints for intelligence-aware selection
+  // Build per-slot field hints for intelligence-aware selection.
+  // When field groups are available from expansion, each slot gets a hint
+  // derived from the dominant field in its group — enabling differentiated
+  // component selection across expanded tabs.
   const fieldHints = new Map<string, FieldHint>();
   if (composed) {
+    // Build field-level hints first
+    const perFieldHints = new Map<string, FieldHint>();
     for (const [fieldName, fieldDef] of Object.entries(composed.schema)) {
       const hint: FieldHint = { type: fieldDef.type };
       if (fieldDef.validation?.enum && fieldDef.validation.enum.length > 0) {
@@ -538,7 +632,34 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       if (composed.semantics?.[fieldName]?.semantic_type) {
         hint.semanticType = composed.semantics[fieldName].semantic_type;
       }
-      fieldHints.set(fieldName, hint);
+      perFieldHints.set(fieldName, hint);
+    }
+
+    // If field groups are available, create per-slot hints from them
+    const fieldGroups = expansionResult?.fieldGroups;
+    if (fieldGroups) {
+      for (const [slotName, fieldNames] of Object.entries(fieldGroups)) {
+        if (fieldNames.length === 0) continue;
+        // Pick the most descriptive field hint (prefer semantic types)
+        let bestHint: FieldHint | undefined;
+        for (const fn of fieldNames) {
+          const h = perFieldHints.get(fn);
+          if (!h) continue;
+          if (!bestHint || (h.semanticType && !bestHint.semanticType)) {
+            bestHint = h;
+          }
+        }
+        if (bestHint) {
+          fieldHints.set(slotName, bestHint);
+        }
+      }
+    }
+
+    // Also include field-level hints for non-slot lookups
+    for (const [fieldName, hint] of perFieldHints) {
+      if (!fieldHints.has(fieldName)) {
+        fieldHints.set(fieldName, hint);
+      }
     }
   }
 
@@ -556,10 +677,14 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         catalog,
         input.preferences?.componentOverrides,
         intentStr,
+        fieldHints.size > 0 ? fieldHints : undefined,
       );
       for (const w of fillResult.warnings) {
         warnings.push({ code: 'OODS-V120', message: w });
       }
+
+      // Use the filled schema (fillSlotsWithObject clones internally)
+      schema = fillResult.schema;
 
       // Convert placements to selections format
       selections = fillResult.placements.map((p) => ({
@@ -587,6 +712,9 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
           fieldHints.size > 0 ? fieldHints : undefined,
         );
         selections.push(...fallbackSelections);
+
+        // Apply selection rankings to the schema tree (bridge the gap)
+        applySelectionsToSchema(schema, fallbackSelections);
       }
     } else {
       // No view_extensions for this context — fall back to generic slot filling
@@ -599,6 +727,9 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         input.preferences?.tabLabels,
         fieldHints.size > 0 ? fieldHints : undefined,
       );
+
+      // Apply selection rankings to the schema tree
+      applySelectionsToSchema(schema, selections);
     }
 
     // Apply composite slot patterns for form/dashboard contexts
@@ -639,6 +770,9 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       intentStr,
       input.preferences?.tabLabels,
     );
+
+    // Apply selection rankings to the schema tree
+    applySelectionsToSchema(schema, selections);
   }
 
   applyOverridesToSchema(
