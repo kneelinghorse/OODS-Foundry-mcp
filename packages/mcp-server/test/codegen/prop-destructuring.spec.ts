@@ -100,18 +100,32 @@ describe('React emitter — prop destructuring', () => {
 /* ------------------------------------------------------------------ */
 
 describe('Vue emitter — prop binding', () => {
-  it('generates defineProps with destructured fields', () => {
+  it('generates ref() bindings for form schemas (Input/Toggle present)', () => {
     const result = vueEmit(schema, tsTailwindOpts);
     expect(result.status).toBe('ok');
 
-    // Should destructure defineProps
-    expect(result.code).toMatch(/const \{[^}]*\} = defineProps<Props>/);
+    // Form schemas use ref() reactivity instead of defineProps
+    expect(result.code).toContain("import { ref } from 'vue'");
+    expect(result.code).toContain('ref<');
     expect(result.code).toContain('inventoryStatus');
     expect(result.code).toContain('name');
   });
 
-  it('generates Props interface with typed fields', () => {
-    const result = vueEmit(schema, tsTailwindOpts);
+  it('generates defineProps for display-only schemas', () => {
+    const displaySchema: UiSchema = {
+      version: '2026.02',
+      objectSchema,
+      screens: [{
+        id: 'screen',
+        component: 'Stack',
+        children: [
+          { id: 'name-text', component: 'Text', props: { field: 'name' } },
+          { id: 'price-display', component: 'Text', props: { field: 'price' } },
+          { id: 'status-badge', component: 'StatusBadge', props: { field: 'inventory_status' } },
+        ],
+      }],
+    };
+    const result = vueEmit(displaySchema, tsTailwindOpts);
     expect(result.code).toContain('interface Props');
     expect(result.code).toContain('name: string');
     expect(result.code).toContain('price: number');

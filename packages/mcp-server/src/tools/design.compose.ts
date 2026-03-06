@@ -84,7 +84,15 @@ export interface SlotSelectionEntry {
   slotName: string;
   intent: string;
   selectedComponent?: string;
+  /** Raw confidence score (0–1) before normalization. */
+  confidence: number;
   candidates: Array<{
+    name: string;
+    confidence: number;
+    reason: string;
+  }>;
+  /** Alternative candidates surfaced when confidence < 0.5. */
+  alternativeCandidates?: Array<{
     name: string;
     confidence: number;
     reason: string;
@@ -124,7 +132,7 @@ export interface DesignComposeOutput {
     contextAutoDetected?: string;
     intentSynthetic?: boolean;
     warnings?: string[];
-    /** Intelligence indicators from Sprint 73 compositor features */
+    /** Intelligence indicators from Sprint 73+ compositor features */
     intelligence?: {
       fieldsExpanded?: boolean;
       slotsExpanded?: number;
@@ -134,6 +142,10 @@ export interface DesignComposeOutput {
       fieldAffinityUsed?: boolean;
       intentSectionsParsed?: number;
       sectionContextUsed?: boolean;
+      /** Aggregated composition confidence (0–1, average of per-slot raw confidences). */
+      compositionConfidence?: number;
+      /** Count of slots with confidence below 0.5 that have alternative candidates. */
+      lowConfidenceSlots?: number;
     };
   };
 }
@@ -294,6 +306,7 @@ function fillSlots(
         slotName: slot.name,
         intent: slot.intent,
         selectedComponent: override,
+        confidence: 1,
         candidates: [{
           name: override,
           confidence: 1,
@@ -315,12 +328,20 @@ function fillSlots(
       ...(slotPosition ? { slotPosition } : {}),
     });
 
-    return {
+    const entry: SlotSelectionEntry = {
       slotName: slot.name,
       intent: slot.intent,
       selectedComponent: result.candidates[0]?.name,
+      confidence: result.rawConfidence,
       candidates: result.candidates,
     };
+
+    // Surface alternative candidates when confidence is low
+    if (result.rawConfidence < 0.5 && result.candidates.length > 1) {
+      entry.alternativeCandidates = result.candidates.slice(1, 4);
+    }
+
+    return entry;
   });
 }
 
@@ -1236,16 +1257,20 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       schema = fillResult.schema;
 
       // Convert placements to selections format
-      selections = fillResult.placements.map((p) => ({
-        slotName: p.slotName,
-        intent: slots.find((s) => s.name === p.slotName)?.intent ?? '',
-        selectedComponent: p.components[0],
-        candidates: p.components.map((name) => ({
-          name,
-          confidence: p.source === 'view_extension' ? 0.95 : p.source === 'override' ? 1 : 0.5,
-          reason: `${p.source} placement`,
-        })),
-      }));
+      selections = fillResult.placements.map((p) => {
+        const rawConf = p.source === 'view_extension' ? 0.95 : p.source === 'override' ? 1 : 0.5;
+        return {
+          slotName: p.slotName,
+          intent: slots.find((s) => s.name === p.slotName)?.intent ?? '',
+          selectedComponent: p.components[0],
+          confidence: rawConf,
+          candidates: p.components.map((name) => ({
+            name,
+            confidence: rawConf,
+            reason: `${p.source} placement`,
+          })),
+        };
+      });
 
       // Also fill any remaining slots not covered by view_extensions
       const filledSlotNames = new Set(fillResult.placements.map((p) => p.slotName));
@@ -1404,6 +1429,17 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   // 5. Return result
   const schemaRefRecord = createSchemaRef(schema, 'compose');
   const schemaRefMeta = describeSchemaRef(schemaRefRecord);
+  // Compute overall composition confidence from per-slot raw confidences
+  const slotConfidences = selections
+    .filter(s => s.confidence !== undefined)
+    .map(s => s.confidence);
+  const compositionConfidence = slotConfidences.length > 0
+    ? Math.round((slotConfidences.reduce((sum, c) => sum + c, 0) / slotConfidences.length) * 100) / 100
+    : undefined;
+  const lowConfidenceSlots = selections
+    .filter(s => s.confidence < 0.5 && s.alternativeCandidates)
+    .length;
+
   const intelligenceMeta = {
     ...(composed ? {
       fieldsExpanded: expansionResult?.expanded ?? false,
@@ -1417,6 +1453,8 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     fieldAffinityUsed: fieldHints.size > 0,
     intentSectionsParsed: parsedIntentSections.sections.length > 0 ? parsedIntentSections.sections.length : undefined,
     sectionContextUsed: sectionContextUsed || undefined,
+    compositionConfidence,
+    lowConfidenceSlots: lowConfidenceSlots > 0 ? lowConfidenceSlots : undefined,
   };
 
   return {

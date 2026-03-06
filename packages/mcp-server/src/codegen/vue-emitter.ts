@@ -5,6 +5,7 @@ import {
   buildTailwindStaticClasses,
   buildTailwindVariantExpression,
   collectTailwindVariantDefinitions,
+  responsiveLayoutClasses,
   type TailwindVariantDefinition,
 } from './tailwind-codegen-utils.js';
 import {
@@ -225,6 +226,12 @@ function emitTemplateNode(
     if (propsStr) attrParts.push(propsStr);
   }
 
+  // v-model for form input components when bound to a field
+  if (FORM_INPUT_COMPONENTS.has(tag) && propsObject?.field && typeof propsObject.field === 'string') {
+    const fieldName = snakeToCamel(propsObject.field as string);
+    attrParts.push(`v-model="${fieldName}"`);
+  }
+
   // Event bindings (e.g., @submit="handleSubmit")
   if (node.bindings && typeof node.bindings === 'object') {
     for (const [eventKey, handlerName] of Object.entries(node.bindings).sort(([a], [b]) => a.localeCompare(b))) {
@@ -236,9 +243,11 @@ function emitTemplateNode(
 
   if (options.styling === 'tailwind') {
     const variantExpression = buildTailwindVariantExpression(node, tailwindVariant);
-    const staticClasses = buildTailwindStaticClasses(node, computedStyle, {
+    const baseClasses = buildTailwindStaticClasses(node, computedStyle, {
       includeVariantFallback: !tailwindVariant,
     });
+    const responsive = responsiveLayoutClasses(node.layout);
+    const staticClasses = responsive ? `${baseClasses} ${responsive}`.trim() : baseClasses;
     const classAttr = buildVueClassAttr(staticClasses, variantExpression);
     if (classAttr) attrParts.push(classAttr);
   } else {
@@ -359,6 +368,93 @@ const VUE_HANDLER_SIGNATURES: HandlerSignatureMap = {
 };
 
 // ---------------------------------------------------------------------------
+// Vue reactivity helpers
+// ---------------------------------------------------------------------------
+
+const FORM_INPUT_COMPONENTS = new Set(['Input', 'Select', 'Textarea', 'TagInput', 'DatePicker', 'Toggle', 'Checkbox', 'Switch']);
+
+const LIST_CONTEXT_BINDINGS = new Set(['onRowClick', 'onSort', 'onFilter', 'onPageChange']);
+
+function isFormSchema(screens: UiElement[]): boolean {
+  // List/table contexts use props even when they contain filter inputs
+  for (const screen of screens) {
+    if (screen.bindings) {
+      const hasListBinding = Object.keys(screen.bindings).some(k => LIST_CONTEXT_BINDINGS.has(k));
+      if (hasListBinding) return false;
+    }
+  }
+  const stack = [...screens];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (FORM_INPUT_COMPONENTS.has(node.component)) return true;
+    if (node.children) stack.push(...node.children);
+  }
+  return false;
+}
+
+/** Map field type to a sensible ref() default value. */
+function fieldRefDefault(entry: FieldSchemaEntry): string {
+  if (entry.enum && entry.enum.length > 0) return `'${entry.enum[0]}'`;
+  switch (entry.type) {
+    case 'boolean': return 'false';
+    case 'integer': case 'number': return '0';
+    case 'array': return '[]';
+    case 'object': return '{}';
+    default: return "''";
+  }
+}
+
+/** Detect derivable computed properties from field names. */
+function detectComputedProperties(
+  objectSchema: Record<string, FieldSchemaEntry>,
+): Array<{ name: string; expression: string; deps: string[] }> {
+  const fields = Object.keys(objectSchema);
+  const computed: Array<{ name: string; expression: string; deps: string[] }> = [];
+
+  // firstName + lastName → fullName
+  const hasFirst = fields.some(f => /^first.?name$/i.test(f));
+  const hasLast = fields.some(f => /^last.?name$/i.test(f));
+  if (hasFirst && hasLast) {
+    const firstName = fields.find(f => /^first.?name$/i.test(f))!;
+    const lastName = fields.find(f => /^last.?name$/i.test(f))!;
+    const firstCamel = snakeToCamel(firstName);
+    const lastCamel = snakeToCamel(lastName);
+    computed.push({
+      name: 'fullName',
+      expression: `\`\${${firstCamel}.value} \${${lastCamel}.value}\`.trim()`,
+      deps: [firstCamel, lastCamel],
+    });
+  }
+
+  // street + city → fullAddress
+  const hasStreet = fields.some(f => /^(?:street|address)$/i.test(f));
+  const hasCity = fields.some(f => /^city$/i.test(f));
+  if (hasStreet && hasCity) {
+    const street = fields.find(f => /^(?:street|address)$/i.test(f))!;
+    const city = fields.find(f => /^city$/i.test(f))!;
+    const streetCamel = snakeToCamel(street);
+    const cityCamel = snakeToCamel(city);
+    const stateField = fields.find(f => /^state$/i.test(f));
+    if (stateField) {
+      const stateCamel = snakeToCamel(stateField);
+      computed.push({
+        name: 'fullAddress',
+        expression: `[${streetCamel}.value, ${cityCamel}.value, ${stateCamel}.value].filter(Boolean).join(', ')`,
+        deps: [streetCamel, cityCamel, stateCamel],
+      });
+    } else {
+      computed.push({
+        name: 'fullAddress',
+        expression: `[${streetCamel}.value, ${cityCamel}.value].filter(Boolean).join(', ')`,
+        deps: [streetCamel, cityCamel],
+      });
+    }
+  }
+
+  return computed;
+}
+
+// ---------------------------------------------------------------------------
 // Script setup block
 // ---------------------------------------------------------------------------
 
@@ -373,11 +469,20 @@ function buildScriptSetup(
   const lines: string[] = [];
   const hasObjectSchema = objectSchema && Object.keys(objectSchema).length > 0;
   const includeCva = tailwindVariants.size > 0;
+  const formMode = hasObjectSchema && screens ? isFormSchema(screens) : false;
 
   if (options.typescript) {
     lines.push(`<script setup lang="ts">`);
   } else {
     lines.push(`<script setup>`);
+  }
+
+  // Vue reactivity imports
+  if (formMode) {
+    const computedProps = hasObjectSchema ? detectComputedProperties(objectSchema!) : [];
+    const vueImports = ['ref'];
+    if (computedProps.length > 0) vueImports.push('computed');
+    lines.push(`import { ${vueImports.sort().join(', ')} } from 'vue';`);
   }
 
   lines.push(`import { ${sorted.join(', ')} } from '@oods/components';`);
@@ -394,8 +499,35 @@ function buildScriptSetup(
     }
   }
 
-  if (options.typescript && hasObjectSchema) {
-    // Generate typed Props alias and populated defineProps
+  if (formMode && hasObjectSchema) {
+    // Vue 3 Composition API: ref() for each form field
+    lines.push('');
+    const sortedFields = Object.entries(objectSchema!).sort(([a], [b]) => a.localeCompare(b));
+    for (const [fieldName, entry] of sortedFields) {
+      const camelName = snakeToCamel(fieldName);
+      const defaultValue = fieldRefDefault(entry);
+      const tsType = options.typescript ? mapFieldType(entry) : null;
+
+      if (entry.description) {
+        lines.push(`/** ${entry.description} */`);
+      }
+      if (tsType) {
+        lines.push(`const ${camelName} = ref<${tsType}>(${defaultValue});`);
+      } else {
+        lines.push(`const ${camelName} = ref(${defaultValue});`);
+      }
+    }
+
+    // computed() for derived values
+    const computedProps = detectComputedProperties(objectSchema!);
+    if (computedProps.length > 0) {
+      lines.push('');
+      for (const cp of computedProps) {
+        lines.push(`const ${cp.name} = computed(() => ${cp.expression});`);
+      }
+    }
+  } else if (options.typescript && hasObjectSchema) {
+    // Non-form: use defineProps for display components
     lines.push('');
     lines.push('interface Props {');
     for (const [fieldName, entry] of Object.entries(objectSchema!).sort(([a], [b]) => a.localeCompare(b))) {

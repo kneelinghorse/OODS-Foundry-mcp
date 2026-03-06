@@ -17,6 +17,7 @@ import type { UiElement } from '../schemas/generated.js';
 import type { TemplateResult } from './templates/types.js';
 import { uid, slotElement } from './templates/types.js';
 import type { FieldDefinition } from '../objects/types.js';
+import { detectFieldPatterns, type FieldPatternMatch } from './field-patterns.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -33,6 +34,8 @@ export interface ExpansionResult {
   reason: string;
   /** Field groups: maps slot name to assigned field names */
   fieldGroups?: Record<string, string[]>;
+  /** Multi-field semantic patterns detected in the object schema */
+  detectedPatterns?: FieldPatternMatch[];
 }
 
 export interface ExpansionContext {
@@ -419,26 +422,40 @@ export function expandSlots(
 ): ExpansionResult {
   const fieldCount = Object.keys(context.fields).length;
 
+  // Detect multi-field patterns for inclusion in result
+  const patternResult = detectFieldPatterns(context.fields, context.semanticTypes);
+  const patterns = patternResult.patterns.length > 0 ? patternResult.patterns : undefined;
+
+  let result: ExpansionResult;
   switch (context.layout) {
     case 'detail':
-      return expandDetailTabs(template, fieldCount, context.fields, context.semanticTypes);
+      result = expandDetailTabs(template, fieldCount, context.fields, context.semanticTypes);
+      break;
 
     case 'dashboard': {
       const kpiCount = countKpiFields(context.fields, context.semanticTypes);
-      return expandDashboardMetrics(template, kpiCount);
+      result = expandDashboardMetrics(template, kpiCount);
+      break;
     }
 
     case 'form':
-      return expandFormFields(template, fieldCount, context.fields, context.semanticTypes);
+      result = expandFormFields(template, fieldCount, context.fields, context.semanticTypes);
+      break;
 
     case 'list':
-      return {
+      result = {
         template,
         slotsAdded: 0,
         expanded: false,
         reason: 'List layout manages columns automatically',
       };
+      break;
   }
+
+  if (patterns) {
+    result.detectedPatterns = patterns;
+  }
+  return result;
 }
 
 /* ------------------------------------------------------------------ */

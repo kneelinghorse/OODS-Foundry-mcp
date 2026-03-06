@@ -16,8 +16,10 @@
 import type { ComponentCatalogSummary } from '../tools/types.js';
 import { scoreFieldAffinity, type FieldHint } from './field-affinity.js';
 import { getPositionAffinity, type SlotPosition } from './position-affinity.js';
+import { resolveIntent, type SynonymResolution } from './intent-synonyms.js';
 export type { FieldHint } from './field-affinity.js';
 export type { SlotPosition } from './position-affinity.js';
+export type { SynonymResolution } from './intent-synonyms.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -35,10 +37,14 @@ export interface SelectionCandidate {
 export interface SelectionResult {
   /** Ranked candidates, highest confidence first. */
   candidates: SelectionCandidate[];
-  /** The intent that was matched. */
+  /** The intent that was matched (canonical if synonym-resolved). */
   intent: string;
+  /** Raw confidence score of the top candidate before normalization (0–1). */
+  rawConfidence: number;
   /** Warning if intent is unknown or no good matches found. */
   warning?: string;
+  /** Synonym resolution metadata (present when input was paraphrased). */
+  synonymResolution?: SynonymResolution;
 }
 
 /* ------------------------------------------------------------------ */
@@ -530,16 +536,23 @@ export function selectComponent(
     return {
       intent: '',
       candidates: [],
+      rawConfidence: 0,
       warning: 'Empty intent provided; no components selected.',
     };
   }
 
   const normalizedIntent = intent.trim().toLowerCase();
+
+  // Synonym resolution: try to map paraphrased intents to canonical keys
+  const knownIntents = new Set(Object.keys(INTENT_MAP));
+  const resolution = resolveIntent(normalizedIntent, knownIntents);
+  const effectiveIntent = resolution.canonicalIntent ?? normalizedIntent;
+
   const slotKeywords = tokenizeIntent(normalizedIntent);
   const contextKeywords = filterContextTokens(tokenizeIntent(intentContext));
   const keywords = Array.from(new Set([...slotKeywords, ...contextKeywords]));
-  const signals = INTENT_MAP[normalizedIntent];
-  const searchOrientedSlot = isSearchOrientedSlot(normalizedIntent, keywords, contextKeywords);
+  const signals = INTENT_MAP[effectiveIntent];
+  const searchOrientedSlot = isSearchOrientedSlot(effectiveIntent, keywords, contextKeywords);
 
   const scored = catalog.map(component => {
     const {
@@ -551,7 +564,7 @@ export function selectComponent(
       contextTraitMatches,
     } = scoreComponent(
       component,
-      normalizedIntent,
+      effectiveIntent,
       signals,
       keywords,
       contextKeywords,
@@ -613,6 +626,9 @@ export function selectComponent(
   const filtered = pool.filter(c => c.confidence >= minConfidence);
   const candidates = filtered.slice(0, topN);
 
+  // Capture raw top confidence before normalization
+  const rawConfidence = candidates.length > 0 ? candidates[0].confidence : 0;
+
   // Normalize confidence scores so the top candidate is 1.0 (if any)
   if (candidates.length > 0 && candidates[0].confidence > 0) {
     const topScore = candidates[0].confidence;
@@ -621,7 +637,16 @@ export function selectComponent(
     }
   }
 
-  const result: SelectionResult = { intent: normalizedIntent, candidates };
+  const result: SelectionResult = {
+    intent: effectiveIntent,
+    candidates,
+    rawConfidence: Math.round(rawConfidence * 100) / 100,
+  };
+
+  // Include synonym resolution metadata when the intent was resolved
+  if (resolution.method !== 'exact' && resolution.method !== 'none') {
+    result.synonymResolution = resolution;
+  }
 
   if (!signals) {
     result.warning = `Unknown intent "${normalizedIntent}"; results based on keyword matching only.`;
