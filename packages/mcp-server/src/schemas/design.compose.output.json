@@ -112,7 +112,12 @@
             "intentSectionsParsed": { "type": "integer", "description": "Number of intent sections parsed from multi-section prompts." },
             "sectionContextUsed": { "type": "boolean", "description": "Whether section context influenced slot composition." },
             "compositionConfidence": { "type": "number", "description": "Aggregated composition confidence (0-1, average of per-slot raw confidences)." },
-            "lowConfidenceSlots": { "type": "number", "description": "Count of slots with confidence below 0.5 that have alternative candidates." }
+            "lowConfidenceSlots": { "type": "number", "description": "Count of slots with confidence below 0.5 that have alternative candidates." },
+            "lowConfidenceSlotNames": {
+              "type": "array",
+              "description": "Slot names whose selected component scored below the low-confidence threshold.",
+              "items": { "type": "string" }
+            }
           },
           "additionalProperties": false
         }
@@ -124,12 +129,25 @@
   "$defs": {
     "slotSelection": {
       "type": "object",
-      "required": ["slotName", "intent", "candidates"],
+      "required": ["slotName", "intent", "candidates", "confidenceLevel", "explanation"],
       "properties": {
         "slotName": { "type": "string" },
         "intent": { "type": "string" },
         "selectedComponent": { "type": "string" },
         "confidence": { "type": "number", "description": "Raw confidence score (0-1) before normalization." },
+        "confidenceLevel": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "Human-readable confidence band for quick review."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "One-line rationale describing why this component was selected."
+        },
+        "reviewHint": {
+          "type": "string",
+          "description": "Follow-up guidance when a low-confidence slot should be reviewed or overridden."
+        },
         "candidates": {
           "type": "array",
           "items": {

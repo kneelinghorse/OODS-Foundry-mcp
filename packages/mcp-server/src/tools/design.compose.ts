@@ -86,6 +86,12 @@ export interface SlotSelectionEntry {
   selectedComponent?: string;
   /** Raw confidence score (0–1) before normalization. */
   confidence: number;
+  /** Human-readable confidence band for quick review. */
+  confidenceLevel: 'high' | 'medium' | 'low';
+  /** One-line rationale summarizing why this component was selected. */
+  explanation: string;
+  /** Follow-up guidance when the selection confidence is low. */
+  reviewHint?: string;
   candidates: Array<{
     name: string;
     confidence: number;
@@ -146,6 +152,8 @@ export interface DesignComposeOutput {
       compositionConfidence?: number;
       /** Count of slots with confidence below 0.5 that have alternative candidates. */
       lowConfidenceSlots?: number;
+      /** Slot names whose selected component scored below the low-confidence threshold. */
+      lowConfidenceSlotNames?: string[];
     };
   };
 }
@@ -307,6 +315,8 @@ function fillSlots(
         intent: slot.intent,
         selectedComponent: override,
         confidence: 1,
+        confidenceLevel: 'high',
+        explanation: `Selected ${override} for slot "${slot.name}" because it was explicitly pinned via preferences.componentOverrides.`,
         candidates: [{
           name: override,
           confidence: 1,
@@ -333,6 +343,8 @@ function fillSlots(
       intent: slot.intent,
       selectedComponent: result.candidates[0]?.name,
       confidence: result.rawConfidence,
+      confidenceLevel: 'low',
+      explanation: '',
       candidates: result.candidates,
     };
 
@@ -341,6 +353,49 @@ function fillSlots(
       entry.alternativeCandidates = result.candidates.slice(1, 4);
     }
 
+    return entry;
+  });
+}
+
+function getConfidenceLevel(confidence: number): 'high' | 'medium' | 'low' {
+  if (confidence < 0.5) return 'low';
+  if (confidence < 0.8) return 'medium';
+  return 'high';
+}
+
+function buildSelectionExplanation(selection: SlotSelectionEntry): string {
+  const selected = selection.selectedComponent ?? selection.candidates[0]?.name ?? 'an unassigned component';
+  const topReason = selection.candidates[0]?.reason?.trim() || 'limited matching signals were available';
+  const normalizedReason = topReason.toLowerCase();
+  if (normalizedReason.includes('override')) {
+    return `${selected} was selected for slot "${selection.slotName}" because it was explicitly pinned via preferences.componentOverrides. Confidence is ${selection.confidenceLevel} (${selection.confidence.toFixed(2)}).`;
+  }
+  const alternatives = selection.alternativeCandidates && selection.alternativeCandidates.length > 0
+    ? ` Alternatives to review: ${selection.alternativeCandidates
+      .map((candidate) => `${candidate.name} (${candidate.confidence.toFixed(2)})`)
+      .join(', ')}.`
+    : '';
+  const reviewSentence = selection.confidenceLevel === 'low'
+    ? ' Review this slot before shipping, or pin a component with preferences.componentOverrides if you disagree with the pick.'
+    : '';
+
+  return `${selected} was selected for slot "${selection.slotName}" because ${topReason}. Confidence is ${selection.confidenceLevel} (${selection.confidence.toFixed(2)}).${alternatives}${reviewSentence}`;
+}
+
+function applySelectionExplainability(selections: SlotSelectionEntry[]): SlotSelectionEntry[] {
+  return selections.map((selection) => {
+    const confidenceLevel = getConfidenceLevel(selection.confidence);
+    const reviewHint = confidenceLevel === 'low'
+      ? `Low-confidence selection for "${selection.slotName}". Consider preferences.componentOverrides to pin a different component if needed.`
+      : undefined;
+
+    const entry: SlotSelectionEntry = {
+      ...selection,
+      confidenceLevel,
+      explanation: '',
+      ...(reviewHint ? { reviewHint } : {}),
+    };
+    entry.explanation = buildSelectionExplanation(entry);
     return entry;
   });
 }
@@ -1293,6 +1348,8 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
           intent: slots.find((s) => s.name === p.slotName)?.intent ?? '',
           selectedComponent: p.components[0],
           confidence: rawConf,
+          confidenceLevel: getConfidenceLevel(rawConf),
+          explanation: '',
           candidates: p.components.map((name) => ({
             name,
             confidence: rawConf,
@@ -1458,16 +1515,20 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   // 5. Return result
   const schemaRefRecord = createSchemaRef(schema, 'compose');
   const schemaRefMeta = describeSchemaRef(schemaRefRecord);
+  const explainedSelections = applySelectionExplainability(selections);
   // Compute overall composition confidence from per-slot raw confidences
-  const slotConfidences = selections
+  const slotConfidences = explainedSelections
     .filter(s => s.confidence !== undefined)
     .map(s => s.confidence);
   const compositionConfidence = slotConfidences.length > 0
     ? Math.round((slotConfidences.reduce((sum, c) => sum + c, 0) / slotConfidences.length) * 100) / 100
     : undefined;
-  const lowConfidenceSlots = selections
+  const lowConfidenceSelections = explainedSelections
+    .filter(s => s.confidenceLevel === 'low');
+  const lowConfidenceSlots = lowConfidenceSelections
     .filter(s => s.confidence < 0.5 && s.alternativeCandidates)
     .length;
+  const lowConfidenceSlotNames = lowConfidenceSelections.map((selection) => selection.slotName);
 
   const intelligenceMeta = {
     ...(composed ? {
@@ -1484,6 +1545,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     sectionContextUsed: sectionContextUsed || undefined,
     compositionConfidence,
     lowConfidenceSlots: lowConfidenceSlots > 0 ? lowConfidenceSlots : undefined,
+    lowConfidenceSlotNames: lowConfidenceSlotNames.length > 0 ? lowConfidenceSlotNames : undefined,
   };
 
   return {
@@ -1493,7 +1555,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     schemaRef: schemaRefMeta.ref,
     schemaRefCreatedAt: schemaRefMeta.createdAt,
     schemaRefExpiresAt: schemaRefMeta.expiresAt,
-    selections,
+    selections: explainedSelections,
     validation,
     warnings,
     ...(objectUsed ? { objectUsed } : {}),

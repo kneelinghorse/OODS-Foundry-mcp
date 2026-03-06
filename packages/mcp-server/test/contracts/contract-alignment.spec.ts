@@ -4,6 +4,9 @@
  * Verifies that agent-intuitive payloads pass input validation
  * and produce correct results without requiring recovery calls.
  */
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { getAjv } from '../../src/lib/ajv.js';
 import validateInputSchema from '../../src/schemas/repl.validate.input.json' assert { type: 'json' };
@@ -14,6 +17,8 @@ import { handle as validateHandle } from '../../src/tools/repl.validate.js';
 import { handle as renderHandle } from '../../src/tools/repl.render.js';
 import { handle as vizHandle } from '../../src/tools/viz.compose.js';
 import { handle as pipelineHandle } from '../../src/tools/pipeline.js';
+import { handle as schemaListHandle } from '../../src/tools/schema/list.js';
+import { handle as schemaLoadHandle } from '../../src/tools/schema/load.js';
 import { createSchemaRef } from '../../src/tools/schema-ref.js';
 import type { UiSchema } from '../../src/schemas/generated.js';
 
@@ -152,6 +157,11 @@ describe('pipeline — nested options aliases contract', () => {
     expect(validate(input)).toBe(true);
   });
 
+  it('schema accepts options.framework + options.typescript together', () => {
+    const input = { object: 'Product', options: { framework: 'vue', styling: 'tokens', typescript: false } };
+    expect(validate(input)).toBe(true);
+  });
+
   it('handler reads styling from options when not at top level', async () => {
     const result = await pipelineHandle({
       object: 'Product',
@@ -164,6 +174,14 @@ describe('pipeline — nested options aliases contract', () => {
     const result = await pipelineHandle({
       object: 'Product',
       options: { framework: 'vue' },
+    });
+    expect(result.code?.framework).toBe('vue');
+  });
+
+  it('handler accepts nested framework + typescript together', async () => {
+    const result = await pipelineHandle({
+      object: 'Product',
+      options: { framework: 'vue', styling: 'tokens', typescript: false },
     });
     expect(result.code?.framework).toBe('vue');
   });
@@ -183,5 +201,29 @@ describe('pipeline — nested options aliases contract', () => {
       save: { name: 'test-tagged-schema', tags: ['test', 'sprint74'] },
     });
     expect(result.saved?.name).toBe('test-tagged-schema');
+  });
+
+  it('pipeline save object persists tags through schema load/list', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'oods-pipeline-contract-'));
+    process.env.MCP_SCHEMA_STORE_ROOT = tempRoot;
+
+    try {
+      const result = await pipelineHandle({
+        object: 'Product',
+        save: { name: 'test-tagged-schema', tags: ['receipt', 'transaction'] },
+      });
+
+      expect(result.saved?.name).toBe('test-tagged-schema');
+
+      const loaded = await schemaLoadHandle({ name: 'test-tagged-schema' });
+      expect(loaded.tags).toEqual(['receipt', 'transaction']);
+
+      const listed = await schemaListHandle({ tags: ['receipt'] });
+      expect(listed.map((entry) => entry.name)).toContain('test-tagged-schema');
+    } finally {
+      delete process.env.MCP_SCHEMA_STORE_ROOT;
+      delete process.env.MCP_SCHEMA_STORE_DIR;
+      await fs.rm(tempRoot, { recursive: true, force: true });
+    }
   });
 });

@@ -190,6 +190,24 @@ describe('map.create → map.list → map.resolve round-trip', () => {
     expect(resolveResult.propTranslations![0].oodsProp).toBe('appearance');
     expect(resolveResult.propTranslations![0].coercionType).toBe('enum');
   });
+
+  it('resolve success uses the documented ok/not_found status model', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'material',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+    });
+
+    const result = await resolveHandle({
+      externalSystem: 'material',
+      externalComponent: 'Button',
+    });
+
+    expect(validateResolveOutput(result)).toBe(true);
+    expect(result.status).toBe('ok');
+    expect(result.message).toBeUndefined();
+  });
 });
 
 describe('map.create trait validation', () => {
@@ -636,7 +654,7 @@ describe('map.delete handler', () => {
     resetMappingsFile();
   });
 
-  it('deletes an existing mapping', async () => {
+  it('deletes an existing mapping and returns the deleted summary object', async () => {
     await createHandle({
       apply: true,
       externalSystem: 'material',
@@ -648,6 +666,7 @@ describe('map.delete handler', () => {
 
     expect(validateDeleteOutput(result)).toBe(true);
     expect(result.status).toBe('ok');
+    expect(result.etag).toMatch(/^[a-f0-9]{64}$/);
     expect(result.deleted!.id).toBe('material-button');
     expect(result.deleted!.externalSystem).toBe('material');
     expect(result.deleted!.externalComponent).toBe('Button');

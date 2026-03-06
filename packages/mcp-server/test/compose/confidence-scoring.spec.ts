@@ -91,7 +91,21 @@ describe('design.compose — per-slot confidence', () => {
     }
   });
 
-  it('overridden slots have confidence 1', async () => {
+  it('selections include confidence bands and human-readable explanations', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'detail',
+    });
+    expect(result.status).toBe('ok');
+
+    for (const selection of result.selections) {
+      expect(['high', 'medium', 'low']).toContain(selection.confidenceLevel);
+      expect(selection.explanation).toContain(selection.slotName);
+      expect(selection.explanation.length).toBeGreaterThan(20);
+    }
+  });
+
+  it('overridden slots are explicit high-confidence selections', async () => {
     const result = await handle({
       object: 'Subscription',
       context: 'detail',
@@ -99,9 +113,15 @@ describe('design.compose — per-slot confidence', () => {
     });
     expect(result.status).toBe('ok');
     const overriddenSlot = result.selections.find(s => s.slotName === 'tab-0');
-    if (overriddenSlot) {
-      expect(overriddenSlot.confidence).toBe(1);
-    }
+    expect(overriddenSlot).toBeDefined();
+    expect(overriddenSlot).toMatchObject({
+      selectedComponent: 'Card',
+      confidence: 1,
+      confidenceLevel: 'high',
+    });
+    expect(overriddenSlot!.explanation).toContain('explicitly pinned');
+    expect(overriddenSlot!.explanation).toContain('preferences.componentOverrides');
+    expect(overriddenSlot!.reviewHint).toBeUndefined();
   });
 });
 
@@ -131,5 +151,22 @@ describe('design.compose — composition confidence metadata', () => {
     const confidences = result.selections.map(s => s.confidence);
     const expectedAvg = Math.round((confidences.reduce((sum, c) => sum + c, 0) / confidences.length) * 100) / 100;
     expect(result.meta!.intelligence!.compositionConfidence).toBe(expectedAvg);
+  });
+
+  it('surfaces low-confidence slot names and review hints for ambiguous prompts', async () => {
+    const result = await handle({
+      intent: 'something completely unrelated xyz',
+    });
+    expect(result.status).toBe('ok');
+
+    const lowConfidenceSelections = result.selections.filter((selection) => selection.confidenceLevel === 'low');
+    expect(lowConfidenceSelections.length).toBeGreaterThan(0);
+    expect(result.meta?.intelligence?.lowConfidenceSlotNames).toEqual(
+      lowConfidenceSelections.map((selection) => selection.slotName),
+    );
+
+    for (const selection of lowConfidenceSelections) {
+      expect(selection.reviewHint).toContain('componentOverrides');
+    }
   });
 });
