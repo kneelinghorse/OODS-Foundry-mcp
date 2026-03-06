@@ -758,6 +758,26 @@ function inferIntentFieldHint(phrase: string): FieldHint {
   return { type: 'string' };
 }
 
+function inferSlotIntentFromFieldHint(hint: FieldHint): string {
+  if (hint.semanticType === 'preferences.toggle' || hint.type === 'boolean') {
+    return 'boolean-input';
+  }
+
+  if (hint.enum && hint.enum.length > 0) {
+    return 'enum-input';
+  }
+
+  if (hint.type === 'datetime' || hint.type === 'date' || hint.semanticType === 'timestamp') {
+    return 'date-input';
+  }
+
+  if (hint.type === 'email') {
+    return 'email-input';
+  }
+
+  return 'form-input';
+}
+
 function inferFormFieldDescriptorsFromIntent(
   intent: string,
   slots: Slot[],
@@ -1163,6 +1183,10 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     for (const [slotName, descriptor] of inferredFormDescriptors) {
       fieldHints.set(slotName, descriptor.hint);
       slotContextOverrides.set(slotName, descriptor.context);
+      const slot = slots.find((candidate) => candidate.name === slotName);
+      if (slot) {
+        slot.intent = inferSlotIntentFromFieldHint(descriptor.hint);
+      }
     }
   } else if (layoutType === 'list') {
     slotContextOverrides.set('search', ['search input']);

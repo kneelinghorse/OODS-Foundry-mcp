@@ -19,7 +19,22 @@ if (nodeMajor < 20) {
   );
 }
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
-const NATIVE_SERVER_DIR = path.join(PROJECT_ROOT, 'packages', 'mcp-server');
+const NATIVE_SERVER_CANDIDATES = [
+  path.join(PROJECT_ROOT, 'packages', 'mcp-server'),
+  path.join(__dirname, '..', 'mcp-server'),
+];
+
+function resolveNativeServerDir() {
+  for (const candidate of NATIVE_SERVER_CANDIDATES) {
+    const registryPath = path.join(candidate, 'dist', 'tools', 'registry.json');
+    if (fs.existsSync(registryPath)) {
+      return candidate;
+    }
+  }
+  return NATIVE_SERVER_CANDIDATES[0];
+}
+
+const NATIVE_SERVER_DIR = resolveNativeServerDir();
 const NATIVE_DIST = path.join(NATIVE_SERVER_DIR, 'dist');
 const SCHEMAS_DIR = path.join(NATIVE_DIST, 'schemas');
 

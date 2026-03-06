@@ -1,31 +1,31 @@
 # Sprint 57 UX Flow Smoke (Adapter + Bridge)
 
-- Started: 2026-03-04T03:36:26.963Z
-- Finished: 2026-03-04T03:36:27.779Z
+- Started: 2026-03-06T18:05:36.794Z
+- Finished: 2026-03-06T18:05:37.710Z
 
 ### Adapter Flow Results
 
 - composeStatus: ok
-- schemaRef: compose-210372f1
+- schemaRef: compose-a57bd728
 - directCodeStatus: ok
-- directCodeLength: 3378
+- directCodeLength: 3623
 - validateStatus: ok
 - renderStatus: ok
-- renderHtmlLength: 85167
+- renderHtmlLength: 85330
 - refCodeStatus: ok
-- refCodeLength: 3378
+- refCodeLength: 3623
 
 ### Bridge Flow Results
 
 - composeStatus: ok
-- schemaRef: compose-71a7728d
+- schemaRef: compose-d00c288a
 - directCodeStatus: ok
-- directCodeLength: 3378
+- directCodeLength: 3623
 - validateStatus: ok
 - renderStatus: ok
-- renderHtmlLength: 85167
+- renderHtmlLength: 85330
 - refCodeStatus: ok
-- refCodeLength: 3378
+- refCodeLength: 3623
 
 Notes:
 - Adapter path uses stdio MCP adapter (packages/mcp-adapter).

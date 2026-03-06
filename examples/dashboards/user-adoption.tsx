@@ -12,7 +12,7 @@ import {
   type ChartPanelDefinition,
 } from '../../src/contexts/regions/chart-regions.js';
 import { Text } from '../../src/components/base/Text.js';
-import activeUser from '../../src/fixtures/user/active.json' assert { type: 'json' };
+import activeUser from '../../src/fixtures/user/active.json';
 import { createStatefulTraitAdapter } from '../../src/traits/Stateful/view.js';
 import { createTimestampableTraitAdapter } from '../../src/traits/Timestampable/view.js';
 import { createTaggableTraitAdapter } from '../../src/traits/Taggable/view.js';

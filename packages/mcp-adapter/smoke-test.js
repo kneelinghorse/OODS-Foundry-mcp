@@ -15,8 +15,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ADAPTER_ENTRY = path.join(__dirname, 'index.js');
-const REGISTRY_PATH = path.join(__dirname, '..', 'mcp-server', 'dist', 'tools', 'registry.json');
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const SERVER_CANDIDATES = [
+  path.join(PROJECT_ROOT, 'packages', 'mcp-server'),
+  path.join(__dirname, '..', 'mcp-server'),
+];
 const TIMEOUT_MS = 15000;
+
+function resolveRegistryPath() {
+  for (const candidate of SERVER_CANDIDATES) {
+    const registryPath = path.join(candidate, 'dist', 'tools', 'registry.json');
+    if (fs.existsSync(registryPath)) {
+      return registryPath;
+    }
+  }
+  return path.join(SERVER_CANDIDATES[0], 'dist', 'tools', 'registry.json');
+}
+
+const REGISTRY_PATH = resolveRegistryPath();
 
 function jsonRpcRequest(method, params = {}, id = 1) {
   return JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n';
