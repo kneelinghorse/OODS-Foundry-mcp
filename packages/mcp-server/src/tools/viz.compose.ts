@@ -271,7 +271,8 @@ function buildVizSchema(
     screens: [
       {
         id: nextId(),
-        component: 'Box',
+        component: 'Stack',
+        layout: { type: 'stack', gapToken: 'cluster-default' },
         props: layoutProps,
         children,
       },

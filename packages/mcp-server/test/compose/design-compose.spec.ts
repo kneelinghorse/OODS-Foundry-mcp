@@ -169,6 +169,39 @@ describe('design.compose — dashboard intent', () => {
     const json = JSON.stringify(result.schema);
     expect(json).toContain('"columns":2');
   });
+
+  it('keeps short dashboard prompts on the default compact slot shape', async () => {
+    const result = await handle({
+      intent: 'dashboard with metrics and sidebar',
+      options: { validate: false },
+    });
+
+    expect(slotNames(result)).toEqual(['header', 'metrics', 'main-content', 'sidebar']);
+    expect(result.meta?.slotCount).toBe(4);
+  });
+
+  it('scales long section-heavy dashboards into distinct main and sidebar slots', async () => {
+    const result = await handle({
+      intent: 'An operations dashboard for a multi-region SaaS company. The dashboard should include: 1) A KPI section at the top showing active users, revenue, churn rate, and NPS score as large metric cards; 2) A real-time order feed showing the last 50 orders with status badges; 3) A geographic heat map of user activity by region; 4) A system health panel showing service uptime percentages; 5) An alerts panel listing active incidents sorted by severity; 6) A team activity feed with avatar, action, and timestamp; 7) Revenue projections chart.',
+      options: { validate: false },
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('dashboard');
+    expect(result.meta?.slotCount).toBeGreaterThan(4);
+    expect(slotNames(result)).toEqual([
+      'header',
+      'metrics',
+      'main-content',
+      'main-section-1',
+      'main-section-2',
+      'main-section-3',
+      'sidebar',
+      'sidebar-section-1',
+    ]);
+    expect(result.selections.find((selection) => selection.slotName === 'main-content')?.intent).toBe('data-table');
+    expect(result.selections.find((selection) => selection.slotName === 'sidebar')?.intent).toBe('metadata-display');
+  });
 });
 
 /* ------------------------------------------------------------------ */

@@ -114,6 +114,16 @@ describe('resolveIntentObject — auto-detect context from intent', () => {
     expect(result.contextSource).toBe('auto-detected');
   });
 
+  it('does not treat imperative "create" as form context by itself', () => {
+    const result = resolveIntentObject(
+      'Create an operations dashboard for a SaaS billing platform',
+      undefined,
+      undefined,
+    );
+    expect(result.context).toBeUndefined();
+    expect(result.contextSource).toBeUndefined();
+  });
+
   it('detects list context from "table" keyword', () => {
     const result = resolveIntentObject('subscription table', undefined, undefined);
     expect(result.context).toBe('list');
@@ -280,6 +290,25 @@ describe('design.compose — backward compatibility (intent-only)', () => {
     const result = await handle({ intent: 'user registration form' });
     expect(result.status).toBe('ok');
     expect(result.layout).toBe('form');
+  });
+
+  it('leading "create" does not force dashboard prompts into form layout', async () => {
+    const intent = [
+      'Create an operations dashboard for a SaaS billing platform.',
+      'The top row should show monthly recurring revenue, active subscriptions, churn rate, failed payment count, and average revenue per account.',
+      'The main canvas should include a revenue trend chart by month, a cancellations breakdown by reason, a table of at-risk accounts with renewal dates, and a feed of recent billing events.',
+      'Add a sidebar with alerts for failed invoices, trial accounts nearing conversion, and plan downgrade anomalies.',
+      'Include a regional performance section showing north america, europe, and asia pacific comparisons.',
+      'Add an internal team activity panel for recent support escalations and finance approvals.',
+      'Add a bottom section for upcoming renewals, open collections work, and a notes area for operators.',
+      'The layout should feel like a dense operational dashboard rather than a simple form or detail page.',
+    ].join(' ');
+
+    const result = await handle({ intent });
+
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('dashboard');
+    expect(result.warnings.some((warning) => warning.message.includes('context "form"'))).toBe(false);
   });
 
   it('all required output fields present on intent-only path', async () => {

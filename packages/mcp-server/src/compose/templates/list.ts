@@ -50,10 +50,10 @@ export function listTemplate(opts: ListOptions = {}): TemplateResult {
     slots.push({
       name: 'search',
       description: 'Search input',
-      intent: 'text-input',
+      intent: 'search-input',
       required: false,
     });
-    toolbarChildren.push(slotElement('search', 'text-input', 'Input'));
+    toolbarChildren.push(slotElement('search', 'search-input', 'SearchInput'));
   }
 
   if (includeFilters) {

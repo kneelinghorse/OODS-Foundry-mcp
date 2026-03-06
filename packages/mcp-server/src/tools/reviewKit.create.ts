@@ -15,6 +15,7 @@ export async function handle(input: BaseInput = {}): Promise<GenericOutput> {
   if (input.apply) {
     const file = path.join(outDir, 'review-kit.txt');
     if (!withinAllowed(policy.artifactsBase, file)) throw new ToolError('OODS-S015', 'Path not allowed', { path: file });
+    fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, 'Review kit placeholder');
     artifacts.push(file);
   }

@@ -40,6 +40,12 @@ import { expandSlots, type ExpansionContext } from '../compose/slot-expander.js'
 import { inferSlotPosition } from '../compose/position-affinity.js';
 import { selectPattern, type CompositionContext } from '../compose/slot-patterns.js';
 import type { FieldHint } from '../compose/field-affinity.js';
+import {
+  buildDashboardSectionPlan,
+  buildSlotContextOverridesFromSections,
+  parseIntentSections,
+  prefersDashboardLayout,
+} from '../compose/intent-sections.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -124,6 +130,8 @@ export interface DesignComposeOutput {
       patternsApplied?: number;
       positionAffinityUsed?: boolean;
       fieldAffinityUsed?: boolean;
+      intentSectionsParsed?: number;
+      sectionContextUsed?: boolean;
     };
   };
 }
@@ -136,10 +144,19 @@ type LayoutType = 'dashboard' | 'form' | 'detail' | 'list';
 
 const LAYOUT_KEYWORDS: Record<LayoutType, string[]> = {
   dashboard: ['dashboard', 'metrics', 'overview', 'analytics', 'stats', 'kpi', 'monitor'],
-  form: ['form', 'registration', 'signup', 'sign-up', 'create', 'edit', 'input', 'submit', 'settings', 'configure'],
+  form: ['form', 'registration', 'signup', 'sign-up', 'edit', 'input', 'submit', 'settings', 'configure'],
   detail: ['detail', 'profile', 'view', 'show', 'record', 'entity', 'page', 'inspect'],
   list: ['list', 'table', 'browse', 'search', 'catalog', 'directory', 'index', 'inventory'],
 };
+
+function hasLayoutKeyword(intent: string, keyword: string): boolean {
+  const pattern = new RegExp(`(^|[^a-z0-9])${escapeRegex(keyword.toLowerCase())}([^a-z0-9]|$)`, 'i');
+  return pattern.test(intent);
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function detectLayout(intent: string): { layout: LayoutType; confidence: number } {
   const lower = intent.toLowerCase();
@@ -147,7 +164,7 @@ function detectLayout(intent: string): { layout: LayoutType; confidence: number 
 
   for (const [layout, keywords] of Object.entries(LAYOUT_KEYWORDS) as [LayoutType, string[]][]) {
     for (const kw of keywords) {
-      if (lower.includes(kw)) {
+      if (hasLayoutKeyword(lower, kw)) {
         scores[layout] += 1;
       }
     }
@@ -173,6 +190,7 @@ function detectLayout(intent: string): { layout: LayoutType; confidence: number 
 function selectTemplate(
   layout: LayoutType,
   preferences: DesignComposeInput['preferences'],
+  dashboardSectionPlan?: ReturnType<typeof buildDashboardSectionPlan>,
 ): TemplateResult {
   resetIdCounter();
 
@@ -180,6 +198,7 @@ function selectTemplate(
     case 'dashboard':
       return dashboardTemplate({
         metricColumns: preferences?.metricColumns,
+        sectionPlan: dashboardSectionPlan,
         theme: preferences?.theme,
       });
     case 'form':
@@ -212,20 +231,24 @@ function fillSlots(
   intentContext: string,
   tabLabels: string[] | undefined,
   fieldHints?: Map<string, FieldHint>,
+  slotContextOverrides?: Map<string, string[]>,
 ): SlotSelectionEntry[] {
   const keywordPriorityIntents = new Set([
     'data-display',
-    'data-list',
     'data-table',
     'form-input',
     'metadata-display',
     'metrics-display',
+    'search-input',
     'status-indicator',
     'tab-panel',
   ]);
 
   const contextForSlot = (slot: Slot): string[] => {
-    const context: string[] = [intentContext, slot.description];
+    const overrideContext = slotContextOverrides?.get(slot.name);
+    const context: string[] = overrideContext && overrideContext.length > 0
+      ? [...overrideContext, slot.description]
+      : [intentContext, slot.description];
     const match = /^tab-(\d+)$/.exec(slot.name);
     if (match && tabLabels?.[Number(match[1])]) {
       context.push(tabLabels[Number(match[1])]);
@@ -356,26 +379,30 @@ function inferSlotIntentFromFields(
     const field = schema[name];
     if (!field) continue;
 
-    const sem = semantics?.[name]?.semantic_type;
-    if (sem) {
-      if (sem.includes('status') || sem.includes('state')) {
-        categories['status'] = (categories['status'] ?? 0) + 1;
-      } else if (sem.includes('currency') || sem.includes('price') || sem.includes('percentage')) {
-        categories['metrics'] = (categories['metrics'] ?? 0) + 1;
-      } else if (sem.includes('timestamp') || sem.includes('date')) {
-        categories['temporal'] = (categories['temporal'] ?? 0) + 1;
-      }
-    }
+    const lowerName = name.toLowerCase();
+    const sem = semantics?.[name]?.semantic_type?.toLowerCase();
+    const isStatusLike = Boolean(
+      sem && /(^|\.)(status|lifecycle)(\.|$)/.test(sem),
+    ) || lowerName === 'status' || lowerName.endsWith('_status') || lowerName.endsWith('_state');
+    const isMetricLike = Boolean(
+      sem && /(currency|price|percentage|count|metric)/.test(sem),
+    ) || field.type === 'number' || field.type === 'integer';
+    const isTemporalLike = Boolean(
+      sem && /(timestamp|date|time|audit)/.test(sem),
+    ) || field.type === 'datetime' || field.type === 'date' || lowerName.endsWith('_at');
+    const isMetadataLike = field.type === 'boolean'
+      || Boolean(field.validation?.enum && field.validation.enum.length > 0)
+      || field.type === 'object[]'
+      || field.type.endsWith('[]');
 
-    // Type-based inference
-    if (field.type === 'boolean') {
-      categories['form'] = (categories['form'] ?? 0) + 1;
-    } else if (field.type === 'datetime' || field.type === 'date') {
-      categories['temporal'] = (categories['temporal'] ?? 0) + 1;
-    } else if (field.type === 'number' || field.type === 'integer') {
-      categories['metrics'] = (categories['metrics'] ?? 0) + 1;
-    } else if (field.validation?.enum && field.validation.enum.length > 0) {
+    if (isStatusLike) {
       categories['status'] = (categories['status'] ?? 0) + 1;
+    } else if (isMetricLike) {
+      categories['metrics'] = (categories['metrics'] ?? 0) + 1;
+    } else if (isTemporalLike) {
+      categories['temporal'] = (categories['temporal'] ?? 0) + 1;
+    } else if (isMetadataLike) {
+      categories['metadata'] = (categories['metadata'] ?? 0) + 1;
     }
   }
 
@@ -394,9 +421,89 @@ function inferSlotIntentFromFields(
     case 'status': return 'status-indicator';
     case 'metrics': return 'metrics-display';
     case 'temporal': return 'metadata-display';
-    case 'form': return 'form-input';
+    case 'metadata': return 'metadata-display';
     default: return undefined; // Keep 'data-display' default
   }
+}
+
+function inferIntentFieldHint(phrase: string): FieldHint {
+  const lower = phrase.toLowerCase();
+
+  if (/(toggle|switch|checkbox|boolean|enable|disable|opt[\s-]?in|opt[\s-]?out)/.test(lower)) {
+    return { type: 'boolean' };
+  }
+
+  if (/(dropdown|select|selector|radio|enum|choice|options?)/.test(lower)) {
+    return { type: 'string', enum: ['option-a', 'option-b'] };
+  }
+
+  if (/(timestamp|time|scheduled at|scheduled for)/.test(lower)) {
+    return { type: 'datetime', semanticType: 'timestamp' };
+  }
+
+  if (/(date|calendar|deadline|due)/.test(lower)) {
+    return { type: 'date', semanticType: 'timestamp' };
+  }
+
+  if (/\bemail\b/.test(lower)) {
+    return { type: 'email' };
+  }
+
+  if (/\b(url|link|website)\b/.test(lower)) {
+    return { type: 'url' };
+  }
+
+  if (/\b(amount|price|total|count|quantity|qty|revenue|score|number)\b/.test(lower)) {
+    return { type: 'number' };
+  }
+
+  return { type: 'string' };
+}
+
+function inferFormFieldDescriptorsFromIntent(
+  intent: string,
+  slots: Slot[],
+): Map<string, { hint: FieldHint; context: string[] }> {
+  const fieldSlots = slots
+    .filter((slot) => /^field-\d+$/.test(slot.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (fieldSlots.length === 0) {
+    return new Map();
+  }
+
+  const listSource = intent.includes(':')
+    ? intent.slice(intent.indexOf(':') + 1)
+    : intent;
+  const phrases = listSource
+    .split(/,|;|\n|\band\b/gi)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (phrases.length < 2) {
+    return new Map();
+  }
+
+  const lowerIntent = intent.toLowerCase();
+  const preferenceContext = /(settings|preference|notification)/.test(lowerIntent)
+    ? 'settings preferences notification'
+    : undefined;
+  const descriptors = new Map<string, { hint: FieldHint; context: string[] }>();
+  for (let i = 0; i < fieldSlots.length && i < phrases.length; i++) {
+    const hint = inferIntentFieldHint(phrases[i]);
+    if (hint.type === 'boolean' && preferenceContext) {
+      hint.semanticType = 'preferences.toggle';
+    }
+
+    descriptors.set(fieldSlots[i].name, {
+      hint,
+      context: hint.semanticType === 'preferences.toggle' && preferenceContext
+        ? [phrases[i], preferenceContext]
+        : [phrases[i]],
+    });
+  }
+
+  return descriptors;
 }
 
 /* ------------------------------------------------------------------ */
@@ -518,6 +625,8 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
 
   // 1. Parse intent and detect layout
   const intentStr = resolved.intent;
+  const parsedIntentSections = parseIntentSections(intentStr);
+  const dashboardSectionPlan = buildDashboardSectionPlan(parsedIntentSections);
   let layoutType: LayoutType;
   let layoutDetected: string;
 
@@ -525,13 +634,24 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     layoutType = input.layout;
     layoutDetected = `explicit: ${input.layout}`;
   } else if (composed && effectiveContext) {
-    // Object-aware: infer layout from context param
-    layoutType = inferLayoutFromContext(effectiveContext);
-    layoutDetected = `context-inferred: ${layoutType} (from context="${effectiveContext}")`;
+    const inferredLayout = inferLayoutFromContext(effectiveContext);
+    if (resolved.contextSource === 'auto-detected' && prefersDashboardLayout(parsedIntentSections) && inferredLayout !== 'dashboard') {
+      layoutType = 'dashboard';
+      layoutDetected = `auto: dashboard (section-signaled, base ${inferredLayout}, confidence 0.75)`;
+    } else {
+      // Object-aware: infer layout from explicit or aligned context hints.
+      layoutType = inferredLayout;
+      layoutDetected = `context-inferred: ${layoutType} (from context="${effectiveContext}")`;
+    }
   } else {
     const detection = detectLayout(intentStr);
-    layoutType = detection.layout;
-    layoutDetected = `auto: ${detection.layout} (confidence ${detection.confidence.toFixed(2)})`;
+    if (prefersDashboardLayout(parsedIntentSections) && detection.layout !== 'dashboard') {
+      layoutType = 'dashboard';
+      layoutDetected = `auto: dashboard (section-signaled, base ${detection.layout}, confidence ${Math.max(detection.confidence, 0.75).toFixed(2)})`;
+    } else {
+      layoutType = detection.layout;
+      layoutDetected = `auto: ${detection.layout} (confidence ${detection.confidence.toFixed(2)})`;
+    }
 
     if (detection.confidence < 0.5) {
       warnings.push({
@@ -543,7 +663,11 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   // 2. Select layout template
-  let template = selectTemplate(layoutType, input.preferences);
+  let template = selectTemplate(
+    layoutType,
+    input.preferences,
+    layoutType === 'dashboard' ? dashboardSectionPlan : undefined,
+  );
   let { schema, slots } = template;
 
   // 2b. Expand slots if object has more fields than template provides
@@ -610,10 +734,27 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   const topN = input.options?.topN ?? 3;
+  const slotContextOverrides = new Map<string, string[]>();
+  let sectionContextUsed = false;
+
+  if (layoutType === 'dashboard') {
+    slotContextOverrides.set('header', [parsedIntentSections.summary]);
+    for (const section of dashboardSectionPlan.slots) {
+      slotContextOverrides.set(section.slotName, section.context);
+    }
+    sectionContextUsed = dashboardSectionPlan.slots.length > 0;
+  }
 
   // 3a. Object-aware slot filling: use view_extensions when object is present
   let selections: SlotSelectionEntry[];
-  const contextForExtensions = effectiveContext ?? layoutType;
+  const contextForExtensions = input.context
+    ?? (
+      resolved.contextSource === 'auto-detected'
+      && effectiveContext
+      && inferLayoutFromContext(effectiveContext) !== layoutType
+        ? layoutType
+        : effectiveContext ?? layoutType
+    );
   let patternsApplied = 0;
 
   // Build per-slot field hints for intelligence-aware selection.
@@ -661,6 +802,26 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         fieldHints.set(fieldName, hint);
       }
     }
+  } else if (layoutType === 'form') {
+    const inferredFormDescriptors = inferFormFieldDescriptorsFromIntent(intentStr, slots);
+    for (const [slotName, descriptor] of inferredFormDescriptors) {
+      fieldHints.set(slotName, descriptor.hint);
+      slotContextOverrides.set(slotName, descriptor.context);
+    }
+  } else if (layoutType === 'list') {
+    slotContextOverrides.set('search', ['search input']);
+    slotContextOverrides.set('filters', ['filter controls']);
+    slotContextOverrides.set('toolbar-actions', ['toolbar actions']);
+  }
+
+  if (parsedIntentSections.isLongForm) {
+    const sectionOverrides = buildSlotContextOverridesFromSections(slots, parsedIntentSections);
+    for (const [slotName, contexts] of sectionOverrides) {
+      if (!slotContextOverrides.has(slotName)) {
+        slotContextOverrides.set(slotName, contexts);
+      }
+    }
+    sectionContextUsed = sectionContextUsed || sectionOverrides.size > 0;
   }
 
   if (composed) {
@@ -710,6 +871,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
           intentStr,
           input.preferences?.tabLabels,
           fieldHints.size > 0 ? fieldHints : undefined,
+          slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
         );
         selections.push(...fallbackSelections);
 
@@ -726,6 +888,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         intentStr,
         input.preferences?.tabLabels,
         fieldHints.size > 0 ? fieldHints : undefined,
+        slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
       );
 
       // Apply selection rankings to the schema tree
@@ -769,6 +932,8 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       topN,
       intentStr,
       input.preferences?.tabLabels,
+      fieldHints.size > 0 ? fieldHints : undefined,
+      slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
     );
 
     // Apply selection rankings to the schema tree
@@ -839,6 +1004,20 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   // 5. Return result
   const schemaRefRecord = createSchemaRef(schema, 'compose');
   const schemaRefMeta = describeSchemaRef(schemaRefRecord);
+  const intelligenceMeta = {
+    ...(composed ? {
+      fieldsExpanded: expansionResult?.expanded ?? false,
+      ...(expansionResult?.expanded ? {
+        slotsExpanded: expansionResult.slotsAdded,
+        expansionReason: expansionResult.reason,
+      } : {}),
+      patternsApplied: patternsApplied > 0 ? patternsApplied : undefined,
+    } : {}),
+    positionAffinityUsed: true,
+    fieldAffinityUsed: fieldHints.size > 0,
+    intentSectionsParsed: parsedIntentSections.sections.length > 0 ? parsedIntentSections.sections.length : undefined,
+    sectionContextUsed: sectionContextUsed || undefined,
+  };
 
   return {
     status: 'ok',
@@ -860,16 +1039,9 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       ...(resolved.contextSource === 'auto-detected' ? { contextAutoDetected: resolved.context } : {}),
       ...(resolved.intentSource === 'synthetic' ? { intentSynthetic: true } : {}),
       ...(warnings.length > 0 ? { warnings: warnings.map((w) => w.message) } : {}),
-      ...(composed ? {
+      ...((Object.values(intelligenceMeta).some((value) => value !== undefined)) ? {
         intelligence: {
-          fieldsExpanded: expansionResult?.expanded ?? false,
-          ...(expansionResult?.expanded ? {
-            slotsExpanded: expansionResult.slotsAdded,
-            expansionReason: expansionResult.reason,
-          } : {}),
-          patternsApplied: patternsApplied > 0 ? patternsApplied : undefined,
-          positionAffinityUsed: true,
-          fieldAffinityUsed: fieldHints.size > 0,
+          ...intelligenceMeta,
         },
       } : {}),
     },

@@ -76,6 +76,12 @@ describe('computeFieldAffinity', () => {
     expect(result.boost).toBe(0.25);
     expect(result.preferredComponents).toContain('ProgressBar');
   });
+
+  it('maps preference toggles to preference-first controls', () => {
+    const result = computeFieldAffinity({ type: 'boolean', semanticType: 'preferences.toggle' });
+    expect(result.boost).toBe(0.30);
+    expect(result.preferredComponents[0]).toBe('PreferenceEditor');
+  });
 });
 
 describe('scoreFieldAffinity', () => {

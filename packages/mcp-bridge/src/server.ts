@@ -18,14 +18,7 @@ import {
 import { registerArtifactEndpoints } from './endpoints/artifacts.js';
 import { buildErrorPayload, normalizeRunErrorCode, sendError, statusForCode } from './middleware/errors.js';
 import { buildToolNameMaps, resolveInternalToolName } from './tool-names.js';
-
-// MCP tool name translation: dots → underscores for clients that cannot send dot-delimited names.
-const INTERNAL_TOOLS = new Set(bridgeConfig.tools.allowed);
-const {
-  externalToInternal: EXTERNAL_TO_INTERNAL,
-  internalToExternal: INTERNAL_TO_EXTERNAL,
-  allowedExternalTools: ALLOWED_EXTERNAL_TOOLS,
-} = buildToolNameMaps(INTERNAL_TOOLS);
+import { resolveBridgeToolSurface } from './tool-surface.js';
 
 const APPROVAL_REQUIRED_TOOLS = approvalRequiredTools;
 const APPLY_CAPABLE_TOOLS = applyCapableTools;
@@ -211,8 +204,20 @@ async function main() {
   // Resolve MCP server cwd relative to this file location (works in dev and dist)
   const resolvedServerDir = fileURLToPath(new URL('../../mcp-server/', import.meta.url));
   const mcpServerCwd = resolvedServerDir;
+  const toolSurface = resolveBridgeToolSurface(mcpServerCwd, bridgeConfig.tools.allowed, process.env);
+  const {
+    externalToInternal: EXTERNAL_TO_INTERNAL,
+    internalToExternal: INTERNAL_TO_EXTERNAL,
+    allowedExternalTools: ALLOWED_EXTERNAL_TOOLS,
+  } = buildToolNameMaps(toolSurface.enabled);
   const client = new McpClient(mcpServerCwd);
   const artifactsRoot = path.join(mcpServerCwd, 'artifacts');
+  const registrySource = path.relative(mcpServerCwd, toolSurface.registrySource).split(path.sep).join('/');
+
+  if (toolSurface.unknownExtras.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn(`[mcp-bridge] unknown MCP_EXTRA_TOOLS entries ignored: ${toolSurface.unknownExtras.join(', ')}`);
+  }
 
   await fastify.register(fastifyStatic, {
     root: artifactsRoot,
@@ -229,10 +234,25 @@ async function main() {
     open: bridgeConfig.rateLimit.artifacts,
   });
 
-  fastify.get('/health', async () => ({ status: 'ok', bridge: 'ready' }));
+  fastify.get('/health', async () => ({
+    status: 'ok',
+    bridge: 'ready',
+    toolset: {
+      mode: toolSurface.toolsetMode,
+      enabledCount: toolSurface.enabled.length,
+      registrySource,
+    },
+  }));
 
   fastify.get('/tools', { config: { rateLimit: bridgeConfig.rateLimit.tools } }, async () => ({
     tools: Array.from(ALLOWED_EXTERNAL_TOOLS),
+    toolset: {
+      mode: toolSurface.toolsetMode,
+      enabledInternal: toolSurface.enabled,
+      extras: toolSurface.extraTools,
+      unknownExtras: toolSurface.unknownExtras,
+      registrySource,
+    },
   }));
 
   fastify.post<{ Body: RunRequestBody }>('/run', { config: { rateLimit: bridgeConfig.rateLimit.run } }, async (request, reply) => {

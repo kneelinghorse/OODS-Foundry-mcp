@@ -172,11 +172,16 @@ export function fillSlotsWithObject(
       for (const entry of entries) {
         if (!knownComponents.has(entry.component)) {
           warnings.push(
-            `Component "${entry.component}" from trait "${entry.sourceTrait}" not found in catalog.`,
+            `Skipped unregistered component "${entry.component}" from trait "${entry.sourceTrait}" while filling slot "${tabSlot}".`,
           );
+          continue;
         }
         children.push(buildElement(entry.component, entry.props, `ve-${tabSlot}`));
         components.push(entry.component);
+      }
+
+      if (components.length === 0) {
+        continue;
       }
 
       slotChildren.set(tabSlot, children);
@@ -203,6 +208,12 @@ export function fillSlotsWithObject(
       continue;
     } else if (filledSlots.has(targetSlot)) {
       // Stack into existing slot (another view_extension already placed)
+      if (!knownComponents.has(entry.component)) {
+        warnings.push(
+          `Skipped unregistered component "${entry.component}" from trait "${entry.sourceTrait}" while filling slot "${targetSlot}".`,
+        );
+        continue;
+      }
       const existing = slotChildren.get(targetSlot) ?? [];
       existing.push(buildElement(entry.component, entry.props, `ve-${targetSlot}`));
       slotChildren.set(targetSlot, existing);
@@ -212,14 +223,14 @@ export function fillSlotsWithObject(
         placement.components.push(entry.component);
       }
     } else {
-      filledSlots.add(targetSlot);
-
       if (!knownComponents.has(entry.component)) {
         warnings.push(
-          `Component "${entry.component}" from trait "${entry.sourceTrait}" not found in catalog.`,
+          `Skipped unregistered component "${entry.component}" from trait "${entry.sourceTrait}" while filling slot "${targetSlot}".`,
         );
+        continue;
       }
 
+      filledSlots.add(targetSlot);
       slotChildren.set(targetSlot, [
         buildElement(entry.component, entry.props, `ve-${targetSlot}`),
       ]);
@@ -435,6 +446,168 @@ const FIELD_TYPE_PREFERRED_STRATEGY: Record<string, ContentStrategy[]> = {
  */
 const ENUM_PREFERRED_STRATEGY: ContentStrategy[] = ['status-prop', 'label-prop', 'children'];
 
+const AUTO_BIND_COMPONENT_BLACKLIST = new Set([
+  'Button',
+]);
+
+function getExplicitFieldRefs(props: Record<string, unknown> | undefined): Set<string> {
+  const refs = new Set<string>();
+  if (!props) return refs;
+
+  for (const [key, value] of Object.entries(props)) {
+    if (key !== 'field' && !/Field(?:s)?$/.test(key)) {
+      continue;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      refs.add(value);
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (typeof entry === 'string' && entry.trim()) {
+          refs.add(entry);
+        }
+      }
+    }
+  }
+
+  return refs;
+}
+
+function normalizeFieldType(type: string): string {
+  return type.trim().toLowerCase();
+}
+
+function isArrayFieldType(type: string): boolean {
+  const normalized = normalizeFieldType(type);
+  return normalized === 'array' || normalized.endsWith('[]');
+}
+
+function isComplexFieldType(type: string): boolean {
+  const trimmed = type.trim();
+  const normalized = normalizeFieldType(type);
+
+  if (normalized === 'object' || normalized === 'object[]' || normalized.startsWith('record<')) {
+    return true;
+  }
+
+  if (/^[A-Z]/.test(trimmed)) {
+    return true;
+  }
+
+  return false;
+}
+
+function isStatusField(fieldName: string, fieldEntry: FieldSchemaEntry): boolean {
+  const semantic = fieldEntry.semanticType?.toLowerCase() ?? '';
+  const lowerName = fieldName.toLowerCase();
+
+  if (/(^|\.)(status|lifecycle)(\.|$)/.test(semantic)) return true;
+  return lowerName === 'status' || lowerName.endsWith('_status') || lowerName.endsWith('_state');
+}
+
+function isTemporalField(fieldName: string, fieldEntry: FieldSchemaEntry): boolean {
+  const semantic = fieldEntry.semanticType?.toLowerCase() ?? '';
+  const lowerName = fieldName.toLowerCase();
+
+  if (fieldEntry.type === 'date' || fieldEntry.type === 'datetime') return true;
+  if (/(^|\.)(timestamp|date|time|audit)(\.|$)/.test(semantic)) return true;
+  return lowerName.endsWith('_at')
+    || lowerName.includes('timestamp')
+    || lowerName.endsWith('_date')
+    || lowerName.endsWith('_time');
+}
+
+function isSearchField(fieldName: string, fieldEntry: FieldSchemaEntry): boolean {
+  const semantic = fieldEntry.semanticType?.toLowerCase() ?? '';
+  const lowerName = fieldName.toLowerCase();
+
+  return semantic.includes('search')
+    || lowerName.includes('search')
+    || lowerName.endsWith('query');
+}
+
+function isTagField(fieldName: string, fieldEntry: FieldSchemaEntry): boolean {
+  const semantic = fieldEntry.semanticType?.toLowerCase() ?? '';
+  const lowerName = fieldName.toLowerCase();
+
+  if (semantic.includes('tag') || semantic.includes('taxonomy')) return true;
+  if (lowerName === 'tags' || lowerName === 'tag_count' || lowerName.includes('tag_')) return true;
+  return isArrayFieldType(fieldEntry.type) && lowerName.includes('tag');
+}
+
+function isLabelField(fieldName: string, fieldEntry: FieldSchemaEntry): boolean {
+  const semantic = fieldEntry.semanticType?.toLowerCase() ?? '';
+  const lowerName = fieldName.toLowerCase();
+
+  if (isComplexFieldType(fieldEntry.type) || isArrayFieldType(fieldEntry.type)) return false;
+
+  if (semantic.includes('label') || semantic.includes('name') || semantic.includes('title')) {
+    return true;
+  }
+
+  return lowerName === 'label'
+    || lowerName === 'name'
+    || lowerName.endsWith('_name')
+    || lowerName.endsWith('_label')
+    || lowerName.endsWith('_title')
+    || lowerName.includes('description')
+    || lowerName.includes('summary');
+}
+
+function isGenericFieldCompatible(
+  strategy: ContentStrategy,
+  fieldEntry: FieldSchemaEntry,
+): boolean {
+  switch (strategy) {
+    case 'value-prop':
+    case 'label-prop':
+      return !isComplexFieldType(fieldEntry.type) && !isArrayFieldType(fieldEntry.type);
+    case 'children':
+      return !isComplexFieldType(fieldEntry.type);
+    case 'status-prop':
+      return false;
+    case 'none':
+    default:
+      return false;
+  }
+}
+
+function isFieldCompatibleWithNode(
+  node: UiElement,
+  fieldName: string,
+  fieldEntry: FieldSchemaEntry,
+): boolean {
+  if (AUTO_BIND_COMPONENT_BLACKLIST.has(node.component)) {
+    return false;
+  }
+
+  switch (node.component) {
+    case 'StatusBadge':
+    case 'MessageStatusBadge':
+    case 'ColorizedBadge':
+      return isStatusField(fieldName, fieldEntry);
+    case 'RelativeTimestamp':
+    case 'TimelineTimestamp':
+      return isTemporalField(fieldName, fieldEntry);
+    case 'SearchInput':
+      return isSearchField(fieldName, fieldEntry);
+    case 'TagInput':
+    case 'TagPills':
+    case 'TagSummary':
+      return isTagField(fieldName, fieldEntry);
+    case 'LabelCell':
+    case 'DetailHeader':
+    case 'InlineLabel':
+    case 'TimelineEntryLabel':
+      return isLabelField(fieldName, fieldEntry);
+    default:
+      return isGenericFieldCompatible(getContentStrategy(node.component), fieldEntry);
+  }
+}
+
 /**
  * Walk the UiSchema tree and set `props.field` on leaf components that
  * match objectSchema fields. Uses field type, component content strategy,
@@ -473,6 +646,18 @@ export function wireFieldProps(
   const assignedFields = new Set<string>();
   let boundCount = 0;
 
+  for (const node of leafNodes) {
+    const refs = getExplicitFieldRefs(node.props);
+    if (refs.size === 0) continue;
+
+    assignedNodes.add(node);
+    for (const ref of refs) {
+      if (objectSchema[ref]) {
+        assignedFields.add(ref);
+      }
+    }
+  }
+
   // Pass 1: Try to match fields to components with strategy+type affinity
   for (const [fieldName, fieldEntry] of fields) {
     if (assignedFields.has(fieldName)) continue;
@@ -486,13 +671,16 @@ export function wireFieldProps(
 
     for (const node of leafNodes) {
       if (assignedNodes.has(node)) continue;
+      if (!isFieldCompatibleWithNode(node, fieldName, fieldEntry)) continue;
 
       const strategy = getContentStrategy(node.component);
       const strategyIdx = preferredStrategies.indexOf(strategy);
-      if (strategyIdx < 0) continue;
+      if (strategyIdx < 0 && strategy !== 'children') continue;
 
       // Score: higher is better. Strategy match priority (inverted index) + name affinity bonus
-      let score = (preferredStrategies.length - strategyIdx) * 10;
+      let score = strategyIdx >= 0
+        ? (preferredStrategies.length - strategyIdx) * 10
+        : 4;
 
       // Bonus if the component name hints at the field
       const componentLower = node.component.toLowerCase();
