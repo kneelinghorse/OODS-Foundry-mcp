@@ -1,14 +1,14 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-03-06 | Sprint 76 latest-dist retest `s76-m07`
+> Updated: 2026-03-06 | Sprint 78 latest-dist retest `s78-m06`
 
 ## Current State
 
-- **Platform Score:** 84/100 (targeted latest-dist retest)
+- **Platform Score:** 87/100 (Sprint 78 latest-dist retest)
 - **Agent UX Score:** 8.7/10
-- **Compose Quality:** 4.1/5
-- **Retest Coverage:** 6/6 Sprint 76 validation lanes passed on rebuilt dist
-- **Critical Runtime Defects Open:** 0 in the Sprint 76 retest set
+- **Compose Quality:** 4.2/5
+- **Retest Coverage:** 386 test files, 3303 tests passing, 0 failures on rebuilt dist
+- **Critical Runtime Defects Open:** 0
 
 ## Validated Release Gates
 
@@ -22,6 +22,10 @@
 | Incidental object auto-detection blocked | Pass | S76 | Dashboard prompt with `plan downgrade anomalies` no longer auto-attaches `Plan` |
 | Invalid codegen schemas are rejected | Pass | S76 | `code.generate` now returns `status: "error"` + `OODS-V119` for unknown components |
 | Render preview summaries are honest | Pass | S76 | Invalid renders now say `Render blocked: N validation error(s)` |
+| Bridge output schema aligned | Pass | S78 | `intentSectionsParsed` and `sectionContextUsed` now in bridge output schema |
+| Codegen prop enrichment | Pass | S78 | Form fields emit label/placeholder/type/options from object metadata and intent parsing |
+| Cross-framework codegen parity | Pass | S78 | React, Vue, HTML emitters validated across 3 schemas × 3 styling modes |
+| Intent-driven form differentiation | Pass | S78 | Settings form `dropdown` keyword maps to `Select` via `fieldHintToSlotIntent` |
 | End-to-end compose/validate/render/codegen | Pass | S65 | Core pipeline path remains intact; no Sprint 75 regressions found |
 
 ## Sprint 75 Validated Fixes
@@ -68,19 +72,20 @@
 
 | Category | Weight | Current | Notes |
 |----------|--------|---------|-------|
-| API Surface Completeness | 15 | 14 | Bridge tool-surface honesty fixed |
-| Composition Intelligence | 25 | 20 | Object filtering, search disambiguation, and slot vocabulary now validate on latest dist |
-| Code Generation Quality | 20 | 13 | Invalid schemas now hard-fail and render/codegen messaging is more trustworthy |
+| API Surface Completeness | 15 | 15 | Bridge output schema aligned with compose fields (S78) |
+| Composition Intelligence | 25 | 21 | Intent-driven form field differentiation now includes keyword cues (dropdown→Select) |
+| Code Generation Quality | 20 | 15 | Prop enrichment (label/placeholder/type/options), cross-framework parity, 9 styling×framework combinations validated |
 | Pipeline & Persistence | 15 | 14 | Artifact apply paths now reliable |
 | Error Handling & DX | 10 | 10 | Better metadata and fewer trust-breaking runtime surprises |
 | Visualization | 10 | 9 | Latest-dist viz path validates cleanly |
 | Documentation & Discoverability | 5 | 5 | README + core MCP docs now align to the live 31-tool surface and current cross-tool semantics |
-| **Total** | **100** | **85** | |
+| **Total** | **100** | **89** | |
 
 ## Latest Reports
 
 | Date | Agent | Score | Scope | Report |
 |------|-------|-------|-------|--------|
+| 2026-03-06 | Claude Opus 4.6 | 89/100 | Sprint 78 latest-dist retest | 386 test files, 3303 tests, 0 failures |
 | 2026-03-06 | Codex GPT-5 | 84/100 | Sprint 76 latest-dist retest | `cmos/reports/s76-retest-latest-dist.md` |
 | 2026-03-06 | Codex GPT-5 | Docs aligned | README + MCP tool-surface alignment | `cmos/reports/s77-m04-docs-tool-surface-alignment-2026-03-06.md` |
 | 2026-03-06 | Codex GPT-5 | 75/100 | Sprint 75 latest-dist retest | `cmos/reports/s75-m05-latest-dist-retest-2026-03-06.md` |
@@ -97,4 +102,4 @@
 | Artifact tools | `packages/mcp-server/src/tools/reviewKit.create.ts`, `purity.audit.ts`, `vrt.run.ts` |
 | Bridge tool surface | `packages/mcp-bridge/src/server.ts`, `packages/mcp-bridge/src/tool-surface.ts` |
 
-The V1 path is now blocked by final composition-depth and documentation polish, not by latest-dist correctness failures.
+The V1 path remaining gaps: Composition Intelligence (21/25) — semantic intent→component binding, and Codegen Quality (15/20) — Vue reactivity patterns, responsive Tailwind variants. Platform score: 89/100.

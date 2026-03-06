@@ -682,6 +682,60 @@ function applyFormFieldBindingsFromGroups(
   schema.screens.forEach(walk);
 }
 
+/**
+ * Enrich form field nodes with label/placeholder/type props derived from
+ * intent-parsed field descriptions. Called in the no-object form path
+ * after slot filling and selection application.
+ */
+function enrichFormFieldPropsFromIntent(
+  schema: UiSchema,
+  slotContextOverrides: Map<string, string[]>,
+  fieldHints: Map<string, FieldHint>,
+): void {
+  const FORM_CONTROL_COMPONENTS = new Set([
+    'Input', 'Select', 'Textarea', 'DatePicker', 'Toggle', 'Checkbox', 'Switch',
+    'TagInput', 'SearchInput', 'PreferenceEditor',
+  ]);
+
+  const walk = (node: UiElement): void => {
+    const slotName = getSlotName(node);
+    if (slotName && slotName.startsWith('field-') && FORM_CONTROL_COMPONENTS.has(node.component)) {
+      const contexts = slotContextOverrides.get(slotName);
+      const hint = fieldHints.get(slotName);
+      if (contexts && contexts.length > 0) {
+        const label = contexts[0]
+          .replace(/\b(toggle|switch|checkbox|dropdown|select|selector|input)\b/gi, '')
+          .trim();
+        if (label) {
+          node.props = {
+            ...(node.props ?? {}),
+            label,
+            placeholder: `Enter ${label.toLowerCase()}`,
+          };
+        }
+      }
+      if (hint && node.component === 'Input') {
+        if (hint.type === 'email') {
+          node.props = { ...(node.props ?? {}), type: 'email' };
+        } else if (hint.type === 'number' || hint.type === 'integer') {
+          node.props = { ...(node.props ?? {}), type: 'number' };
+        } else if (hint.type === 'url') {
+          node.props = { ...(node.props ?? {}), type: 'url' };
+        }
+      }
+      if (hint?.enum && hint.enum.length > 0 && node.component === 'Select') {
+        node.props = {
+          ...(node.props ?? {}),
+          options: hint.enum,
+        };
+      }
+    }
+    node.children?.forEach(walk);
+  };
+
+  schema.screens.forEach(walk);
+}
+
 function inferIntentFieldHint(phrase: string): FieldHint {
   const lower = phrase.toLowerCase();
 
@@ -714,6 +768,14 @@ function inferIntentFieldHint(phrase: string): FieldHint {
   }
 
   return { type: 'string' };
+}
+
+function fieldHintToSlotIntent(hint: FieldHint): string | undefined {
+  if (hint.enum && hint.enum.length > 0) return 'enum-input';
+  if (hint.type === 'boolean') return 'boolean-input';
+  if (hint.type === 'date' || hint.type === 'datetime') return 'date-input';
+  if (hint.type === 'email') return 'email-input';
+  return undefined;
 }
 
 function inferFormFieldDescriptorsFromIntent(
@@ -1121,6 +1183,14 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     for (const [slotName, descriptor] of inferredFormDescriptors) {
       fieldHints.set(slotName, descriptor.hint);
       slotContextOverrides.set(slotName, descriptor.context);
+      // Update slot intent to match the inferred field type
+      const slot = slots.find((s) => s.name === slotName);
+      if (slot && slot.intent === 'form-input') {
+        const intentForHint = fieldHintToSlotIntent(descriptor.hint);
+        if (intentForHint) {
+          slot.intent = intentForHint;
+        }
+      }
     }
   } else if (layoutType === 'list') {
     slotContextOverrides.set('search', ['search input']);
@@ -1254,6 +1324,11 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
 
     // Apply selection rankings to the schema tree
     applySelectionsToSchema(schema, selections);
+
+    // Enrich form field props from intent-parsed descriptions (no-object path)
+    if (layoutType === 'form' && slotContextOverrides.size > 0) {
+      enrichFormFieldPropsFromIntent(schema, slotContextOverrides, fieldHints);
+    }
   }
 
   applyOverridesToSchema(
