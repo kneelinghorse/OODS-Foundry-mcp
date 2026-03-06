@@ -59,7 +59,6 @@ const CONTEXT_KEYWORDS: Record<string, string> = {
   catalog: 'list',
   form: 'form',
   edit: 'form',
-  create: 'form',
   register: 'form',
   signup: 'form',
 };

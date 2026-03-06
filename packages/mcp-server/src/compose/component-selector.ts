@@ -76,6 +76,13 @@ const INTENT_MAP: Record<string, IntentSignals> = {
     regions: ['forms', 'form'],
     categories: ['primitive', 'behavioral'],
   },
+  'search-input': {
+    preferredComponents: ['SearchInput', 'Input'],
+    tags: ['search', 'filtering', 'interactive'],
+    contexts: ['list', 'form'],
+    regions: ['header', 'actions', 'forms', 'form'],
+    categories: ['behavioral', 'primitive'],
+  },
   'form-input': {
     preferredComponents: ['Input', 'Select', 'TagInput'],
     tags: ['interactive', 'input'],

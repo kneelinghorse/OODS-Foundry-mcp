@@ -105,8 +105,8 @@ describe('fillSlotsWithObject — position heuristics', () => {
   it('position=main distributes to tab slots in detail template', () => {
     const template = getDetailTemplate();
     const mainPlan: SlotPlan[] = [
-      { component: 'CompA', sourceTrait: 'trait-a', position: 'main', priority: 10, props: {} },
-      { component: 'CompB', sourceTrait: 'trait-b', position: 'main', priority: 5, props: {} },
+      { component: 'StatusBadge', sourceTrait: 'trait-a', position: 'main', priority: 10, props: {} },
+      { component: 'RelativeTimestamp', sourceTrait: 'trait-b', position: 'main', priority: 5, props: {} },
     ];
     const result = fillSlotsWithObject(template, mainPlan, catalog);
 
@@ -117,7 +117,7 @@ describe('fillSlotsWithObject — position heuristics', () => {
   it('position=sidebar maps to metadata slot in detail template', () => {
     const template = getDetailTemplate();
     const sidebarPlan: SlotPlan[] = [{
-      component: 'MetadataPanel',
+      component: 'FilterPanel',
       sourceTrait: 'core/Classifiable',
       position: 'sidebar',
       priority: 0,
@@ -126,7 +126,7 @@ describe('fillSlotsWithObject — position heuristics', () => {
     const result = fillSlotsWithObject(template, sidebarPlan, catalog);
     const metaPlacement = result.placements.find((p) => p.slotName === 'metadata');
     expect(metaPlacement).toBeDefined();
-    expect(metaPlacement!.components).toContain('MetadataPanel');
+    expect(metaPlacement!.components).toContain('FilterPanel');
   });
 });
 
@@ -139,29 +139,29 @@ describe('fillSlotsWithObject — stacking', () => {
     const template = getDetailTemplate();
     const plan: SlotPlan[] = [
       { component: 'StatusBadge', sourceTrait: 'trait-a', position: 'top', priority: 20, props: {} },
-      { component: 'AlertBanner', sourceTrait: 'trait-b', position: 'top', priority: 10, props: {} },
+      { component: 'Banner', sourceTrait: 'trait-b', position: 'top', priority: 10, props: {} },
     ];
     const result = fillSlotsWithObject(template, plan, catalog);
     const headerPlacement = result.placements.find((p) => p.slotName === 'header');
     expect(headerPlacement).toBeDefined();
     expect(headerPlacement!.components).toHaveLength(2);
     expect(headerPlacement!.components).toContain('StatusBadge');
-    expect(headerPlacement!.components).toContain('AlertBanner');
+    expect(headerPlacement!.components).toContain('Banner');
   });
 
   it('stacked elements wrapped in Stack container', () => {
     const template = getDetailTemplate();
     const plan: SlotPlan[] = [
-      { component: 'CompA', sourceTrait: 'trait-a', position: 'top', priority: 20, props: {} },
-      { component: 'CompB', sourceTrait: 'trait-b', position: 'top', priority: 10, props: {} },
+      { component: 'StatusBadge', sourceTrait: 'trait-a', position: 'top', priority: 20, props: {} },
+      { component: 'Banner', sourceTrait: 'trait-b', position: 'top', priority: 10, props: {} },
     ];
     const result = fillSlotsWithObject(template, plan, catalog);
 
     // Find the header slot element — it should be a Stack with 2 children
     const stacks = findAllElements(result, (el) =>
       el.component === 'Stack' && (el.children?.length ?? 0) >= 2 &&
-      el.children!.some((c) => c.component === 'CompA') &&
-      el.children!.some((c) => c.component === 'CompB'),
+      el.children!.some((c) => c.component === 'StatusBadge') &&
+      el.children!.some((c) => c.component === 'Banner'),
     );
     expect(stacks.length).toBeGreaterThan(0);
   });
@@ -183,6 +183,7 @@ describe('fillSlotsWithObject — catalog validation', () => {
     }];
     const result = fillSlotsWithObject(template, plan, catalog);
     expect(result.warnings.some((w) => w.includes('FakeComponent'))).toBe(true);
+    expect(result.placements.some((placement) => placement.components.includes('FakeComponent'))).toBe(false);
   });
 });
 

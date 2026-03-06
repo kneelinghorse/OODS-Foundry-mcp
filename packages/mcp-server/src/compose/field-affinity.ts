@@ -120,6 +120,10 @@ const SEMANTIC_AFFINITY: Record<string, AffinityEntry> = {
     components: ['RatingStars', 'Badge', 'Text'],
     boost: 0.25,
   },
+  'preferences.toggle': {
+    components: ['PreferenceEditor', 'Select', 'Input'],
+    boost: 0.30,
+  },
 };
 
 /**

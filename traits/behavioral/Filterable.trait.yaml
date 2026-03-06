@@ -112,13 +112,6 @@ view_extensions:
         modeParameter: filterMode
         maxActiveParameter: maxActiveFilters
         collapsibleParameter: collapsible
-    - component: ActiveFilterChips
-      position: header
-      priority: 5
-      props:
-        field: activeFilters
-        countField: filterCount
-        showCountParameter: showFilterCount
   detail:
     - component: FilterPanel
       position: sidebar
@@ -147,7 +140,7 @@ dependencies: []
 
 metadata:
   created: "2026-03-05"
-  updated: "2026-03-05"
+  updated: "2026-03-06"
   owners:
     - design@oods.systems
   maturity: stable
@@ -158,13 +151,9 @@ metadata:
       - Enter/Space to toggle selections
       - Escape to collapse an open dropdown
       - In batch mode, Tab to Apply button, Enter to submit
-      ActiveFilterChips:
-      - Tab to navigate between chips
-      - Delete/Backspace to remove a chip
     screenreader: |
       Filter panel is announced with role="region" and aria-label="Filters".
-      Active filter count is announced via aria-live when filters change.
-      Each active filter chip announces its field, operator, and value.
+      Active filter changes are announced via aria-live when filters change.
       Clear-all button is announced as "Clear all filters".
   regionsUsed:
     - list

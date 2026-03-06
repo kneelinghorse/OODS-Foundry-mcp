@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { handle } from '../../src/tools/viz.compose.js';
+import { handle as validateHandle } from '../../src/tools/repl.validate.js';
+import { handle as renderHandle } from '../../src/tools/repl.render.js';
+import { handle as codeGenerateHandle } from '../../src/tools/code.generate.js';
 
 describe('viz.compose handler', () => {
   describe('chartType input mode', () => {
@@ -184,7 +187,7 @@ describe('viz.compose handler', () => {
       const result = await handle({ chartType: 'bar' });
       expect(result.schema.version).toBe('2026.02');
       expect(result.schema.screens).toHaveLength(1);
-      expect(result.schema.screens[0].component).toBe('Box');
+      expect(result.schema.screens[0].component).toBe('Stack');
     });
 
     it('includes layout data attributes', async () => {
@@ -221,6 +224,54 @@ describe('viz.compose handler', () => {
       expect(result.schemaRef).toMatch(/^viz\.compose[-:]/);
       expect(result.schemaRefCreatedAt).toBeDefined();
       expect(result.schemaRefExpiresAt).toBeDefined();
+    });
+
+    it('manual viz output validates against the live registry', async () => {
+      const result = await handle({
+        chartType: 'bar',
+        dataBindings: { x: 'date', y: 'revenue' },
+      });
+      const validation = await validateHandle({
+        mode: 'full',
+        schema: result.schema,
+        options: { checkComponents: true },
+      });
+
+      expect(validation.status).toBe('ok');
+      expect(validation.errors).toHaveLength(0);
+    });
+
+    it('object-backed viz output validates against the live registry', async () => {
+      const result = await handle({ object: 'Subscription' });
+      const validation = await validateHandle({
+        mode: 'full',
+        schema: result.schema,
+        options: { checkComponents: true },
+      });
+
+      expect(validation.status).toBe('ok');
+      expect(validation.errors).toHaveLength(0);
+    });
+
+    it('render and code.generate accept the viz schema without unknown-component warnings', async () => {
+      const result = await handle({
+        chartType: 'bar',
+        dataBindings: { x: 'month', y: 'revenue' },
+      });
+      const renderResult = await renderHandle({
+        mode: 'full',
+        schema: result.schema,
+        apply: true,
+        output: { format: 'document' },
+      });
+      const codegen = await codeGenerateHandle({
+        schema: result.schema,
+        framework: 'react',
+      });
+
+      expect(renderResult.status).toBe('ok');
+      expect(codegen.status).toBe('ok');
+      expect(codegen.warnings.some((warning) => warning.code === 'OODS-V119')).toBe(false);
     });
   });
 

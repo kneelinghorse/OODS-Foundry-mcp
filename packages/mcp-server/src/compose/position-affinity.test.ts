@@ -78,6 +78,8 @@ describe('inferSlotPosition', () => {
     expect(inferSlotPosition('main-content')).toBe('main');
     expect(inferSlotPosition('items')).toBe('main');
     expect(inferSlotPosition('metrics')).toBe('main');
+    expect(inferSlotPosition('main-section-1')).toBe('main');
+    expect(inferSlotPosition('metrics-section-1')).toBe('main');
   });
 
   it('maps footer-like slot names', () => {
@@ -90,6 +92,7 @@ describe('inferSlotPosition', () => {
     expect(inferSlotPosition('sidebar')).toBe('sidebar');
     expect(inferSlotPosition('metadata')).toBe('sidebar');
     expect(inferSlotPosition('filters')).toBe('sidebar');
+    expect(inferSlotPosition('sidebar-section-1')).toBe('sidebar');
   });
 
   it('maps tab-N slot names', () => {

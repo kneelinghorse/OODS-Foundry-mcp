@@ -10,6 +10,7 @@
  *       └── sidebar      – slot: side panel / filters
  */
 import type { UiElement } from '../../schemas/generated.js';
+import type { DashboardSectionPlan, DashboardSectionSlot } from '../intent-sections.js';
 import {
   type Slot,
   type TemplateResult,
@@ -24,18 +25,77 @@ export interface DashboardOptions {
   metricColumns?: number;
   /** Whether to include the sidebar (default: true). */
   includeSidebar?: boolean;
+  /** Optional long-form dashboard section plan. */
+  sectionPlan?: DashboardSectionPlan;
   /** Theme token (optional). */
   theme?: string;
 }
 
+function makeSlotDescriptor(
+  slotName: string,
+  description: string,
+  intent: string,
+  required: boolean,
+): DashboardSectionSlot {
+  return {
+    slotName,
+    description,
+    intent,
+    required,
+    zone: slotName.startsWith('sidebar')
+      ? 'sidebar'
+      : slotName === 'metrics' || slotName.startsWith('metrics-section-')
+        ? 'metrics'
+        : 'main',
+    context: [],
+  };
+}
+
+function buildSectionNode(section: DashboardSectionSlot): UiElement {
+  return {
+    id: uid('dashboard-section'),
+    component: 'Stack',
+    layout: { type: 'stack', gapToken: 'cluster-tight' },
+    children: [
+      ...(section.title ? [{
+        id: uid('dashboard-section-title'),
+        component: 'Text',
+        props: { text: section.title },
+      } satisfies UiElement] : []),
+      slotElement(section.slotName, section.intent),
+    ],
+  };
+}
+
 export function dashboardTemplate(opts: DashboardOptions = {}): TemplateResult {
   resetIdCounter();
-  const { metricColumns = 4, includeSidebar = true, theme } = opts;
+  const { metricColumns = 4, includeSidebar = true, sectionPlan, theme } = opts;
+
+  const metricSections = sectionPlan?.metrics.length
+    ? sectionPlan.metrics
+    : [makeSlotDescriptor('metrics', 'Metric display cards', 'metrics-display', true)];
+  const mainSections = sectionPlan?.main.length
+    ? sectionPlan.main
+    : [makeSlotDescriptor('main-content', 'Primary content area', 'data-display', true)];
+  const sidebarSections = sectionPlan?.sidebar.length
+    ? sectionPlan.sidebar
+    : [makeSlotDescriptor('sidebar', 'Side panel for filters or navigation', 'navigation-panel', false)];
+  const useStructuredSections = Boolean(sectionPlan?.expanded);
 
   const slots: Slot[] = [
     { name: 'header', description: 'Page header area', intent: 'page-header', required: true },
-    { name: 'metrics', description: 'Metric display cards', intent: 'metrics-display', required: true },
-    { name: 'main-content', description: 'Primary content area', intent: 'data-display', required: true },
+    ...metricSections.map((section) => ({
+      name: section.slotName,
+      description: section.description,
+      intent: section.intent,
+      required: section.required,
+    })),
+    ...mainSections.map((section) => ({
+      name: section.slotName,
+      description: section.description,
+      intent: section.intent,
+      required: section.required,
+    })),
   ];
 
   // -- header slot --
@@ -52,7 +112,9 @@ export function dashboardTemplate(opts: DashboardOptions = {}): TemplateResult {
     id: uid('dashboard-metrics'),
     component: 'Grid',
     props: { columns: metricColumns, gap: 'cluster-default' },
-    children: [slotElement('metrics', 'metrics-display')],
+    children: useStructuredSections
+      ? metricSections.map(buildSectionNode)
+      : [slotElement(metricSections[0].slotName, metricSections[0].intent)],
   };
 
   // -- main content --
@@ -60,18 +122,20 @@ export function dashboardTemplate(opts: DashboardOptions = {}): TemplateResult {
     id: uid('dashboard-main'),
     component: 'Stack',
     layout: { type: 'stack', gapToken: 'cluster-default' },
-    children: [slotElement('main-content', 'data-display')],
+    children: useStructuredSections
+      ? mainSections.map(buildSectionNode)
+      : [slotElement(mainSections[0].slotName, mainSections[0].intent)],
   };
 
   // -- body (with or without sidebar) --
   let body: UiElement;
   if (includeSidebar) {
-    slots.push({
-      name: 'sidebar',
-      description: 'Side panel for filters or navigation',
-      intent: 'navigation-panel',
-      required: false,
-    });
+    slots.push(...sidebarSections.map((section) => ({
+      name: section.slotName,
+      description: section.description,
+      intent: section.intent,
+      required: section.required,
+    })));
 
     body = {
       id: uid('dashboard-body'),
@@ -84,7 +148,9 @@ export function dashboardTemplate(opts: DashboardOptions = {}): TemplateResult {
           component: 'Stack',
           layout: { type: 'stack', gapToken: 'cluster-tight' },
           style: { spacingToken: 'inset-default' },
-          children: [slotElement('sidebar', 'navigation-panel')],
+          children: useStructuredSections
+            ? sidebarSections.map(buildSectionNode)
+            : [slotElement(sidebarSections[0].slotName, sidebarSections[0].intent)],
         },
       ],
     };

@@ -132,13 +132,24 @@ export function inferSlotPosition(slotName: string): SlotPosition | undefined {
   if (slotName === 'header' || slotName === 'title' || slotName === 'banner' || slotName === 'search') {
     return 'header';
   }
-  if (slotName === 'main-content' || slotName === 'items' || slotName === 'metrics') {
+  if (
+    slotName === 'main-content'
+    || slotName === 'items'
+    || slotName === 'metrics'
+    || slotName.startsWith('main-section-')
+    || slotName.startsWith('metrics-section-')
+  ) {
     return 'main';
   }
   if (slotName === 'footer' || slotName === 'actions' || slotName === 'pagination') {
     return 'footer';
   }
-  if (slotName === 'sidebar' || slotName === 'metadata' || slotName === 'filters') {
+  if (
+    slotName === 'sidebar'
+    || slotName === 'metadata'
+    || slotName === 'filters'
+    || slotName.startsWith('sidebar-section-')
+  ) {
     return 'sidebar';
   }
   if (slotName.startsWith('tab-')) {

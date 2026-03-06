@@ -102,6 +102,23 @@ describe('design.compose — context layout inference', () => {
     expect(result.layout).toBe('list');
   });
 
+  it('Product list stays registry-valid when composed from first-party traits', async () => {
+    const result = await handle({
+      object: 'Product',
+      context: 'list',
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('list');
+    expect(result.validation?.status).toBe('ok');
+    expect(JSON.stringify(result.schema)).not.toContain('ActiveFilterChips');
+    expect(
+      result.selections.some((selection) =>
+        selection.candidates.some((candidate) => candidate.name === 'ActiveFilterChips'),
+      ),
+    ).toBe(false);
+  });
+
   it('context=form infers form layout', async () => {
     const result = await handle({
       intent: 'subscription view',

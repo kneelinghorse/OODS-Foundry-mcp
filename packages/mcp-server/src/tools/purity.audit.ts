@@ -15,6 +15,7 @@ export async function handle(input: BaseInput = {}): Promise<GenericOutput> {
   if (input.apply) {
     const file = path.join(outDir, 'purity-audit.json');
     if (!withinAllowed(policy.artifactsBase, file)) throw new ToolError('OODS-S015', 'Path not allowed', { path: file });
+    fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ violations: 0, files: [] }, null, 2));
     artifacts.push(file);
   }
