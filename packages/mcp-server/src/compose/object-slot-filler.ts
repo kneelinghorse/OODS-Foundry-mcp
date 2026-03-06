@@ -754,6 +754,21 @@ function applyBoundFieldProps(
     field: fieldName,
   };
 
+  // Set label from field description if not already present
+  if (fieldEntry.description && typeof nextProps.label !== 'string') {
+    nextProps.label = fieldEntry.description;
+  }
+
+  const INPUT_LIKE = new Set(['Input', 'Select', 'Textarea', 'DatePicker', 'SearchInput', 'TagInput']);
+
+  if (INPUT_LIKE.has(node.component)) {
+    // Set placeholder for input-like components
+    if (typeof nextProps.placeholder !== 'string') {
+      const displayName = fieldName.replace(/_/g, ' ');
+      nextProps.placeholder = `Enter ${displayName}`;
+    }
+  }
+
   if (node.component === 'Input' && typeof nextProps.type !== 'string') {
     switch (fieldEntry.type) {
       case 'email':
@@ -766,6 +781,12 @@ function applyBoundFieldProps(
       case 'number':
         nextProps.type = 'number';
         break;
+    }
+  }
+
+  if (node.component === 'Select' && fieldEntry.enum && fieldEntry.enum.length > 0) {
+    if (!nextProps.options) {
+      nextProps.options = fieldEntry.enum;
     }
   }
 

@@ -23,6 +23,10 @@
 | Incidental object auto-detection blocked | Pass | S76 | Dashboard prompt with `plan downgrade anomalies` no longer auto-attaches `Plan` |
 | Invalid codegen schemas are rejected | Pass | S76 | `code.generate` now returns `status: "error"` + `OODS-V119` for unknown components |
 | Render preview summaries are honest | Pass | S76 | Invalid renders now say `Render blocked: N validation error(s)` |
+| Bridge output schema aligned | Pass | S78 | `intentSectionsParsed` and `sectionContextUsed` now in bridge output schema |
+| Codegen prop enrichment | Pass | S78 | Form fields emit label/placeholder/type/options from object metadata and intent parsing |
+| Cross-framework codegen parity | Pass | S78 | React, Vue, HTML emitters validated across 3 schemas × 3 styling modes |
+| Intent-driven form differentiation | Pass | S78 | Settings form `dropdown` keyword maps to `Select` via `fieldHintToSlotIntent` |
 | End-to-end compose/validate/render/codegen | Pass | S65 | Core pipeline path remains intact; no Sprint 75 regressions found |
 
 ## Sprint 75 Validated Fixes
@@ -108,4 +112,4 @@
 | Artifact tools | `packages/mcp-server/src/tools/reviewKit.create.ts`, `purity.audit.ts`, `vrt.run.ts` |
 | Bridge tool surface | `packages/mcp-bridge/src/server.ts`, `packages/mcp-bridge/src/tool-surface.ts` |
 
-The V1 path is now blocked by final composition-depth and documentation polish, not by latest-dist correctness failures.
+The V1 path remaining gaps: Composition Intelligence (21/25) — semantic intent→component binding, and Codegen Quality (15/20) — Vue reactivity patterns, responsive Tailwind variants. Platform score: 89/100.
