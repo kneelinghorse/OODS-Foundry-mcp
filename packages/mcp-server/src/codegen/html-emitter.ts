@@ -2,7 +2,7 @@ import { renderTree } from '../render/tree-renderer.js';
 import { renderDocument } from '../render/document.js';
 import type { UiElement, UiSchema } from '../schemas/generated.js';
 import type { CodegenOptions, CodegenResult } from './types.js';
-import { resolveChildContent } from './binding-utils.js';
+import { resolveChildContent, resolveFieldProps } from './binding-utils.js';
 
 /**
  * Inject {{fieldName}} placeholder text into leaf nodes with field bindings.
@@ -14,6 +14,17 @@ function injectFieldPlaceholders(schema: UiSchema): UiSchema {
 
   const cloned = structuredClone(schema);
   const walk = (node: UiElement): void => {
+    // Enrich props from objectSchema metadata (labels, placeholders, required, options, type)
+    const enriched = resolveFieldProps(node, objectSchema);
+    if (enriched) {
+      node.props = { ...node.props };
+      for (const [key, value] of Object.entries(enriched)) {
+        if ((node.props as Record<string, unknown>)[key] === undefined) {
+          (node.props as Record<string, unknown>)[key] = value;
+        }
+      }
+    }
+
     const hasChildren = Array.isArray(node.children) && node.children.length > 0;
     if (!hasChildren) {
       const content = resolveChildContent(node, objectSchema);

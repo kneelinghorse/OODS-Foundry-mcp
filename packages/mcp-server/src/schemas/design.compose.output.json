@@ -108,7 +108,9 @@
             "expansionReason": { "type": "string", "description": "Reason for slot expansion." },
             "patternsApplied": { "type": "number", "description": "Number of composite slot patterns applied." },
             "positionAffinityUsed": { "type": "boolean", "description": "Whether position-aware scoring was used." },
-            "fieldAffinityUsed": { "type": "boolean", "description": "Whether field-type-aware scoring was used." }
+            "fieldAffinityUsed": { "type": "boolean", "description": "Whether field-type-aware scoring was used." },
+            "intentSectionsParsed": { "type": "integer", "description": "Number of intent sections parsed from multi-section prompts." },
+            "sectionContextUsed": { "type": "boolean", "description": "Whether section context influenced slot composition." }
           },
           "additionalProperties": false
         }
