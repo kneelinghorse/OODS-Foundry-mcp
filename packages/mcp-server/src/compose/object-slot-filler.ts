@@ -21,7 +21,7 @@ import {
 } from './component-selector.js';
 import type { ComponentCatalogSummary } from '../tools/types.js';
 import { getContentStrategy, type ContentStrategy } from '../codegen/content-strategy.js';
-import { inferSlotPosition } from './position-affinity.js';
+import { inferSlotPosition, type SlotPosition } from './position-affinity.js';
 import type { FieldHint } from './field-affinity.js';
 
 /* ------------------------------------------------------------------ */
@@ -53,15 +53,43 @@ export interface SlotPlacement {
  * Each position can match multiple slot names; first match wins.
  */
 const POSITION_TO_SLOTS: Record<string, string[]> = {
-  top: ['header', 'title', 'banner'],
-  header: ['search', 'header', 'title', 'banner'],
-  main: ['main-content', 'tab-0', 'items'],
-  bottom: ['footer', 'actions', 'pagination'],
-  footer: ['pagination', 'footer', 'actions'],
-  sidebar: ['metadata', 'sidebar', 'filters'],
-  before: ['header', 'banner', 'title'],
-  after: ['footer', 'actions'],
+  top: ['search', 'header', 'title', 'banner', 'metrics'],
+  header: ['search', 'toolbar-actions', 'header', 'title', 'banner'],
+  main: ['metrics', 'main-content', 'items'],
+  bottom: ['toolbar-actions', 'pagination', 'footer', 'actions'],
+  footer: ['toolbar-actions', 'pagination', 'footer', 'actions'],
+  sidebar: ['filters', 'metadata', 'sidebar'],
+  before: ['search', 'filters', 'header', 'banner', 'title'],
+  after: ['toolbar-actions', 'pagination', 'footer', 'actions'],
 };
+
+const POSITION_TO_SLOT_PREFIXES: Record<string, string[]> = {
+  top: ['metrics-section-', 'main-section-', 'field-'],
+  header: [],
+  main: ['metrics-section-', 'main-section-', 'field-'],
+  bottom: [],
+  footer: [],
+  sidebar: ['sidebar-section-'],
+  before: [],
+  after: [],
+};
+
+const POSITION_TO_SLOT_GROUP: Partial<Record<string, SlotPosition>> = {
+  top: 'header',
+  header: 'header',
+  before: 'header',
+  main: 'main',
+  bottom: 'footer',
+  footer: 'footer',
+  after: 'footer',
+  sidebar: 'sidebar',
+};
+
+const PRIMARY_SLOT_INTENTS = new Set([
+  'action-button',
+  'pagination-control',
+  'search-input',
+]);
 
 /**
  * Find the best matching slot for a position hint.
@@ -71,9 +99,64 @@ function matchPositionToSlot(
   position: string,
   availableSlots: Set<string>,
 ): string | undefined {
-  const candidates = POSITION_TO_SLOTS[position];
-  if (!candidates) return undefined;
-  return candidates.find((s) => availableSlots.has(s));
+  const candidates = POSITION_TO_SLOTS[position] ?? [];
+  for (const candidate of candidates) {
+    if (availableSlots.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  const prefixes = POSITION_TO_SLOT_PREFIXES[position] ?? [];
+  const available = Array.from(availableSlots).sort();
+  for (const prefix of prefixes) {
+    const prefixedSlot = available.find((slotName) => slotName.startsWith(prefix));
+    if (prefixedSlot) {
+      return prefixedSlot;
+    }
+  }
+
+  const slotGroup = POSITION_TO_SLOT_GROUP[position];
+  if (!slotGroup) {
+    return undefined;
+  }
+
+  return available
+    .filter((slotName) => inferSlotPosition(slotName) === slotGroup)
+    .sort((a, b) => rankSlotForPosition(a, slotGroup) - rankSlotForPosition(b, slotGroup))[0];
+}
+
+function rankSlotForPosition(slotName: string, position: SlotPosition): number {
+  switch (position) {
+    case 'header':
+      if (slotName === 'search') return 0;
+      if (slotName === 'toolbar-actions') return 1;
+      if (slotName === 'header') return 2;
+      if (slotName === 'title') return 3;
+      if (slotName === 'banner') return 4;
+      return 10;
+    case 'main':
+      if (slotName === 'metrics') return 0;
+      if (slotName.startsWith('metrics-section-')) return 1;
+      if (slotName === 'main-content') return 2;
+      if (slotName.startsWith('main-section-')) return 3;
+      if (slotName.startsWith('field-')) return 4;
+      if (slotName === 'items') return 5;
+      return 10;
+    case 'footer':
+      if (slotName === 'toolbar-actions') return 0;
+      if (slotName === 'pagination') return 1;
+      if (slotName === 'footer') return 2;
+      if (slotName === 'actions') return 3;
+      return 10;
+    case 'sidebar':
+      if (slotName === 'filters') return 0;
+      if (slotName === 'metadata') return 1;
+      if (slotName === 'sidebar') return 2;
+      if (slotName.startsWith('sidebar-section-')) return 3;
+      return 10;
+    case 'tab':
+      return slotName.startsWith('tab-') ? 0 : 10;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -244,14 +327,53 @@ export function fillSlotsWithObject(
 
   // ---- Phase 3: Fallback for unfilled required slots ----
   for (const slot of template.slots) {
+    if (!filledSlots.has(slot.name)) continue;
+    if (!PRIMARY_SLOT_INTENTS.has(slot.intent)) continue;
+
+    const existingChildren = slotChildren.get(slot.name);
+    if (!existingChildren || existingChildren.length === 0) continue;
+
+    const existingComponents = new Set(existingChildren.map((child) => child.component));
+    const slotPosition = inferSlotPosition(slot.name);
+    const slotFieldHint = !FORM_CONTROL_INTENTS.has(slot.intent)
+      ? fieldHints?.get(slot.name)
+      : undefined;
+    const primarySelection = selectComponent(slot.intent, catalog, {
+      topN: 1,
+      intentContext: FORM_CONTROL_INTENTS.has(slot.intent)
+        ? (intentContext ? [intentContext] : [])
+        : (intentContext ? [intentContext, slot.description] : [slot.description]),
+      ...(slotFieldHint ? { fieldHint: slotFieldHint } : {}),
+      ...(slotPosition ? { slotPosition } : {}),
+    });
+    const primaryComponent = primarySelection.candidates[0]?.name;
+
+    if (!primaryComponent || existingComponents.has(primaryComponent)) {
+      continue;
+    }
+
+    existingChildren.unshift(buildElement(primaryComponent, {}, `primary-${slot.name}`));
+
+    const placement = placements.find((entry) => entry.slotName === slot.name);
+    if (placement) {
+      placement.components.unshift(primaryComponent);
+    }
+  }
+
+  for (const slot of template.slots) {
     if (filledSlots.has(slot.name)) continue;
     if (!slot.required) continue;
 
     const slotPosition = inferSlotPosition(slot.name);
+    const slotFieldHint = !FORM_CONTROL_INTENTS.has(slot.intent)
+      ? fieldHints?.get(slot.name)
+      : undefined;
     const result: SelectionResult = selectComponent(slot.intent, catalog, {
       topN: 1,
-      intentContext: intentContext ? [intentContext, slot.description] : [slot.description],
-      ...(fieldHints?.has(slot.name) ? { fieldHint: fieldHints.get(slot.name) } : {}),
+      intentContext: FORM_CONTROL_INTENTS.has(slot.intent)
+        ? (intentContext ? [intentContext] : [])
+        : (intentContext ? [intentContext, slot.description] : [slot.description]),
+      ...(slotFieldHint ? { fieldHint: slotFieldHint } : {}),
       ...(slotPosition ? { slotPosition } : {}),
     });
 
@@ -450,6 +572,15 @@ const AUTO_BIND_COMPONENT_BLACKLIST = new Set([
   'Button',
 ]);
 
+const FORM_CONTROL_INTENTS = new Set([
+  'boolean-input',
+  'date-input',
+  'email-input',
+  'enum-input',
+  'form-input',
+  'long-text-input',
+]);
+
 function getExplicitFieldRefs(props: Record<string, unknown> | undefined): Set<string> {
   const refs = new Set<string>();
   if (!props) return refs;
@@ -608,6 +739,34 @@ function isFieldCompatibleWithNode(
   }
 }
 
+function applyBoundFieldProps(
+  node: UiElement,
+  fieldName: string,
+  fieldEntry: FieldSchemaEntry,
+): void {
+  const nextProps: Record<string, unknown> = {
+    ...(node.props ?? {}),
+    field: fieldName,
+  };
+
+  if (node.component === 'Input' && typeof nextProps.type !== 'string') {
+    switch (fieldEntry.type) {
+      case 'email':
+        nextProps.type = 'email';
+        break;
+      case 'url':
+        nextProps.type = 'url';
+        break;
+      case 'integer':
+      case 'number':
+        nextProps.type = 'number';
+        break;
+    }
+  }
+
+  node.props = nextProps;
+}
+
 /**
  * Walk the UiSchema tree and set `props.field` on leaf components that
  * match objectSchema fields. Uses field type, component content strategy,
@@ -648,12 +807,18 @@ export function wireFieldProps(
 
   for (const node of leafNodes) {
     const refs = getExplicitFieldRefs(node.props);
+    const explicitField = typeof node.props?.field === 'string'
+      ? node.props.field
+      : undefined;
     if (refs.size === 0) continue;
 
     assignedNodes.add(node);
     for (const ref of refs) {
       if (objectSchema[ref]) {
         assignedFields.add(ref);
+        if (explicitField === ref) {
+          applyBoundFieldProps(node, ref, objectSchema[ref]);
+        }
       }
     }
   }
@@ -701,7 +866,7 @@ export function wireFieldProps(
     }
 
     if (bestNode) {
-      bestNode.props = { ...bestNode.props, field: fieldName };
+      applyBoundFieldProps(bestNode, fieldName, fieldEntry);
       assignedNodes.add(bestNode);
       assignedFields.add(fieldName);
       boundCount++;

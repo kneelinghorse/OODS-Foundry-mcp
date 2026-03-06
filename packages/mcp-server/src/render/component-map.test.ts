@@ -97,7 +97,10 @@ describe('component map coverage', () => {
       'Stack',
       'Text',
       'Input',
+      'Checkbox',
+      'DatePicker',
       'Select',
+      'Textarea',
       'Badge',
       'Banner',
       'Table',
@@ -160,6 +163,28 @@ describe('component map coverage', () => {
     expect(html).toContain('data-prop-mask="email"');
   });
 
+  it('renders Checkbox as semantic checkbox input', () => {
+    const html = renderMappedComponent(
+      makeNode('Checkbox', { name: 'tos', checked: true, required: true })
+    );
+
+    expect(html.startsWith('<input')).toBe(true);
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain(' checked');
+    expect(html).toContain(' required');
+  });
+
+  it('renders DatePicker as date input', () => {
+    const html = renderMappedComponent(
+      makeNode('DatePicker', { name: 'startDate', min: '2026-01-01', value: '2026-03-06' })
+    );
+
+    expect(html.startsWith('<input')).toBe(true);
+    expect(html).toContain('type="date"');
+    expect(html).toContain('name="startDate"');
+    expect(html).toContain('value="2026-03-06"');
+  });
+
   it('renders Select with option list and selected value', () => {
     const html = renderMappedComponent(
       makeNode('Select', {
@@ -176,6 +201,17 @@ describe('component map coverage', () => {
     expect(html).toContain('name="status"');
     expect(html).toContain('<option value="draft">Draft</option>');
     expect(html).toContain('<option value="active" selected>Active</option>');
+  });
+
+  it('renders Textarea with inner text content', () => {
+    const html = renderMappedComponent(
+      makeNode('Textarea', { name: 'notes', rows: 6, value: 'Longer form copy.' })
+    );
+
+    expect(html.startsWith('<textarea')).toBe(true);
+    expect(html).toContain('name="notes"');
+    expect(html).toContain('rows="6"');
+    expect(html).toContain('>Longer form copy.</textarea>');
   });
 
   it('renders Badge as span', () => {

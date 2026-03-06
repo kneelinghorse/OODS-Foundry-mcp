@@ -46,7 +46,8 @@
 }
 
 .form-field__input,
-.form-field__select {
+.form-field__select,
+.form-field__textarea {
   display: block;
   width: 100%;
   border-radius: 0.75rem;
@@ -62,13 +63,15 @@
     background-color 120ms ease;
 }
 
-.form-field__input::placeholder {
+.form-field__input::placeholder,
+.form-field__textarea::placeholder {
   color: var(--form-field-placeholder);
   opacity: 1;
 }
 
 .form-field__input:focus-visible,
-.form-field__select:focus-visible {
+.form-field__select:focus-visible,
+.form-field__textarea:focus-visible {
   outline: none;
   border-color: var(--form-field-border-active);
   box-shadow:
@@ -93,6 +96,11 @@
     8px 8px,
     1px calc(60%);
   background-repeat: no-repeat;
+}
+
+.form-field__textarea {
+  min-height: calc(var(--form-field-control-padding-block) * 6 + 3.5rem);
+  resize: vertical;
 }
 
 .form-field__description,

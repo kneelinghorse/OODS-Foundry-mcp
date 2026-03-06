@@ -35,7 +35,21 @@ const INPUT_HTML_ATTRS = new Set([
   'autocomplete',
   'title',
 ]);
+const CHECKBOX_HTML_ATTRS = new Set([...INPUT_HTML_ATTRS, 'checked']);
 const SELECT_HTML_ATTRS = new Set(['name', 'multiple', 'disabled', 'required', 'size', 'title']);
+const TEXTAREA_HTML_ATTRS = new Set([
+  'name',
+  'placeholder',
+  'disabled',
+  'required',
+  'readonly',
+  'rows',
+  'cols',
+  'maxlength',
+  'minlength',
+  'autocomplete',
+  'title',
+]);
 const GENERIC_HTML_ATTRS = new Set(['title']);
 const TABLE_HTML_ATTRS = new Set(['title', 'summary']);
 const FORM_LABEL_HTML_ATTRS = new Set(['for', 'title']);
@@ -269,6 +283,23 @@ function renderInput(node: UiElement): string {
   return `<input${attrs} />`;
 }
 
+function renderCheckbox(node: UiElement): string {
+  const attrs = buildAttributes(node, {
+    allowedHtmlAttrs: CHECKBOX_HTML_ATTRS,
+    htmlOverrides: { type: 'checkbox' },
+  });
+  return `<input${attrs} />`;
+}
+
+function renderDatePicker(node: UiElement): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const attrs = buildAttributes(node, {
+    allowedHtmlAttrs: INPUT_HTML_ATTRS,
+    htmlOverrides: { type: asString(props.type) ?? 'date' },
+  });
+  return `<input${attrs} />`;
+}
+
 function normalizeSelectOptions(rawOptions: unknown, selectedValue: unknown): Array<{ value: string; label: string; selected: boolean }> {
   if (!Array.isArray(rawOptions)) return [];
   const selectedValues = new Set<string>();
@@ -311,6 +342,17 @@ function renderSelect(node: UiElement, childrenHtml = ''): string {
     .map((option) => `<option value="${escapeHtml(option.value)}"${option.selected ? ' selected' : ''}>${escapeHtml(option.label)}</option>`)
     .join('');
   return `<select${attrs}>${optionsHtml}</select>`;
+}
+
+function renderTextarea(node: UiElement, childrenHtml = ''): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const attrs = buildAttributes(node, {
+    allowedHtmlAttrs: TEXTAREA_HTML_ATTRS,
+    consumedProps: new Set(['value', 'text']),
+  });
+  const value = asString(props.value) ?? asString(props.text) ?? '';
+  const content = hasChildrenHtml(childrenHtml) ? childrenHtml : escapeHtml(value);
+  return `<textarea${attrs}>${content}</textarea>`;
 }
 
 function renderBadge(node: UiElement, childrenHtml = ''): string {
@@ -1788,7 +1830,10 @@ export const componentRenderers: Record<string, ComponentRenderer> = {
   Grid: renderGrid,
   Text: renderText,
   Input: renderInput,
+  Checkbox: renderCheckbox,
+  DatePicker: renderDatePicker,
   Select: renderSelect,
+  Textarea: renderTextarea,
   Badge: renderBadge,
   StatusBadge: renderStatusBadge,
   CancellationBadge: renderCancellationBadge,

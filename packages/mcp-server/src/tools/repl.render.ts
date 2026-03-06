@@ -1,6 +1,7 @@
 import {
   applyPatch,
   buildPreview,
+  buildPreviewSummary,
   loadComponentRegistry,
   summarizeMeta,
   validateComponents,
@@ -243,6 +244,10 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   }
 
   output.status = status;
+  if (output.preview) {
+    const errorCount = output.status === 'error' ? output.errors.length : 0;
+    output.preview.summary = buildPreviewSummary((output.preview.screens ?? []).length, errorCount);
+  }
 
   return output;
 }

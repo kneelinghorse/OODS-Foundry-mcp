@@ -426,6 +426,13 @@ export function summarizeMeta(tree: UiSchema, registry: RegistryInfo): ReplValid
   };
 }
 
+export function buildPreviewSummary(screenCount: number, errorCount = 0): string {
+  if (errorCount > 0) {
+    return `Render blocked: ${errorCount} validation error${errorCount === 1 ? '' : 's'}`;
+  }
+  return `Render ready for ${screenCount} screen${screenCount === 1 ? '' : 's'}`;
+}
+
 export function buildPreview(tree: UiSchema, researchContext?: Record<string, any>): ReplRenderPreview {
   const screens = Array.isArray(tree.screens) ? tree.screens.map((screen) => screen.id) : [];
   const routes = Array.isArray(tree.screens)
@@ -437,7 +444,7 @@ export function buildPreview(tree: UiSchema, researchContext?: Record<string, an
     screens,
     routes,
     activeScreen: screens.length ? screens[0] : null,
-    summary: `Render ready for ${screens.length} screen${screens.length === 1 ? '' : 's'}`,
+    summary: buildPreviewSummary(screens.length),
     researchContext,
   };
 }

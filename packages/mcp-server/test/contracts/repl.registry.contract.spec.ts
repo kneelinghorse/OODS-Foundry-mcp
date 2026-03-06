@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { componentRenderers } from '../../src/render/component-map.js';
 import { loadComponentRegistry } from '../../src/tools/repl.utils.js';
 
-const BASIC_COMPONENTS = ['Button', 'Card', 'Grid', 'Stack', 'Text', 'Input', 'Select', 'Badge', 'Banner', 'Table', 'Tabs'];
-const EXPECTED_COMPONENT_COUNT = 97;
+const BASIC_COMPONENTS = ['Button', 'Card', 'Grid', 'Stack', 'Text', 'Input', 'Checkbox', 'DatePicker', 'Select', 'Textarea', 'Badge', 'Banner', 'Table', 'Tabs'];
+const EXPECTED_COMPONENT_COUNT = 101;
 
 describe('REPL registry contract', () => {
   it('includes all registry components and the basic primitives', () => {

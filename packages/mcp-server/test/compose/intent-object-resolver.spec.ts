@@ -81,6 +81,18 @@ describe('resolveIntentObject — auto-detect object from intent', () => {
     expect(result.objectSource).toBe('auto-detected');
   });
 
+  it('detects lowercase Product when a list keyword is adjacent', () => {
+    const result = resolveIntentObject('product list page', undefined, undefined);
+    expect(result.object).toBe('Product');
+    expect(result.objectSource).toBe('auto-detected');
+  });
+
+  it('preserves explicit Product references with command phrasing', () => {
+    const result = resolveIntentObject('show me the Product list', undefined, undefined);
+    expect(result.object).toBe('Product');
+    expect(result.objectSource).toBe('auto-detected');
+  });
+
   it('does not auto-detect when explicit object is provided', () => {
     const result = resolveIntentObject('User profile view', 'Subscription', undefined);
     // Explicit object takes precedence
@@ -90,6 +102,18 @@ describe('resolveIntentObject — auto-detect object from intent', () => {
 
   it('returns no object when intent has no known object names', () => {
     const result = resolveIntentObject('dashboard with metrics', undefined, undefined);
+    expect(result.object).toBeUndefined();
+    expect(result.objectSource).toBeUndefined();
+  });
+
+  it('does not auto-detect Plan from incidental lowercase usage', () => {
+    const result = resolveIntentObject('alerts for plan downgrade anomalies', undefined, undefined);
+    expect(result.object).toBeUndefined();
+    expect(result.objectSource).toBeUndefined();
+  });
+
+  it('does not treat sentence-initial capitalization as sufficient confidence', () => {
+    const result = resolveIntentObject('Plan a dashboard for billing operations', undefined, undefined);
     expect(result.object).toBeUndefined();
     expect(result.objectSource).toBeUndefined();
   });
@@ -242,6 +266,16 @@ describe('design.compose — intent auto-detection', () => {
     expect(result.layout).toBe('list');
   });
 
+  it('keeps explicit Product references working for object attachment', async () => {
+    const result = await handle({
+      intent: 'show me the Product list',
+    });
+    expect(result.status).toBe('ok');
+    expect(result.objectUsed).toBeDefined();
+    expect(result.objectUsed!.name).toBe('Product');
+    expect(result.meta!.objectAutoDetected).toBe('Product');
+  });
+
   it('intent without object name falls through to intent-only path', async () => {
     const result = await handle({
       intent: 'dashboard with metrics and sidebar',
@@ -308,6 +342,8 @@ describe('design.compose — backward compatibility (intent-only)', () => {
 
     expect(result.status).toBe('ok');
     expect(result.layout).toBe('dashboard');
+    expect(result.objectUsed).toBeUndefined();
+    expect(result.meta!.objectAutoDetected).toBeUndefined();
     expect(result.warnings.some((warning) => warning.message.includes('context "form"'))).toBe(false);
   });
 

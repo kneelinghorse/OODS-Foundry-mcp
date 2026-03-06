@@ -28,6 +28,16 @@ describe('object-loader', () => {
     expect(names).toContain('Invoice');
   });
 
+  it('prefers canonical objects/ definitions when domains contain duplicate names', () => {
+    const filePath = getObjectFilePath('Subscription');
+    expect(filePath).toContain('objects/core/Subscription.object.yaml');
+
+    const subscription = loadObject('Subscription');
+    expect(subscription.schema.customer_email).toBeDefined();
+    expect(subscription.schema.cancel_at_period_end?.type).toBe('boolean');
+    expect(subscription.schema.status?.validation?.enum?.length).toBeGreaterThan(0);
+  });
+
   it('loads a known object with correct structure', () => {
     const user = loadObject('User');
 

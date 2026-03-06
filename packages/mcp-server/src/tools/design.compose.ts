@@ -33,10 +33,11 @@ import type { ComponentCatalogSummary } from './types.js';
 import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 import { loadObject } from '../objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
+import type { FieldDefinition, SemanticMapping } from '../objects/types.js';
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
 import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldProps, applySelectionsToSchema } from '../compose/object-slot-filler.js';
 import { collectViewExtensions } from '../compose/view-extension-collector.js';
-import { expandSlots, type ExpansionContext } from '../compose/slot-expander.js';
+import { expandSlots, groupFieldsIntoSlots, type ExpansionContext } from '../compose/slot-expander.js';
 import { inferSlotPosition } from '../compose/position-affinity.js';
 import { selectPattern, type CompositionContext } from '../compose/slot-patterns.js';
 import type { FieldHint } from '../compose/field-affinity.js';
@@ -141,6 +142,11 @@ export interface DesignComposeOutput {
 /* ------------------------------------------------------------------ */
 
 type LayoutType = 'dashboard' | 'form' | 'detail' | 'list';
+type FormFieldSlotConfig = {
+  description?: string;
+  intent?: string;
+  required?: boolean;
+};
 
 const LAYOUT_KEYWORDS: Record<LayoutType, string[]> = {
   dashboard: ['dashboard', 'metrics', 'overview', 'analytics', 'stats', 'kpi', 'monitor'],
@@ -191,6 +197,7 @@ function selectTemplate(
   layout: LayoutType,
   preferences: DesignComposeInput['preferences'],
   dashboardSectionPlan?: ReturnType<typeof buildDashboardSectionPlan>,
+  formFieldSlots?: FormFieldSlotConfig[],
 ): TemplateResult {
   resetIdCounter();
 
@@ -204,6 +211,7 @@ function selectTemplate(
     case 'form':
       return formTemplate({
         fieldGroups: preferences?.fieldGroups,
+        fieldSlots: formFieldSlots,
         theme: preferences?.theme,
       });
     case 'detail':
@@ -232,20 +240,41 @@ function fillSlots(
   tabLabels: string[] | undefined,
   fieldHints?: Map<string, FieldHint>,
   slotContextOverrides?: Map<string, string[]>,
+  strictFieldControlSlots?: Set<string>,
 ): SlotSelectionEntry[] {
   const keywordPriorityIntents = new Set([
+    'boolean-input',
     'data-display',
     'data-table',
+    'date-input',
+    'email-input',
+    'enum-input',
     'form-input',
+    'long-text-input',
     'metadata-display',
     'metrics-display',
     'search-input',
     'status-indicator',
     'tab-panel',
   ]);
+  const formControlIntents = new Set([
+    'boolean-input',
+    'date-input',
+    'email-input',
+    'enum-input',
+    'form-input',
+    'long-text-input',
+  ]);
 
   const contextForSlot = (slot: Slot): string[] => {
     const overrideContext = slotContextOverrides?.get(slot.name);
+    const suppressFormControlBias = strictFieldControlSlots?.has(slot.name) && formControlIntents.has(slot.intent);
+    if (suppressFormControlBias) {
+      return (overrideContext && overrideContext.length > 0
+        ? overrideContext
+        : [intentContext]).filter(Boolean);
+    }
+
     const context: string[] = overrideContext && overrideContext.length > 0
       ? [...overrideContext, slot.description]
       : [intentContext, slot.description];
@@ -274,11 +303,14 @@ function fillSlots(
 
     // Use the component selector with intelligence signals
     const slotPosition = inferSlotPosition(slot.name);
+    const suppressFormControlBias = strictFieldControlSlots?.has(slot.name) && formControlIntents.has(slot.intent);
+    const slotFieldHint = !suppressFormControlBias ? fieldHints?.get(slot.name) : undefined;
+    const useKeywordMatches = !suppressFormControlBias && keywordPriorityIntents.has(slot.intent);
     const result: SelectionResult = selectComponent(slot.intent, catalog, {
       topN,
       intentContext: contextForSlot(slot),
-      preferKeywordMatches: keywordPriorityIntents.has(slot.intent),
-      ...(fieldHints?.has(slot.name) ? { fieldHint: fieldHints.get(slot.name) } : {}),
+      preferKeywordMatches: useKeywordMatches,
+      ...(slotFieldHint ? { fieldHint: slotFieldHint } : {}),
       ...(slotPosition ? { slotPosition } : {}),
     });
 
@@ -358,8 +390,6 @@ function inferLayoutFromContext(context: string | undefined): LayoutType {
 /*  Field group → intent inference                                     */
 /* ------------------------------------------------------------------ */
 
-import type { FieldDefinition, SemanticMapping } from '../objects/types.js';
-
 /**
  * Infer a differentiated slot intent from the dominant field types/semantics
  * in a field group. Produces intents like 'status-indicator', 'metrics-display',
@@ -424,6 +454,231 @@ function inferSlotIntentFromFields(
     case 'metadata': return 'metadata-display';
     default: return undefined; // Keep 'data-display' default
   }
+}
+
+const FORM_INTENT_PRIORITY = [
+  'long-text-input',
+  'enum-input',
+  'boolean-input',
+  'date-input',
+  'email-input',
+  'form-input',
+] as const;
+
+function buildSemanticTypeMap(
+  semantics?: Record<string, SemanticMapping>,
+): Record<string, string> {
+  const semanticTypes: Record<string, string> = {};
+  if (!semantics) return semanticTypes;
+
+  for (const [name, sem] of Object.entries(semantics)) {
+    if (sem.semantic_type) {
+      semanticTypes[name] = sem.semantic_type;
+    }
+  }
+
+  return semanticTypes;
+}
+
+function humanizeFieldName(fieldName: string): string {
+  return fieldName
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function isLongTextField(
+  fieldName: string,
+  field: FieldDefinition,
+  semantics?: Record<string, SemanticMapping>,
+): boolean {
+  if (field.type !== 'string') return false;
+
+  const uiHints = semantics?.[fieldName]?.ui_hints;
+  const hintMaxLength = typeof uiHints?.maxLength === 'number'
+    ? uiHints.maxLength
+    : undefined;
+  const validationMaxLength = typeof field.validation?.maxLength === 'number'
+    ? field.validation.maxLength
+    : undefined;
+  const normalizedName = fieldName.replace(/[_-]+/g, ' ');
+  const lowerText = `${normalizedName} ${field.description}`.toLowerCase();
+
+  return Boolean(
+    uiHints?.multiline === true
+    || (hintMaxLength && hintMaxLength >= 120)
+    || (validationMaxLength && validationMaxLength >= 120)
+    || /\b(description|summary|notes?|message|comment|reason|details?|body|content|bio|explanation|free form)\b/.test(lowerText),
+  );
+}
+
+function inferFormSlotIntentFromFields(
+  fieldNames: string[],
+  schema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): string {
+  if (fieldNames.length === 0) return 'form-input';
+
+  const counts: Record<string, number> = {};
+
+  for (const fieldName of fieldNames) {
+    const field = schema[fieldName];
+    if (!field) continue;
+
+    const semanticType = semantics?.[fieldName]?.semantic_type?.toLowerCase() ?? '';
+    let intent = 'form-input';
+
+    if (isLongTextField(fieldName, field, semantics)) {
+      intent = 'long-text-input';
+    } else if (field.validation?.enum && field.validation.enum.length > 0) {
+      intent = 'enum-input';
+    } else if (field.type === 'boolean') {
+      intent = 'boolean-input';
+    } else if (
+      field.type === 'date'
+      || field.type === 'datetime'
+      || /(timestamp|date|time|calendar)/.test(semanticType)
+    ) {
+      intent = 'date-input';
+    } else if (field.type === 'email' || semanticType.includes('email')) {
+      intent = 'email-input';
+    }
+
+    counts[intent] = (counts[intent] ?? 0) + 1;
+  }
+
+  let bestIntent: typeof FORM_INTENT_PRIORITY[number] = 'form-input';
+  let bestCount = 0;
+
+  for (const intent of FORM_INTENT_PRIORITY) {
+    const count = counts[intent] ?? 0;
+    if (count > bestCount) {
+      bestIntent = intent;
+      bestCount = count;
+    }
+  }
+
+  return bestIntent;
+}
+
+function buildFormSlotDescription(slotName: string, fieldNames: string[]): string {
+  const slotIndex = Number.parseInt(slotName.replace('field-', ''), 10);
+  if (fieldNames.length === 0) {
+    return `Form field group ${Number.isNaN(slotIndex) ? 1 : slotIndex + 1}`;
+  }
+
+  const labels = fieldNames.slice(0, 3).map(humanizeFieldName);
+  const suffix = fieldNames.length > 3 ? ', ...' : '';
+  return `Form fields: ${labels.join(', ')}${suffix}`;
+}
+
+function buildFormSlotMetadata(
+  slotName: string,
+  fieldNames: string[],
+  schema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): FormFieldSlotConfig {
+  return {
+    description: buildFormSlotDescription(slotName, fieldNames),
+    intent: inferFormSlotIntentFromFields(fieldNames, schema, semantics),
+    required: slotName === 'field-0',
+  };
+}
+
+function buildFormFieldSlots(
+  fieldGroups: number,
+  schema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+  semanticTypes?: Record<string, string>,
+): FormFieldSlotConfig[] {
+  const slotNames = Array.from({ length: fieldGroups }, (_, idx) => `field-${idx}`);
+  const groupedFields = groupFieldsIntoSlots(schema, slotNames, semanticTypes);
+
+  return slotNames.map((slotName, idx) => {
+    const fieldNames = groupedFields[slotName] ?? [];
+    if (fieldNames.length === 0) {
+      return {
+        description: `Form field group ${idx + 1}`,
+        intent: 'form-input',
+        required: idx === 0,
+      };
+    }
+
+    return buildFormSlotMetadata(slotName, fieldNames, schema, semantics);
+  });
+}
+
+function applyFormSlotMetadata(
+  slots: Slot[],
+  fieldGroups: Record<string, string[]>,
+  schema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): void {
+  for (const slot of slots) {
+    if (!slot.name.startsWith('field-')) continue;
+    const fieldNames = fieldGroups[slot.name];
+    if (!fieldNames || fieldNames.length === 0) continue;
+
+    const metadata = buildFormSlotMetadata(slot.name, fieldNames, schema, semantics);
+    slot.intent = metadata.intent ?? slot.intent;
+    slot.description = metadata.description ?? slot.description;
+  }
+}
+
+function resolvePrimaryFieldForFormSlot(
+  slotIntent: string,
+  fieldNames: string[],
+  schema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): string | undefined {
+  const matchingField = fieldNames.find((fieldName) => (
+    inferFormSlotIntentFromFields([fieldName], schema, semantics) === slotIntent
+  ));
+
+  return matchingField ?? fieldNames[0];
+}
+
+function getSlotName(node: UiElement): string | undefined {
+  if (node.meta?.label) return node.meta.label;
+  if (node.meta?.intent?.startsWith('slot:')) {
+    return node.meta.intent.slice('slot:'.length);
+  }
+  return undefined;
+}
+
+function applyFormFieldBindingsFromGroups(
+  schema: UiSchema,
+  slots: Slot[],
+  fieldGroups: Record<string, string[]>,
+  objectSchema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): void {
+  const fieldBySlot = new Map<string, string>();
+
+  for (const slot of slots) {
+    if (!slot.name.startsWith('field-')) continue;
+    const fieldNames = fieldGroups[slot.name] ?? [];
+    const primaryField = resolvePrimaryFieldForFormSlot(slot.intent, fieldNames, objectSchema, semantics);
+    if (primaryField) {
+      fieldBySlot.set(slot.name, primaryField);
+    }
+  }
+
+  const walk = (node: UiElement): void => {
+    const slotName = getSlotName(node);
+    const fieldName = slotName ? fieldBySlot.get(slotName) : undefined;
+    if (fieldName && typeof node.props?.field !== 'string') {
+      node.props = {
+        ...(node.props ?? {}),
+        field: fieldName,
+      };
+    }
+    node.children?.forEach(walk);
+  };
+
+  schema.screens.forEach(walk);
 }
 
 function inferIntentFieldHint(phrase: string): FieldHint {
@@ -623,6 +878,8 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     }
   }
 
+  const semanticTypes = buildSemanticTypeMap(composed?.semantics);
+
   // 1. Parse intent and detect layout
   const intentStr = resolved.intent;
   const parsedIntentSections = parseIntentSections(intentStr);
@@ -667,19 +924,21 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     layoutType,
     input.preferences,
     layoutType === 'dashboard' ? dashboardSectionPlan : undefined,
+    layoutType === 'form' && composed
+      ? buildFormFieldSlots(
+        input.preferences?.fieldGroups ?? 3,
+        composed.schema,
+        composed.semantics,
+        semanticTypes,
+      )
+      : undefined,
   );
   let { schema, slots } = template;
 
   // 2b. Expand slots if object has more fields than template provides
   let expansionResult: ReturnType<typeof expandSlots> | undefined;
+  let formFieldGroups: Record<string, string[]> | undefined;
   if (composed) {
-    const semanticTypes: Record<string, string> = {};
-    if (composed.semantics) {
-      for (const [name, sem] of Object.entries(composed.semantics)) {
-        if (sem.semantic_type) semanticTypes[name] = sem.semantic_type;
-      }
-    }
-
     const expCtx: ExpansionContext = {
       layout: layoutType,
       fields: composed.schema,
@@ -695,6 +954,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     // This ensures each tab selects a different component instead of
     // all tabs getting the same 'data-display' → Card result.
     const fieldGroups = expansionResult?.fieldGroups;
+    formFieldGroups = layoutType === 'form' ? fieldGroups : undefined;
     if (fieldGroups && composed) {
       for (const slot of slots) {
         if (!slot.name.startsWith('tab-')) continue;
@@ -711,6 +971,10 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
           slot.description = `${slot.description} (${dominantIntent})`;
         }
       }
+    }
+
+    if (layoutType === 'form' && fieldGroups) {
+      applyFormSlotMetadata(slots, fieldGroups, composed.schema, composed.semantics);
     }
   }
 
@@ -735,6 +999,9 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
 
   const topN = input.options?.topN ?? 3;
   const slotContextOverrides = new Map<string, string[]>();
+  const strictFieldControlSlots = composed && layoutType === 'form'
+    ? new Set(slots.filter((slot) => slot.name.startsWith('field-')).map((slot) => slot.name))
+    : undefined;
   let sectionContextUsed = false;
 
   if (layoutType === 'dashboard') {
@@ -872,6 +1139,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
           input.preferences?.tabLabels,
           fieldHints.size > 0 ? fieldHints : undefined,
           slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
+          strictFieldControlSlots,
         );
         selections.push(...fallbackSelections);
 
@@ -889,6 +1157,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         input.preferences?.tabLabels,
         fieldHints.size > 0 ? fieldHints : undefined,
         slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
+        strictFieldControlSlots,
       );
 
       // Apply selection rankings to the schema tree
@@ -898,12 +1167,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     // Apply composite slot patterns for form/dashboard contexts
     if (composed && (layoutType === 'form' || layoutType === 'dashboard')) {
       const compCtx = layoutType as CompositionContext;
-      const semanticMap: Record<string, string> = {};
-      if (composed.semantics) {
-        for (const [name, sem] of Object.entries(composed.semantics)) {
-          if (sem.semantic_type) semanticMap[name] = sem.semantic_type;
-        }
-      }
+      const semanticMap = semanticTypes;
 
       // Apply patterns to unassigned fields
       const assignedFields = new Set<string>();
@@ -934,6 +1198,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       input.preferences?.tabLabels,
       fieldHints.size > 0 ? fieldHints : undefined,
       slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
+      strictFieldControlSlots,
     );
 
     // Apply selection rankings to the schema tree
@@ -950,6 +1215,15 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   // 3b. Populate object schema, field→component wiring, and bindings for codegen
   if (composed) {
     populateObjectSchema(schema, composed.schema, composed.semantics);
+    if (layoutType === 'form' && formFieldGroups) {
+      applyFormFieldBindingsFromGroups(
+        schema,
+        slots,
+        formFieldGroups,
+        composed.schema,
+        composed.semantics,
+      );
+    }
     wireFieldProps(schema);
 
     if (effectiveContext) {

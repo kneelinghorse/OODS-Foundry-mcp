@@ -160,6 +160,30 @@ describe('expandSlots', () => {
       expect(result.expanded).toBe(false);
     });
 
+    it('returns field groups for form slots even without expansion', () => {
+      const template = formTemplate({ fieldGroups: 4 });
+      const ctx: ExpansionContext = {
+        layout: 'form',
+        fields: {
+          primary_email: { type: 'email', required: true, description: 'Email' },
+          role: { type: 'string', required: true, description: 'Role', validation: { enum: ['admin', 'owner'] } },
+          created_at: { type: 'datetime', required: true, description: 'Created at' },
+          description: { type: 'string', required: false, description: 'Long description', validation: { maxLength: 240 } },
+        },
+        semanticTypes: {
+          primary_email: 'identity.user.email',
+          role: 'identity.user.role',
+          created_at: 'audit.created_at',
+        },
+      };
+
+      const result = expandSlots(template, ctx);
+
+      expect(result.fieldGroups).toBeDefined();
+      expect(result.fieldGroups!['field-0']).toBeDefined();
+      expect(Object.values(result.fieldGroups!).flat()).toHaveLength(4);
+    });
+
     it('expands field groups when fields exceed capacity', () => {
       resetIdCounter();
       const template = formTemplate({ fieldGroups: 3 });

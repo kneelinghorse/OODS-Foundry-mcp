@@ -129,13 +129,20 @@ export function getPositionAffinity(
  * Returns undefined if the name doesn't map to a known position.
  */
 export function inferSlotPosition(slotName: string): SlotPosition | undefined {
-  if (slotName === 'header' || slotName === 'title' || slotName === 'banner' || slotName === 'search') {
+  if (
+    slotName === 'header'
+    || slotName === 'title'
+    || slotName === 'banner'
+    || slotName === 'search'
+    || slotName === 'toolbar-actions'
+  ) {
     return 'header';
   }
   if (
     slotName === 'main-content'
     || slotName === 'items'
     || slotName === 'metrics'
+    || slotName.startsWith('field-')
     || slotName.startsWith('main-section-')
     || slotName.startsWith('metrics-section-')
   ) {

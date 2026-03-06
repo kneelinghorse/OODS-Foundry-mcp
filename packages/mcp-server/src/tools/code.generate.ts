@@ -1,4 +1,4 @@
-import { loadComponentRegistry, validateSchema, validateComponents } from './repl.utils.js';
+import { loadComponentRegistry, validateSchema } from './repl.utils.js';
 import { emit as emitHtml } from '../codegen/html-emitter.js';
 import { emit as emitReact } from '../codegen/react-emitter.js';
 import { emit as emitVue } from '../codegen/vue-emitter.js';
@@ -106,18 +106,15 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
 
   // Check component registry for unknown components
   const registry = loadComponentRegistry();
-  const componentErrors = validateComponents(schema, registry);
-  const unknownComponents = componentErrors
-    .filter((e) => e.code === 'OODS-V006')
-    .map((e) => e.component)
-    .filter((c): c is string => c !== undefined);
-
-  if (unknownComponents.length > 0) {
-    warnings.push({
-      code: 'OODS-V119',
-      message: `${unknownComponents.length} component(s) not found in registry: ${unknownComponents.join(', ')}`,
-    });
-  }
+  const allComponents = collectComponents(schema.screens);
+  const unknownComponents = Array.from(allComponents)
+    .filter((componentName) => registry.names.size > 0 && !registry.names.has(componentName))
+    .sort();
+  const meta: CodeGenerateOutput['meta'] = {
+    nodeCount: countNodes(schema.screens),
+    componentCount: allComponents.size,
+    ...(unknownComponents.length > 0 ? { unknownComponents } : {}),
+  };
 
   // Resolve emitter
   const emitter = emitters[framework];
@@ -129,7 +126,26 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
       fileExtension: '',
       imports: [],
       warnings,
+      meta,
       errors: [{ code: 'OODS-V005', message: `No emitter registered for framework '${framework}'` }],
+    };
+  }
+
+  if (unknownComponents.length > 0) {
+    return {
+      status: 'error',
+      framework,
+      code: '',
+      fileExtension: '',
+      imports: [],
+      warnings,
+      errors: [{
+        code: 'OODS-V119',
+        message:
+          `Schema contains unregistered component${unknownComponents.length === 1 ? '' : 's'}: ` +
+          `${unknownComponents.join(', ')}. Fix the schema or run repl.validate before code generation.`,
+      }],
+      meta,
     };
   }
 
@@ -144,14 +160,6 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
 
   // Merge warnings
   const allWarnings = [...warnings, ...result.warnings];
-
-  // Build meta
-  const allComponents = collectComponents(schema.screens);
-  const meta: CodeGenerateOutput['meta'] = {
-    nodeCount: countNodes(schema.screens),
-    componentCount: allComponents.size,
-    ...(unknownComponents.length > 0 ? { unknownComponents } : {}),
-  };
 
   return {
     status: result.status,
