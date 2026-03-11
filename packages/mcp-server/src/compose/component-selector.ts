@@ -515,6 +515,13 @@ export interface SelectOptions {
    * based on how well they fit the target position.
    */
   slotPosition?: SlotPosition;
+  /**
+   * Optional pattern boost for multi-field pattern matches.
+   * When a field pattern (e.g., status-timeline, pricing-summary)
+   * detected a composite component, that component receives
+   * the specified score boost (0.20–0.35).
+   */
+  patternBoost?: { componentName: string; boost: number; patternId: string };
 }
 
 /**
@@ -530,7 +537,7 @@ export function selectComponent(
   catalog: ComponentCatalogSummary[],
   options: SelectOptions = {},
 ): SelectionResult {
-  const { topN = 5, minConfidence = 0.05, intentContext, preferKeywordMatches = false, fieldHint, slotPosition } = options;
+  const { topN = 5, minConfidence = 0.05, intentContext, preferKeywordMatches = false, fieldHint, slotPosition, patternBoost } = options;
 
   if (!intent || !intent.trim()) {
     return {
@@ -593,6 +600,12 @@ export function selectComponent(
     if (searchOrientedSlot && component.name === 'SearchInput') {
       finalScore = Math.min(finalScore + WEIGHTS.searchIntentBias, MAX_RAW_SCORE);
       finalReasons.push('search intent bias');
+    }
+
+    // Apply multi-field pattern boost when a composite component matches
+    if (patternBoost && component.name === patternBoost.componentName) {
+      finalScore = Math.min(finalScore + patternBoost.boost, MAX_RAW_SCORE);
+      finalReasons.push(`field pattern: ${patternBoost.patternId}`);
     }
 
     return {

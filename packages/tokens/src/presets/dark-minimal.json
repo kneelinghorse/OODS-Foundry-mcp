@@ -1,0 +1,127 @@
+{
+  "$schema": "https://design-tokens.org/dtcg/schema.json",
+  "$description": "Dark Minimal preset — sleek dark-mode palette with muted green accents and low-chroma neutrals. Suitable for developer tools, code editors, terminal UIs, and monitoring dashboards.",
+  "color": {
+    "brand": {
+      "A": {
+        "surface": {
+          "canvas": {
+            "$type": "color",
+            "$value": "oklch(0.2 0.005 260)",
+            "$description": "Near-black canvas for immersive dark UI."
+          },
+          "raised": {
+            "$type": "color",
+            "$value": "oklch(0.25 0.008 260)",
+            "$description": "Slightly lighter raised cards for depth."
+          },
+          "subtle": {
+            "$type": "color",
+            "$value": "oklch(0.3 0.01 260)",
+            "$description": "Dark gray panel surface for secondary regions."
+          },
+          "disabled": {
+            "$type": "color",
+            "$value": "oklch(0.28 0.005 260)",
+            "$description": "Disabled dark surface."
+          },
+          "backdrop": {
+            "$type": "color",
+            "$value": "oklch(0.12 0.003 260)",
+            "$description": "Deep overlay scrim."
+          },
+          "inverse": {
+            "$type": "color",
+            "$value": "oklch(0.92 0.008 260)",
+            "$description": "Light inverse surface for tooltips."
+          },
+          "interactive": {
+            "primary": {
+              "default": {
+                "$type": "color",
+                "$value": "oklch(0.65 0.15 155)",
+                "$description": "Muted green primary — calm and functional."
+              },
+              "hover": {
+                "$type": "color",
+                "$value": "oklch(0.7 0.17 155)",
+                "$description": "Brighter green hover."
+              },
+              "pressed": {
+                "$type": "color",
+                "$value": "oklch(0.6 0.14 155)",
+                "$description": "Dimmed green pressed state."
+              }
+            }
+          }
+        },
+        "text": {
+          "primary": {
+            "$type": "color",
+            "$value": "oklch(0.88 0.008 260)",
+            "$description": "Light gray text for dark backgrounds."
+          },
+          "secondary": {
+            "$type": "color",
+            "$value": "oklch(0.65 0.01 260)",
+            "$description": "Medium gray for secondary labels."
+          },
+          "muted": {
+            "$type": "color",
+            "$value": "oklch(0.5 0.008 260)",
+            "$description": "Dim gray for muted captions."
+          },
+          "inverse": {
+            "$type": "color",
+            "$value": "oklch(0.2 0.005 260)",
+            "$description": "Dark text for inverse (light) surfaces."
+          },
+          "accent": {
+            "$type": "color",
+            "$value": "oklch(0.7 0.14 155)",
+            "$description": "Green accent for links and highlights."
+          },
+          "onInteractive": {
+            "$type": "color",
+            "$value": "oklch(0.15 0.005 155)",
+            "$description": "Dark text on green interactive surfaces."
+          },
+          "disabled": {
+            "$type": "color",
+            "$value": "oklch(0.4 0.005 260)",
+            "$description": "Dim disabled text."
+          }
+        },
+        "border": {
+          "subtle": {
+            "$type": "color",
+            "$value": "oklch(0.35 0.008 260)",
+            "$description": "Dark subtle border."
+          },
+          "strong": {
+            "$type": "color",
+            "$value": "oklch(0.5 0.02 260)",
+            "$description": "Medium gray strong border."
+          }
+        },
+        "accent": {
+          "background": {
+            "$type": "color",
+            "$value": "oklch(0.28 0.04 155)",
+            "$description": "Dark green accent surface."
+          },
+          "border": {
+            "$type": "color",
+            "$value": "oklch(0.5 0.1 155)",
+            "$description": "Green accent border."
+          },
+          "text": {
+            "$type": "color",
+            "$value": "oklch(0.7 0.14 155)",
+            "$description": "Green accent text."
+          }
+        }
+      }
+    }
+  }
+}

@@ -124,6 +124,38 @@ const SEMANTIC_AFFINITY: Record<string, AffinityEntry> = {
     components: ['PreferenceEditor', 'Select', 'Input'],
     boost: 0.30,
   },
+  priority: {
+    components: ['Badge', 'Select', 'StatusBadge'],
+    boost: 0.20,
+  },
+  severity: {
+    components: ['StatusBadge', 'Badge', 'ColorizedBadge'],
+    boost: 0.25,
+  },
+  category: {
+    components: ['Badge', 'Select', 'Text'],
+    boost: 0.20,
+  },
+  duration: {
+    components: ['Text', 'Badge', 'Input'],
+    boost: 0.15,
+  },
+  quantity: {
+    components: ['Text', 'Badge', 'Input'],
+    boost: 0.15,
+  },
+  description: {
+    components: ['Textarea', 'Text', 'Input'],
+    boost: 0.20,
+  },
+  address: {
+    components: ['Text', 'Textarea', 'Input'],
+    boost: 0.15,
+  },
+  score: {
+    components: ['ProgressBar', 'Badge', 'Text'],
+    boost: 0.25,
+  },
 };
 
 /**

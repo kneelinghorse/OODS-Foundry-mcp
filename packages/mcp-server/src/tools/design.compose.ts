@@ -39,6 +39,7 @@ import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldP
 import { collectDashboardViewExtensions, collectViewExtensions } from '../compose/view-extension-collector.js';
 import type { SlotPlan } from '../compose/view-extension-collector.js';
 import { expandSlots, groupFieldsIntoSlots, type ExpansionContext } from '../compose/slot-expander.js';
+import type { FieldPatternMatch } from '../compose/field-patterns.js';
 import { inferSlotPosition } from '../compose/position-affinity.js';
 import { selectPattern, type CompositionContext } from '../compose/slot-patterns.js';
 import type { FieldHint } from '../compose/field-affinity.js';
@@ -262,6 +263,7 @@ function fillSlots(
   fieldHints?: Map<string, FieldHint>,
   slotContextOverrides?: Map<string, string[]>,
   strictFieldControlSlots?: Set<string>,
+  detectedPatterns?: FieldPatternMatch[],
 ): SlotSelectionEntry[] {
   const keywordPriorityIntents = new Set([
     'boolean-input',
@@ -330,12 +332,29 @@ function fillSlots(
     const suppressFormControlBias = strictFieldControlSlots?.has(slot.name) && formControlIntents.has(slot.intent);
     const slotFieldHint = !suppressFormControlBias ? fieldHints?.get(slot.name) : undefined;
     const useKeywordMatches = !suppressFormControlBias && keywordPriorityIntents.has(slot.intent);
+
+    // Look up pattern boost for this slot's field group
+    let slotPatternBoost: { componentName: string; boost: number; patternId: string } | undefined;
+    if (detectedPatterns && detectedPatterns.length > 0) {
+      for (const pattern of detectedPatterns) {
+        if (pattern.slotGroup === slot.name || slot.name.startsWith(pattern.slotGroup)) {
+          slotPatternBoost = {
+            componentName: pattern.compositeComponent,
+            boost: pattern.selectionBoost,
+            patternId: pattern.patternId,
+          };
+          break;
+        }
+      }
+    }
+
     const result: SelectionResult = selectComponent(slot.intent, catalog, {
       topN,
       intentContext: contextForSlot(slot),
       preferKeywordMatches: useKeywordMatches,
       ...(slotFieldHint ? { fieldHint: slotFieldHint } : {}),
       ...(slotPosition ? { slotPosition } : {}),
+      ...(slotPatternBoost ? { patternBoost: slotPatternBoost } : {}),
     });
 
     const entry: SlotSelectionEntry = {
@@ -1372,6 +1391,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
           fieldHints.size > 0 ? fieldHints : undefined,
           slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
           strictFieldControlSlots,
+          expansionResult?.detectedPatterns,
         );
         selections.push(...fallbackSelections);
 
@@ -1390,6 +1410,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         fieldHints.size > 0 ? fieldHints : undefined,
         slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
         strictFieldControlSlots,
+        expansionResult?.detectedPatterns,
       );
 
       // Apply selection rankings to the schema tree
@@ -1431,6 +1452,7 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       fieldHints.size > 0 ? fieldHints : undefined,
       slotContextOverrides.size > 0 ? slotContextOverrides : undefined,
       strictFieldControlSlots,
+      expansionResult?.detectedPatterns,
     );
 
     // Apply selection rankings to the schema tree

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://design-tokens.org/dtcg/schema.json",
+  "$description": "Corporate Blue preset — professional, trust-forward palette with deep blue primaries and neutral grays. Suitable for B2B dashboards, enterprise tools, and financial interfaces.",
+  "color": {
+    "brand": {
+      "A": {
+        "surface": {
+          "canvas": {
+            "$type": "color",
+            "$value": "oklch(0.975 0.008 240)",
+            "$description": "Near-white canvas with a barely perceptible cool undertone."
+          },
+          "raised": {
+            "$type": "color",
+            "$value": "oklch(0.99 0.003 240)",
+            "$description": "Pure-white raised cards for clean separation."
+          },
+          "subtle": {
+            "$type": "color",
+            "$value": "oklch(0.945 0.012 240)",
+            "$description": "Light gray panel surface for secondary regions."
+          },
+          "interactive": {
+            "primary": {
+              "default": {
+                "$type": "color",
+                "$value": "oklch(0.48 0.2 250)",
+                "$description": "Deep corporate blue primary action."
+              },
+              "hover": {
+                "$type": "color",
+                "$value": "oklch(0.42 0.21 250)",
+                "$description": "Darkened hover state."
+              },
+              "pressed": {
+                "$type": "color",
+                "$value": "oklch(0.36 0.22 250)",
+                "$description": "Deep pressed state."
+              }
+            }
+          }
+        },
+        "text": {
+          "primary": {
+            "$type": "color",
+            "$value": "oklch(0.22 0.02 260)",
+            "$description": "Near-black text for maximum readability."
+          },
+          "secondary": {
+            "$type": "color",
+            "$value": "oklch(0.42 0.015 260)",
+            "$description": "Medium gray for secondary labels."
+          },
+          "accent": {
+            "$type": "color",
+            "$value": "oklch(0.48 0.18 250)",
+            "$description": "Corporate blue accent for links and highlights."
+          },
+          "onInteractive": {
+            "$type": "color",
+            "$value": "oklch(0.98 0.005 240)",
+            "$description": "White text on blue interactive surfaces."
+          }
+        },
+        "border": {
+          "subtle": {
+            "$type": "color",
+            "$value": "oklch(0.88 0.008 240)",
+            "$description": "Light gray border for cards and inputs."
+          },
+          "strong": {
+            "$type": "color",
+            "$value": "oklch(0.65 0.03 250)",
+            "$description": "Steel blue border for focus states."
+          }
+        },
+        "accent": {
+          "background": {
+            "$type": "color",
+            "$value": "oklch(0.93 0.035 250)",
+            "$description": "Light blue accent surface."
+          },
+          "border": {
+            "$type": "color",
+            "$value": "oklch(0.7 0.12 250)",
+            "$description": "Medium blue accent border."
+          },
+          "text": {
+            "$type": "color",
+            "$value": "oklch(0.44 0.16 250)",
+            "$description": "Corporate blue accent text."
+          }
+        }
+      }
+    }
+  }
+}

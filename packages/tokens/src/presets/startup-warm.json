@@ -1,0 +1,97 @@
+{
+  "$schema": "https://design-tokens.org/dtcg/schema.json",
+  "$description": "Startup Warm preset — friendly, approachable palette with coral/orange primaries and warm neutrals. Suitable for consumer apps, onboarding flows, and creative tools.",
+  "color": {
+    "brand": {
+      "A": {
+        "surface": {
+          "canvas": {
+            "$type": "color",
+            "$value": "oklch(0.975 0.015 60)",
+            "$description": "Warm off-white canvas with a subtle peach undertone."
+          },
+          "raised": {
+            "$type": "color",
+            "$value": "oklch(0.985 0.008 60)",
+            "$description": "Cream-white raised surface for friendly separation."
+          },
+          "subtle": {
+            "$type": "color",
+            "$value": "oklch(0.94 0.025 60)",
+            "$description": "Warm beige panel surface."
+          },
+          "interactive": {
+            "primary": {
+              "default": {
+                "$type": "color",
+                "$value": "oklch(0.65 0.2 30)",
+                "$description": "Vibrant coral primary action — energetic and inviting."
+              },
+              "hover": {
+                "$type": "color",
+                "$value": "oklch(0.58 0.22 30)",
+                "$description": "Deepened coral hover."
+              },
+              "pressed": {
+                "$type": "color",
+                "$value": "oklch(0.52 0.23 30)",
+                "$description": "Rich coral pressed state."
+              }
+            }
+          }
+        },
+        "text": {
+          "primary": {
+            "$type": "color",
+            "$value": "oklch(0.25 0.04 50)",
+            "$description": "Warm dark brown for readable body text."
+          },
+          "secondary": {
+            "$type": "color",
+            "$value": "oklch(0.45 0.03 50)",
+            "$description": "Warm gray-brown for secondary labels."
+          },
+          "accent": {
+            "$type": "color",
+            "$value": "oklch(0.58 0.18 30)",
+            "$description": "Coral accent for links and CTAs."
+          },
+          "onInteractive": {
+            "$type": "color",
+            "$value": "oklch(0.98 0.01 60)",
+            "$description": "Near-white text on coral interactive surfaces."
+          }
+        },
+        "border": {
+          "subtle": {
+            "$type": "color",
+            "$value": "oklch(0.88 0.02 60)",
+            "$description": "Warm tan border for cards."
+          },
+          "strong": {
+            "$type": "color",
+            "$value": "oklch(0.65 0.06 40)",
+            "$description": "Warm brown-orange focus border."
+          }
+        },
+        "accent": {
+          "background": {
+            "$type": "color",
+            "$value": "oklch(0.92 0.06 30)",
+            "$description": "Light peach accent surface."
+          },
+          "border": {
+            "$type": "color",
+            "$value": "oklch(0.75 0.14 30)",
+            "$description": "Coral accent border."
+          },
+          "text": {
+            "$type": "color",
+            "$value": "oklch(0.5 0.18 30)",
+            "$description": "Coral accent text."
+          }
+        }
+      }
+    }
+  }
+}
