@@ -107,6 +107,21 @@
             "slotsExpanded": { "type": "number", "description": "Number of slots added by expansion." },
             "expansionReason": { "type": "string", "description": "Reason for slot expansion." },
             "patternsApplied": { "type": "number", "description": "Number of composite slot patterns applied." },
+            "patternGroups": {
+              "type": "array",
+              "description": "Detected multi-field pattern groups applied to slots (s83-m01).",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "slotName": { "type": "string" },
+                  "patternId": { "type": "string" },
+                  "compositeComponent": { "type": "string" },
+                  "matchedFields": { "type": "array", "items": { "type": "string" } },
+                  "confidence": { "type": "number" }
+                },
+                "additionalProperties": false
+              }
+            },
             "positionAffinityUsed": { "type": "boolean", "description": "Whether position-aware scoring was used." },
             "fieldAffinityUsed": { "type": "boolean", "description": "Whether field-type-aware scoring was used." },
             "intentSectionsParsed": { "type": "integer", "description": "Number of intent sections parsed from multi-section prompts." },

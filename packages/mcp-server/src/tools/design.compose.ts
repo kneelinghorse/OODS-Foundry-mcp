@@ -20,6 +20,7 @@ import {
   listTemplate,
   resetIdCounter,
   isSlotElement,
+  uid,
   type TemplateResult,
   type Slot,
 } from '../compose/templates/index.js';
@@ -417,6 +418,71 @@ function applySelectionExplainability(selections: SlotSelectionEntry[]): SlotSel
     entry.explanation = buildSelectionExplanation(entry);
     return entry;
   });
+}
+
+/**
+ * Wrap pattern-grouped slots with container components.
+ *
+ * When a slot contains fields from a detected multi-field pattern
+ * (e.g., address-block → street + city + state + zip), this function
+ * groups those fields together in a Stack container with metadata
+ * indicating the pattern. The composite component name is preserved
+ * in props.patternComponent for downstream codegen to reference.
+ *
+ * Uses Stack (a known, validated component) as the container to
+ * avoid validation failures from unregistered composite component names.
+ *
+ * Returns the number of patterns applied.
+ */
+function applyPatternGroupWrappers(
+  schema: UiSchema,
+  patternGroups: Record<string, FieldPatternMatch>,
+  objectFields: Record<string, FieldDefinition>,
+): number {
+  let applied = 0;
+
+  const walk = (el: UiElement): void => {
+    const slotName = el.meta?.label ?? (
+      el.meta?.intent?.startsWith('slot:')
+        ? el.meta.intent.slice('slot:'.length)
+        : undefined
+    );
+
+    if (slotName && patternGroups[slotName]) {
+      const pattern = patternGroups[slotName];
+
+      const fieldChildren: UiElement[] = pattern.matchedFields
+        .filter(f => objectFields[f])
+        .map(fieldName => ({
+          id: uid(`pg-${pattern.patternId}`),
+          component: 'Text',
+          props: { field: fieldName },
+        }));
+
+      if (fieldChildren.length > 0) {
+        const existingChildren = el.children ?? [];
+        // Use Stack as container (validated component) with pattern metadata
+        el.component = 'Stack';
+        el.layout = { type: 'stack', gapToken: 'cluster-tight' };
+        el.props = {
+          ...el.props,
+          patternComponent: pattern.compositeComponent,
+          fields: pattern.matchedFields,
+        };
+        el.children = [...fieldChildren, ...existingChildren];
+        el.meta = {
+          ...el.meta,
+          notes: `pattern-group:${pattern.patternId}`,
+        };
+        applied++;
+      }
+    }
+
+    el.children?.forEach(walk);
+  };
+
+  schema.screens.forEach(walk);
+  return applied;
 }
 
 function applyOverridesToSchema(
@@ -1440,6 +1506,16 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         }
       }
     }
+
+    // Apply pattern-driven slot grouping: wrap pattern-grouped slots with
+    // composite container components (e.g., AddressBlock, DateRange, MetricTrend)
+    if (expansionResult?.patternGroups) {
+      patternsApplied += applyPatternGroupWrappers(
+        schema,
+        expansionResult.patternGroups,
+        composed.schema,
+      );
+    }
   } else {
     // No object — use generic slot filling (backward compatible)
     selections = fillSlots(
@@ -1560,6 +1636,15 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
         expansionReason: expansionResult.reason,
       } : {}),
       patternsApplied: patternsApplied > 0 ? patternsApplied : undefined,
+      patternGroups: expansionResult?.patternGroups
+        ? Object.entries(expansionResult.patternGroups).map(([slotName, p]) => ({
+          slotName,
+          patternId: p.patternId,
+          compositeComponent: p.compositeComponent,
+          matchedFields: p.matchedFields,
+          confidence: p.confidence,
+        }))
+        : undefined,
     } : {}),
     positionAffinityUsed: true,
     fieldAffinityUsed: fieldHints.size > 0,

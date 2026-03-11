@@ -27,8 +27,8 @@
     },
     "chartType": {
       "type": "string",
-      "enum": ["bar", "line", "area", "point"],
-      "description": "Chart type to compose. Maps to mark traits: bar→mark-bar, line→mark-line, area→mark-area, point→mark-point."
+      "enum": ["bar", "line", "area", "point", "scatter", "heatmap"],
+      "description": "Chart type to compose. Maps to mark traits: bar→mark-bar, line→mark-line, area→mark-area, point→mark-point, scatter→mark-scatter, heatmap→mark-heatmap."
     },
     "dataBindings": {
       "type": "object",
@@ -48,6 +48,14 @@
         "size": {
           "type": "string",
           "description": "Field name for size encoding."
+        },
+        "opacity": {
+          "type": "string",
+          "description": "Field name for opacity encoding."
+        },
+        "shape": {
+          "type": "string",
+          "description": "Field name for shape encoding."
         }
       },
       "additionalProperties": false
@@ -59,7 +67,9 @@
         "x": { "type": "string", "description": "Field name for the x-axis encoding." },
         "y": { "type": "string", "description": "Field name for the y-axis encoding." },
         "color": { "type": "string", "description": "Field name for color encoding." },
-        "size": { "type": "string", "description": "Field name for size encoding." }
+        "size": { "type": "string", "description": "Field name for size encoding." },
+        "opacity": { "type": "string", "description": "Field name for opacity encoding." },
+        "shape": { "type": "string", "description": "Field name for shape encoding." }
       },
       "additionalProperties": false
     },

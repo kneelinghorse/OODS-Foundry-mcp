@@ -29,6 +29,8 @@ export interface FieldPatternMatch {
   selectionBoost: number;
   /** Suggested slot group name for slot-expander integration. */
   slotGroup: string;
+  /** Confidence score (0–1) based on matched vs max possible fields. */
+  confidence: number;
 }
 
 export interface PatternDetectionResult {
@@ -50,6 +52,8 @@ interface PatternRule {
   compositeComponent: string;
   selectionBoost: number;
   slotGroup: string;
+  /** Maximum number of fields this pattern can match (for confidence calculation). */
+  maxFields: number;
   /**
    * Detect whether this pattern matches the given fields.
    * Returns the matched field names, or null if no match.
@@ -105,6 +109,7 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'StatusTimeline',
     selectionBoost: 0.30,
     slotGroup: 'status',
+    maxFields: 2,
     detect(fields, semanticTypes) {
       const statusField = hasFieldMatching(fields, [
         /^status$/i, /^state$/i, /status$/i, /^lifecycle/i,
@@ -141,6 +146,7 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'PricingSummary',
     selectionBoost: 0.30,
     slotGroup: 'pricing',
+    maxFields: 3,
     detect(fields, semanticTypes) {
       const priceField = hasFieldMatching(fields, [
         /^price$/i, /^cost$/i, /^amount$/i, /^fee$/i, /^rate$/i,
@@ -179,6 +185,7 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'UserIdentityCard',
     selectionBoost: 0.35,
     slotGroup: 'identity',
+    maxFields: 4,
     detect(fields) {
       const firstName = hasFieldMatching(fields, [
         /^first.?name$/i, /^given.?name$/i, /^fname$/i,
@@ -209,6 +216,7 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'AddressBlock',
     selectionBoost: 0.30,
     slotGroup: 'address',
+    maxFields: 5,
     detect(fields) {
       const streetFields = hasFieldsMatching(fields, [
         /^street$/i, /^address$/i, /^address.?line/i, /^street.?address/i,
@@ -239,6 +247,7 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'DateRange',
     selectionBoost: 0.25,
     slotGroup: 'temporal',
+    maxFields: 2,
     detect(fields) {
       const startField = hasFieldMatching(fields, [
         /^start.?date$/i, /^from.?date$/i, /^begin.?date$/i,
@@ -263,6 +272,7 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'MetricTrend',
     selectionBoost: 0.25,
     slotGroup: 'metrics',
+    maxFields: 2,
     detect(fields, semanticTypes) {
       const valueField = hasFieldMatching(fields, [
         /^value$/i, /^score$/i, /^total$/i, /^count$/i, /^revenue$/i,
@@ -299,9 +309,10 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'ContactInfo',
     selectionBoost: 0.25,
     slotGroup: 'contact',
+    maxFields: 2,
     detect(fields, semanticTypes) {
       const emailField = hasFieldMatching(fields, [/email/i, /^e.?mail$/i]);
-      const phoneField = hasFieldMatching(fields, [/phone/i, /mobile/i, /tel/i, /cell/i]);
+      const phoneField = hasFieldMatching(fields, [/phone/i, /mobile/i, /(?:^|_)tel(?:$|_)/i, /(?:^|_)cell(?:$|_)/i]);
 
       // Also check semantic types
       if (!emailField && !phoneField) {
@@ -329,6 +340,7 @@ const PATTERN_RULES: PatternRule[] = [
     compositeComponent: 'Dimensions',
     selectionBoost: 0.20,
     slotGroup: 'sizing',
+    maxFields: 3,
     detect(fields) {
       const widthField = hasFieldMatching(fields, [/^width$/i, /^w$/i]);
       const heightField = hasFieldMatching(fields, [/^height$/i, /^h$/i]);
@@ -382,6 +394,7 @@ export function detectFieldPatterns(
       compositeComponent: rule.compositeComponent,
       selectionBoost: rule.selectionBoost,
       slotGroup: rule.slotGroup,
+      confidence: Math.round((matched.length / rule.maxFields) * 100) / 100,
     });
   }
 

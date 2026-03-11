@@ -1437,6 +1437,91 @@ function renderVizPointPreview(node: UiElement, childrenHtml = ''): string {
   return renderVizPreview(node, childrenHtml, 'point', 'Point');
 }
 
+function renderVizScatterControls(node: UiElement, childrenHtml = ''): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const body = [
+    renderSelectControl('Shape', 'shape', props.shapes ?? ['circle', 'square', 'diamond', 'triangle'], props.shape),
+    renderInputControl('Size', 'size', firstSerialized(props, ['size']), { type: 'number' }),
+    renderInputControl('Opacity', 'opacity', firstSerialized(props, ['opacity']), { type: 'number' }),
+    renderInputControl('Jitter', 'jitter', firstSerialized(props, ['jitter']), { type: 'number' }),
+  ].join('');
+  return renderFormContainer(node, childrenHtml, body, {
+    tag: 'fieldset',
+    defaultTitle: 'Viz Scatter Controls',
+    formType: 'viz-scatter-controls',
+  });
+}
+
+function renderVizScatterPreview(node: UiElement, childrenHtml = ''): string {
+  return renderVizPreview(node, childrenHtml, 'scatter', 'Scatter');
+}
+
+function renderVizHeatmapControls(node: UiElement, childrenHtml = ''): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const body = [
+    renderSelectControl('Color Scheme', 'scheme', props.schemes ?? ['viridis', 'inferno', 'plasma', 'blues'], props.scheme),
+    renderInputControl('Cell Padding', 'cellPadding', firstSerialized(props, ['cellPadding']), { type: 'number' }),
+    renderInputControl('Corner Radius', 'cornerRadius', firstSerialized(props, ['cornerRadius']), { type: 'number' }),
+  ].join('');
+  return renderFormContainer(node, childrenHtml, body, {
+    tag: 'fieldset',
+    defaultTitle: 'Viz Heatmap Controls',
+    formType: 'viz-heatmap-controls',
+  });
+}
+
+function renderVizHeatmapPreview(node: UiElement, childrenHtml = ''): string {
+  return renderVizPreview(node, childrenHtml, 'heatmap', 'Heatmap');
+}
+
+function renderVizOpacityControls(node: UiElement, childrenHtml = ''): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const body = [
+    renderInputControl('Min Opacity', 'minOpacity', firstSerialized(props, ['min']), { type: 'number' }),
+    renderInputControl('Max Opacity', 'maxOpacity', firstSerialized(props, ['max']), { type: 'number' }),
+  ].join('');
+  return renderFormContainer(node, childrenHtml, body, {
+    tag: 'fieldset',
+    defaultTitle: 'Viz Opacity Controls',
+    formType: 'viz-opacity-controls',
+  });
+}
+
+function renderVizOpacitySummary(node: UiElement, childrenHtml = ''): string {
+  return renderSummarySection(node, childrenHtml, {
+    defaultTitle: 'Viz Opacity Summary',
+    summaryType: 'viz-opacity-summary',
+    fields: [
+      { term: 'Field', keys: ['opacityField', 'field'] },
+      { term: 'Min', keys: ['min', 'minOpacity'] },
+      { term: 'Max', keys: ['max', 'maxOpacity'] },
+    ],
+  });
+}
+
+function renderVizShapeControls(node: UiElement, childrenHtml = ''): string {
+  const props = isRecord(node.props) ? node.props : {};
+  const body = [
+    renderSelectControl('Shape Set', 'shapeSet', props.shapeSets ?? ['default', 'filled', 'outlined'], props.shapeSet),
+  ].join('');
+  return renderFormContainer(node, childrenHtml, body, {
+    tag: 'fieldset',
+    defaultTitle: 'Viz Shape Controls',
+    formType: 'viz-shape-controls',
+  });
+}
+
+function renderVizShapeLegend(node: UiElement, childrenHtml = ''): string {
+  return renderSummarySection(node, childrenHtml, {
+    defaultTitle: 'Viz Shape Legend',
+    summaryType: 'viz-shape-legend',
+    fields: [
+      { term: 'Field', keys: ['shapeField', 'field'] },
+      { term: 'Shape Set', keys: ['shapeSet'] },
+    ],
+  });
+}
+
 function renderVizColorControls(node: UiElement, childrenHtml = ''): string {
   const props = isRecord(node.props) ? node.props : {};
   const body = [
@@ -1812,6 +1897,14 @@ export const componentRenderers: Record<string, ComponentRenderer> = {
   VizLinePreview: renderVizLinePreview,
   VizPointControls: renderVizPointControls,
   VizPointPreview: renderVizPointPreview,
+  VizScatterControls: renderVizScatterControls,
+  VizScatterPreview: renderVizScatterPreview,
+  VizHeatmapControls: renderVizHeatmapControls,
+  VizHeatmapPreview: renderVizHeatmapPreview,
+  VizOpacityControls: renderVizOpacityControls,
+  VizOpacitySummary: renderVizOpacitySummary,
+  VizShapeControls: renderVizShapeControls,
+  VizShapeLegend: renderVizShapeLegend,
   VizColorControls: renderVizColorControls,
   VizColorLegendConfig: renderVizColorLegendConfig,
   VizEncodingBadge: renderVizEncodingBadge,

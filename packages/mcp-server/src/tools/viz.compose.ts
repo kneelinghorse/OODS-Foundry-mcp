@@ -29,13 +29,15 @@ import {
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-export type ChartType = 'bar' | 'line' | 'area' | 'point';
+export type ChartType = 'bar' | 'line' | 'area' | 'point' | 'scatter' | 'heatmap';
 
 export interface DataBindings {
   x?: string;
   y?: string;
   color?: string;
   size?: string;
+  opacity?: string;
+  shape?: string;
 }
 
 export interface VizComposeInput {
@@ -95,9 +97,11 @@ const CHART_COMPONENTS: Record<ChartType, { controls: string; preview: string }>
   line: { controls: 'VizLineControls', preview: 'VizLinePreview' },
   area: { controls: 'VizAreaControls', preview: 'VizAreaPreview' },
   point: { controls: 'VizPointControls', preview: 'VizPointPreview' },
+  scatter: { controls: 'VizScatterControls', preview: 'VizScatterPreview' },
+  heatmap: { controls: 'VizHeatmapControls', preview: 'VizHeatmapPreview' },
 };
 
-const VALID_CHART_TYPES = new Set<string>(['bar', 'line', 'area', 'point']);
+const VALID_CHART_TYPES = new Set<string>(['bar', 'line', 'area', 'point', 'scatter', 'heatmap']);
 
 /* ------------------------------------------------------------------ */
 /*  Schema building                                                    */
@@ -127,6 +131,8 @@ function buildVizSchema(
   if (dataBindings.y) previewProps.yField = dataBindings.y;
   if (dataBindings.color) previewProps.colorField = dataBindings.color;
   if (dataBindings.size) previewProps.sizeField = dataBindings.size;
+  if (dataBindings.opacity) previewProps.opacityField = dataBindings.opacity;
+  if (dataBindings.shape) previewProps.shapeField = dataBindings.shape;
 
   const controlsProps: Record<string, unknown> = { ...previewProps };
 
@@ -141,6 +147,8 @@ function buildVizSchema(
   const yEnc = resolution.encodings.find((e) => e.channel === 'y');
   const colorEnc = resolution.encodings.find((e) => e.channel === 'color');
   const sizeEnc = resolution.encodings.find((e) => e.channel === 'size');
+  const opacityEnc = resolution.encodings.find((e) => e.channel === 'opacity');
+  const shapeEnc = resolution.encodings.find((e) => e.channel === 'shape');
 
   if (xEnc || yEnc) {
     // Axis controls (form context)
@@ -191,6 +199,20 @@ function buildVizSchema(
     slots.push(
       { slotName: 'size-config', component: 'VizSizeControls', props: { sizeField: dataBindings.size } },
       { slotName: 'size-summary', component: 'VizSizeSummary', props: { sizeField: dataBindings.size } },
+    );
+  }
+
+  if (opacityEnc) {
+    slots.push(
+      { slotName: 'opacity-config', component: 'VizOpacityControls', props: { opacityField: dataBindings.opacity } },
+      { slotName: 'opacity-summary', component: 'VizOpacitySummary', props: { opacityField: dataBindings.opacity } },
+    );
+  }
+
+  if (shapeEnc) {
+    slots.push(
+      { slotName: 'shape-config', component: 'VizShapeControls', props: { shapeField: dataBindings.shape } },
+      { slotName: 'shape-legend', component: 'VizShapeLegend', props: { shapeField: dataBindings.shape } },
     );
   }
 
@@ -262,6 +284,12 @@ function buildVizSchema(
   if (dataBindings.size) {
     objectSchema.size_field = { type: 'string', required: false, description: `Size encoding field: ${dataBindings.size}` };
   }
+  if (dataBindings.opacity) {
+    objectSchema.opacity_field = { type: 'string', required: false, description: `Opacity encoding field: ${dataBindings.opacity}` };
+  }
+  if (dataBindings.shape) {
+    objectSchema.shape_field = { type: 'string', required: false, description: `Shape encoding field: ${dataBindings.shape}` };
+  }
   objectSchema.data = { type: 'array', required: true, description: 'Data array for chart visualization' };
 
   const schema: UiSchema = {
@@ -316,8 +344,8 @@ export async function handle(input: VizComposeInput): Promise<VizComposeOutput> 
       warnings: [],
       errors: [{
         code: 'OODS-V120',
-        message: `Invalid chart type: "${input.chartType}". Must be one of: bar, line, area, point.`,
-        hint: 'Use chartType: "bar" | "line" | "area" | "point".',
+        message: `Invalid chart type: "${input.chartType}". Must be one of: bar, line, area, point, scatter, heatmap.`,
+        hint: 'Use chartType: "bar" | "line" | "area" | "point" | "scatter" | "heatmap".',
       }],
     };
   }
@@ -364,7 +392,7 @@ export async function handle(input: VizComposeInput): Promise<VizComposeOutput> 
         warnings.push({
           code: 'OODS-V122',
           message: `Object "${input.object}" has no viz mark traits. Falling back to bar chart.`,
-          hint: 'Add mark-bar, mark-line, mark-area, or mark-point traits to the object.',
+          hint: 'Add mark-bar, mark-line, mark-area, mark-point, mark-scatter, or mark-heatmap traits to the object.',
         });
         resolvedChartType = 'bar';
       }

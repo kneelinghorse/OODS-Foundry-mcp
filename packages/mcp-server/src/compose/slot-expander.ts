@@ -36,6 +36,8 @@ export interface ExpansionResult {
   fieldGroups?: Record<string, string[]>;
   /** Multi-field semantic patterns detected in the object schema */
   detectedPatterns?: FieldPatternMatch[];
+  /** Maps slot name → pattern match for slots containing pattern-grouped fields */
+  patternGroups?: Record<string, FieldPatternMatch>;
 }
 
 export interface ExpansionContext {
@@ -146,22 +148,53 @@ function isLongTextField(fieldName: string, fieldDef: FieldDefinition): boolean 
   );
 }
 
+/** Minimum confidence for a detected pattern to produce a grouped slot. */
+const PATTERN_GROUPING_CONFIDENCE = 0.7;
+
 /**
  * Group fields into semantic categories, then distribute across N slots.
  * Returns a map from slot name to field names.
+ *
+ * When detectedPatterns are provided, high-confidence patterns (>= 0.7) are
+ * pre-assigned to dedicated slots before semantic category distribution.
+ * This ensures recognized multi-field groups (address-block, date-range, etc.)
+ * land together in the same slot.
  */
 export function groupFieldsIntoSlots(
   fields: Record<string, FieldDefinition>,
   slotNames: string[],
   semanticTypes?: Record<string, string>,
+  detectedPatterns?: FieldPatternMatch[],
 ): Record<string, string[]> {
   if (slotNames.length === 0) return {};
 
-  // Categorize each field
+  const result: Record<string, string[]> = {};
+  for (const name of slotNames) {
+    result[name] = [];
+  }
+
+  // Phase 0: Pre-assign pattern-grouped fields to dedicated slots
+  const patternConsumedFields = new Set<string>();
+  if (detectedPatterns && detectedPatterns.length > 0) {
+    let slotIdx = 0;
+    for (const pattern of detectedPatterns) {
+      if (pattern.confidence < PATTERN_GROUPING_CONFIDENCE) continue;
+      if (slotIdx >= slotNames.length) break;
+
+      const targetSlot = slotNames[slotIdx];
+      result[targetSlot].push(...pattern.matchedFields);
+      for (const f of pattern.matchedFields) patternConsumedFields.add(f);
+      slotIdx++;
+    }
+  }
+
+  // Phase 1: Categorize remaining (non-pattern) fields
   const categorized = new Map<string, string[]>();
   const uncategorized: string[] = [];
 
   for (const [fieldName, fieldDef] of Object.entries(fields)) {
+    if (patternConsumedFields.has(fieldName)) continue;
+
     const semantic = semanticTypes?.[fieldName];
     const category = resolveSemanticCategory(semantic)
       ?? (fieldDef.validation?.enum && fieldDef.validation.enum.length > 0 ? 'choices' : undefined)
@@ -178,24 +211,23 @@ export function groupFieldsIntoSlots(
     }
   }
 
-  // Distribute category groups round-robin into slots
-  const result: Record<string, string[]> = {};
-  for (const name of slotNames) {
-    result[name] = [];
-  }
-
+  // Phase 2: Distribute category groups round-robin into slots
+  // Skip slots already used by pattern groups
+  const availableSlots = slotNames.filter(
+    name => !patternConsumedFields.size || result[name].length === 0,
+  );
   let slotIdx = 0;
 
-  // First, assign each category group to a slot
   for (const [, fieldNames] of categorized) {
-    const target = slotNames[slotIdx % slotNames.length];
+    const target = availableSlots.length > 0
+      ? availableSlots[slotIdx % availableSlots.length]
+      : slotNames[slotIdx % slotNames.length];
     result[target].push(...fieldNames);
     slotIdx++;
   }
 
-  // Then distribute uncategorized fields to fill remaining/sparse slots
+  // Phase 3: Distribute uncategorized fields to fill remaining/sparse slots
   for (const fieldName of uncategorized) {
-    // Find the slot with fewest fields
     let minSlot = slotNames[0];
     let minCount = result[minSlot].length;
     for (const name of slotNames) {
@@ -219,6 +251,7 @@ function expandDetailTabs(
   fieldCount: number,
   fields: Record<string, FieldDefinition>,
   semanticTypes?: Record<string, string>,
+  detectedPatterns?: FieldPatternMatch[],
 ): ExpansionResult {
   const existingTabs = template.slots.filter(s => s.name.startsWith('tab-'));
   const existingTabCount = existingTabs.length;
@@ -232,7 +265,7 @@ function expandDetailTabs(
     const allTabSlots = template.slots
       .filter(s => s.name.startsWith('tab-'))
       .map(s => s.name);
-    const fieldGroups = groupFieldsIntoSlots(fields, allTabSlots, semanticTypes);
+    const fieldGroups = groupFieldsIntoSlots(fields, allTabSlots, semanticTypes, detectedPatterns);
 
     return {
       template,
@@ -277,7 +310,7 @@ function expandDetailTabs(
   const allTabSlots = result.slots
     .filter(s => s.name.startsWith('tab-'))
     .map(s => s.name);
-  const fieldGroups = groupFieldsIntoSlots(fields, allTabSlots, semanticTypes);
+  const fieldGroups = groupFieldsIntoSlots(fields, allTabSlots, semanticTypes, detectedPatterns);
 
   return {
     template: result,
@@ -429,7 +462,7 @@ export function expandSlots(
   let result: ExpansionResult;
   switch (context.layout) {
     case 'detail':
-      result = expandDetailTabs(template, fieldCount, context.fields, context.semanticTypes);
+      result = expandDetailTabs(template, fieldCount, context.fields, context.semanticTypes, patterns);
       break;
 
     case 'dashboard': {
@@ -439,6 +472,7 @@ export function expandSlots(
     }
 
     case 'form':
+      // Form fields have their own specialized slot metadata; don't apply pattern grouping
       result = expandFormFields(template, fieldCount, context.fields, context.semanticTypes);
       break;
 
@@ -454,6 +488,28 @@ export function expandSlots(
 
   if (patterns) {
     result.detectedPatterns = patterns;
+
+    // Build patternGroups: map slot names → patterns for slots that contain
+    // pattern-grouped fields. This lets the compose pipeline wrap those slots
+    // with composite container components.
+    if (result.fieldGroups) {
+      const highConfPatterns = patterns.filter(p => p.confidence >= PATTERN_GROUPING_CONFIDENCE);
+      if (highConfPatterns.length > 0) {
+        const patternGroups: Record<string, FieldPatternMatch> = {};
+        for (const [slotName, fieldNames] of Object.entries(result.fieldGroups)) {
+          const fieldSet = new Set(fieldNames);
+          for (const pattern of highConfPatterns) {
+            if (pattern.matchedFields.every(f => fieldSet.has(f))) {
+              patternGroups[slotName] = pattern;
+              break;
+            }
+          }
+        }
+        if (Object.keys(patternGroups).length > 0) {
+          result.patternGroups = patternGroups;
+        }
+      }
+    }
   }
   return result;
 }

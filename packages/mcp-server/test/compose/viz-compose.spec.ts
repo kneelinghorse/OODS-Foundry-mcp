@@ -6,7 +6,7 @@ import { handle as codeGenerateHandle } from '../../src/tools/code.generate.js';
 
 describe('viz.compose handler', () => {
   describe('chartType input mode', () => {
-    it.each(['bar', 'line', 'area', 'point'] as const)(
+    it.each(['bar', 'line', 'area', 'point', 'scatter', 'heatmap'] as const)(
       'composes %s chart from explicit chartType',
       async (chartType) => {
         const result = await handle({ chartType, dataBindings: { x: 'date', y: 'value' } });
@@ -92,6 +92,18 @@ describe('viz.compose handler', () => {
       expect(chartArea?.component).toBe('VizPointPreview');
     });
 
+    it('places correct preview component for scatter', async () => {
+      const result = await handle({ chartType: 'scatter' });
+      const chartArea = result.slots.find((s) => s.slotName === 'chart-area');
+      expect(chartArea?.component).toBe('VizScatterPreview');
+    });
+
+    it('places correct preview component for heatmap', async () => {
+      const result = await handle({ chartType: 'heatmap' });
+      const chartArea = result.slots.find((s) => s.slotName === 'chart-area');
+      expect(chartArea?.component).toBe('VizHeatmapPreview');
+    });
+
     it('always places VizRoleBadge', async () => {
       const result = await handle({ chartType: 'bar' });
       const roleBadge = result.slots.find((s) => s.slotName === 'role-badge');
@@ -139,6 +151,26 @@ describe('viz.compose handler', () => {
       expect(slotNames).toContain('size-config');
       expect(slotNames).toContain('size-summary');
     });
+
+    it('places opacity controls for opacity encoding', async () => {
+      const result = await handle({
+        traits: ['mark-scatter', 'encoding-opacity'],
+        dataBindings: { opacity: 'confidence' },
+      });
+      const slotNames = result.slots.map((s) => s.slotName);
+      expect(slotNames).toContain('opacity-config');
+      expect(slotNames).toContain('opacity-summary');
+    });
+
+    it('places shape legend for shape encoding', async () => {
+      const result = await handle({
+        traits: ['mark-scatter', 'encoding-shape'],
+        dataBindings: { shape: 'category' },
+      });
+      const slotNames = result.slots.map((s) => s.slotName);
+      expect(slotNames).toContain('shape-config');
+      expect(slotNames).toContain('shape-legend');
+    });
   });
 
   describe('scale and interaction slots', () => {
@@ -179,6 +211,16 @@ describe('viz.compose handler', () => {
       expect(chartArea?.props.yField).toBe('revenue');
       expect(chartArea?.props.colorField).toBe('region');
       expect(chartArea?.props.sizeField).toBe('count');
+    });
+
+    it('wires opacity and shape dataBindings to chart component props', async () => {
+      const result = await handle({
+        chartType: 'scatter',
+        dataBindings: { x: 'age', y: 'income', opacity: 'confidence', shape: 'category' },
+      });
+      const chartArea = result.slots.find((s) => s.slotName === 'chart-area');
+      expect(chartArea?.props.opacityField).toBe('confidence');
+      expect(chartArea?.props.shapeField).toBe('category');
     });
   });
 
