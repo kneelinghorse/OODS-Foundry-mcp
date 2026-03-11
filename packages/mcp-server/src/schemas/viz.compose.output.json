@@ -13,7 +13,7 @@
     },
     "chartType": {
       "type": "string",
-      "description": "Resolved chart type (bar, line, area, point, or empty on error)."
+      "description": "Resolved chart type (bar, line, area, point, scatter, heatmap, or empty on error)."
     },
     "schema": {
       "type": "object",

@@ -4130,6 +4130,94 @@
       }
     },
     {
+      "id": "VizScatterControls",
+      "displayName": "VizScatterControls",
+      "categories": ["viz.mark"],
+      "tags": ["scatter", "mark", "viz"],
+      "contexts": ["form"],
+      "regions": ["form"],
+      "traitUsages": [{"trait": "MarkScatter", "traitCategory": "viz.mark", "context": "form", "position": "top", "priority": null, "props": {}, "source": "runtime"}],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 2, "categories": ["viz.mark"], "source": "traitCategories"}
+    },
+    {
+      "id": "VizScatterPreview",
+      "displayName": "VizScatterPreview",
+      "categories": ["viz.mark"],
+      "tags": ["scatter", "mark", "viz"],
+      "contexts": ["detail"],
+      "regions": ["detail", "form", "list"],
+      "traitUsages": [{"trait": "MarkScatter", "traitCategory": "viz.mark", "context": "detail", "position": "top", "priority": 55, "props": {}, "source": "runtime"}],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 2, "categories": ["viz.mark"], "source": "traitCategories"}
+    },
+    {
+      "id": "VizHeatmapControls",
+      "displayName": "VizHeatmapControls",
+      "categories": ["viz.mark"],
+      "tags": ["heatmap", "mark", "viz"],
+      "contexts": ["form"],
+      "regions": ["form"],
+      "traitUsages": [{"trait": "MarkHeatmap", "traitCategory": "viz.mark", "context": "form", "position": "top", "priority": null, "props": {}, "source": "runtime"}],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 2, "categories": ["viz.mark"], "source": "traitCategories"}
+    },
+    {
+      "id": "VizHeatmapPreview",
+      "displayName": "VizHeatmapPreview",
+      "categories": ["viz.mark"],
+      "tags": ["heatmap", "mark", "viz"],
+      "contexts": ["detail"],
+      "regions": ["detail", "form", "list"],
+      "traitUsages": [{"trait": "MarkHeatmap", "traitCategory": "viz.mark", "context": "detail", "position": "top", "priority": 55, "props": {}, "source": "runtime"}],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 2, "categories": ["viz.mark"], "source": "traitCategories"}
+    },
+    {
+      "id": "VizOpacityControls",
+      "displayName": "VizOpacityControls",
+      "categories": ["viz.encoding"],
+      "tags": ["opacity", "encoding", "viz"],
+      "contexts": ["form"],
+      "regions": ["form"],
+      "traitUsages": [],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 1, "categories": ["viz.encoding"], "source": "traitCategories"}
+    },
+    {
+      "id": "VizOpacitySummary",
+      "displayName": "VizOpacitySummary",
+      "categories": ["viz.encoding"],
+      "tags": ["opacity", "encoding", "viz"],
+      "contexts": ["detail"],
+      "regions": ["detail"],
+      "traitUsages": [],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 1, "categories": ["viz.encoding"], "source": "traitCategories"}
+    },
+    {
+      "id": "VizShapeControls",
+      "displayName": "VizShapeControls",
+      "categories": ["viz.encoding"],
+      "tags": ["shape", "encoding", "viz"],
+      "contexts": ["form"],
+      "regions": ["form"],
+      "traitUsages": [],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 1, "categories": ["viz.encoding"], "source": "traitCategories"}
+    },
+    {
+      "id": "VizShapeLegend",
+      "displayName": "VizShapeLegend",
+      "categories": ["viz.encoding"],
+      "tags": ["shape", "encoding", "viz", "legend"],
+      "contexts": ["detail"],
+      "regions": ["detail"],
+      "traitUsages": [],
+      "sourceFiles": [],
+      "renderComplexity": {"tier": "low", "score": 1, "categories": ["viz.encoding"], "source": "traitCategories"}
+    },
+    {
       "id": "VizRoleBadge",
       "displayName": "VizRoleBadge",
       "categories": [

@@ -1,6 +1,6 @@
 {
   "name": "test-tagged-schema",
-  "schemaRef": "compose-5feaa4c9",
+  "schemaRef": "compose-2d1a1c9a",
   "schema": {
     "version": "2026.02",
     "screens": [
@@ -106,11 +106,41 @@
                     "children": [
                       {
                         "id": "slot-tab-0-4",
-                        "component": "Card",
+                        "component": "Stack",
                         "meta": {
                           "intent": "slot:tab-0",
-                          "label": "tab-0"
-                        }
+                          "label": "tab-0",
+                          "notes": "pattern-group:status-timeline"
+                        },
+                        "props": {
+                          "patternComponent": "StatusTimeline",
+                          "fields": [
+                            "status",
+                            "allowed_transitions"
+                          ]
+                        },
+                        "layout": {
+                          "type": "stack",
+                          "gapToken": "cluster-tight"
+                        },
+                        "children": [
+                          {
+                            "id": "pg-status-timeline-31",
+                            "component": "Text",
+                            "props": {
+                              "field": "status",
+                              "label": "Canonical lifecycle state derived from the states parameter. This is the single source\nof truth for the entity's current lifecycle position. Consumed by Colorized to resolve\nvisual tokens, and by view extensions to render StatusBadge and StatusTimeline.\n"
+                            }
+                          },
+                          {
+                            "id": "pg-status-timeline-32",
+                            "component": "Text",
+                            "props": {
+                              "field": "allowed_transitions",
+                              "label": "Materialized list of valid next states from the current status, computed from the\ntransitionRules parameter. When transitionRules is null (open model), this contains\nall states except the current one. Used by StatusSelector to disable invalid options\nand by StatusBadge to indicate available paths.\n"
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -127,14 +157,10 @@
                     "children": [
                       {
                         "id": "slot-tab-1-6",
-                        "component": "StatusBadge",
+                        "component": "Card",
                         "meta": {
                           "intent": "slot:tab-1",
                           "label": "tab-1"
-                        },
-                        "props": {
-                          "field": "inventory_status",
-                          "label": "Availability state synchronized with inventory service."
                         }
                       }
                     ]
@@ -571,9 +597,9 @@
     }
   },
   "object": "Product",
-  "version": 35,
+  "version": 48,
   "createdAt": "2026-03-05T23:29:45.932Z",
-  "updatedAt": "2026-03-11T04:32:27.176Z",
+  "updatedAt": "2026-03-11T15:10:21.245Z",
   "tags": [
     "test",
     "sprint74"

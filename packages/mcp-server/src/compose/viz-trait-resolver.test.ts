@@ -11,6 +11,8 @@ describe('viz-trait-resolver', () => {
       ['mark-line', 'line'],
       ['mark-area', 'area'],
       ['mark-point', 'point'],
+      ['mark-scatter', 'scatter'],
+      ['mark-heatmap', 'heatmap'],
     ] as const)('resolves %s to %s chart type', (trait, expected) => {
       const result = resolveVizTraits([trait]);
       expect(result.chartType).toBe(expected);
@@ -35,6 +37,8 @@ describe('viz-trait-resolver', () => {
       ['MarkLine', 'line'],
       ['MarkArea', 'area'],
       ['MarkPoint', 'point'],
+      ['MarkScatter', 'scatter'],
+      ['MarkHeatmap', 'heatmap'],
     ] as const)('normalizes %s to matching chart type', (pascal, expected) => {
       const result = resolveVizTraits([pascal]);
       expect(result.chartType).toBe(expected);
@@ -93,16 +97,30 @@ describe('viz-trait-resolver', () => {
       expect(result.encodings[0].channel).toBe('size');
     });
 
-    it('resolves all four encodings together', () => {
+    it('resolves encoding-opacity', () => {
+      const result = resolveVizTraits(['encoding-opacity']);
+      expect(result.encodings).toHaveLength(1);
+      expect(result.encodings[0].channel).toBe('opacity');
+    });
+
+    it('resolves encoding-shape', () => {
+      const result = resolveVizTraits(['encoding-shape']);
+      expect(result.encodings).toHaveLength(1);
+      expect(result.encodings[0].channel).toBe('shape');
+    });
+
+    it('resolves all six encodings together', () => {
       const result = resolveVizTraits([
         'encoding-position-x',
         'encoding-position-y',
         'encoding-color',
         'encoding-size',
+        'encoding-opacity',
+        'encoding-shape',
       ]);
-      expect(result.encodings).toHaveLength(4);
+      expect(result.encodings).toHaveLength(6);
       const channels = result.encodings.map((e) => e.channel).sort();
-      expect(channels).toEqual(['color', 'size', 'x', 'y']);
+      expect(channels).toEqual(['color', 'opacity', 'shape', 'size', 'x', 'y']);
     });
   });
 
@@ -154,19 +172,19 @@ describe('viz-trait-resolver', () => {
   });
 
   describe('full trait resolution', () => {
-    it('resolves all 15 viz trait types', () => {
+    it('resolves all 19 viz trait types', () => {
       const allTraits = [
-        'mark-bar', 'mark-line', 'mark-area', 'mark-point',
-        'encoding-position-x', 'encoding-position-y', 'encoding-color', 'encoding-size',
+        'mark-bar', 'mark-line', 'mark-area', 'mark-point', 'mark-scatter', 'mark-heatmap',
+        'encoding-position-x', 'encoding-position-y', 'encoding-color', 'encoding-size', 'encoding-opacity', 'encoding-shape',
         'layout-layer',
         'scale-linear', 'scale-temporal',
         'interaction-tooltip', 'interaction-highlight',
       ];
       const result = resolveVizTraits(allTraits);
-      expect(result.allResolved).toHaveLength(13);
+      expect(result.allResolved).toHaveLength(17);
       expect(result.unrecognized).toHaveLength(0);
-      expect(result.markTraits).toHaveLength(4);
-      expect(result.encodings).toHaveLength(4);
+      expect(result.markTraits).toHaveLength(6);
+      expect(result.encodings).toHaveLength(6);
       expect(result.scales).toHaveLength(2);
       expect(result.interactions).toHaveLength(2);
     });

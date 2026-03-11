@@ -114,14 +114,14 @@
 
 | Category | Weight | Current | Notes |
 |----------|--------|---------|-------|
-| API Surface Completeness | 15 | 14 | Bridge tool-surface honesty fixed |
-| Composition Intelligence | 25 | 23 | S80: intent synonyms (80+ words, 3-tier resolution), multi-field semantic patterns (8 rules, metadata-only), confidence-aware composition with alternativeCandidates. S81: explainability polish (confidenceLevel, explanation, reviewHint). Remaining gap: multi-field patterns not yet driving slot grouping |
+| API Surface Completeness | 15 | 15 | S83: propMappings sub-property docs (map-create.md), bridge tool-surface honesty (S81), pipeline save tags (S81) |
+| Composition Intelligence | 25 | 25 | S83: pattern-driven slot grouping (confidence ≥0.7 threshold, Phase 0 pre-assignment), contact-info regex fix. S80: intent synonyms, multi-field semantic patterns, confidence-aware composition. S81: explainability polish |
 | Code Generation Quality | 20 | 20 | S80: Vue 3 Composition API reactivity (ref, computed, v-model), responsive Tailwind variants (mobile-first breakpoints, CVA size variants). All 9 framework×styling combos validated |
 | Pipeline & Persistence | 15 | 15 | S81: contract fidelity (pipeline.save dual forms, mapping contract alignment), pipeline framework/typescript option handling |
 | Error Handling & DX | 10 | 10 | S81: composition explainability, override guidance, escape hatch documentation |
-| Visualization | 10 | 9 | Latest-dist viz path validates cleanly |
+| Visualization | 10 | 10 | S83: scatter+heatmap chart types, opacity+shape encoding channels, 8 new viz components registered |
 | Documentation & Discoverability | 5 | 5 | README + MCP docs aligned, override examples added, confidence/explainability documented |
-| **Total** | **100** | **96** | |
+| **Total** | **100** | **100** | |
 
 ## Latest Reports
 
@@ -145,4 +145,4 @@
 | Artifact tools | `packages/mcp-server/src/tools/reviewKit.create.ts`, `purity.audit.ts`, `vrt.run.ts` |
 | Bridge tool surface | `packages/mcp-bridge/src/server.ts`, `packages/mcp-bridge/src/tool-surface.ts` |
 
-The V1 path remaining gaps: Composition Intelligence (23/25) — multi-field patterns not yet driving slot grouping, API Surface (14/15), Visualization (9/10). Platform score: 96/100. Stage1 integration contract is bilateral; awaiting Stage1 Sprint 26 bridge delivery.
+All V1 categories at full score (100/100). S83 closed final gaps: Composition Intelligence 25/25 (pattern-driven slot grouping), API Surface 15/15 (propMappings docs), Visualization 10/10 (scatter+heatmap, opacity+shape encodings). Stage1 integration contract is bilateral; awaiting Stage1 Sprint 26 bridge delivery.

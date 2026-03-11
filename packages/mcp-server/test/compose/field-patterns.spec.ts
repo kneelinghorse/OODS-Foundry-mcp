@@ -300,6 +300,7 @@ describe('getPatternBoost', () => {
       compositeComponent: 'StatusTimeline',
       selectionBoost: 0.30,
       slotGroup: 'status',
+      confidence: 1.0,
     }];
     const result = getPatternBoost('StatusTimeline', patterns);
     expect(result.boost).toBe(0.30);
@@ -314,6 +315,7 @@ describe('getPatternBoost', () => {
       compositeComponent: 'StatusTimeline',
       selectionBoost: 0.30,
       slotGroup: 'status',
+      confidence: 1.0,
     }];
     const result = getPatternBoost('Button', patterns);
     expect(result.boost).toBe(0);
@@ -337,5 +339,214 @@ describe('buildPatternGroups', () => {
     expect(groups['status']).toEqual(['status', 'statusUpdatedAt']);
     expect(groups['contact']).toEqual(['email', 'phone']);
     expect(groups['general']).toContain('name');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Confidence scoring (s83-m01)                                       */
+/* ------------------------------------------------------------------ */
+
+describe('field-patterns — confidence scoring', () => {
+  it('address-block with all 5 fields has confidence 1.0', () => {
+    const fields: Record<string, FieldDefinition> = {
+      street: requiredField('string'),
+      city: requiredField('string'),
+      state: field('string'),
+      zip: field('string'),
+      country: field('string'),
+    };
+    const result = detectFieldPatterns(fields);
+    const addr = result.patterns.find(p => p.patternId === 'address-block');
+    expect(addr).toBeDefined();
+    expect(addr!.confidence).toBe(1.0);
+  });
+
+  it('address-block with 2 required fields has confidence 0.4', () => {
+    const fields: Record<string, FieldDefinition> = {
+      street: requiredField('string'),
+      city: requiredField('string'),
+    };
+    const result = detectFieldPatterns(fields);
+    const addr = result.patterns.find(p => p.patternId === 'address-block');
+    expect(addr).toBeDefined();
+    expect(addr!.confidence).toBe(0.4);
+  });
+
+  it('address-block with 4 fields has confidence >= 0.7', () => {
+    const fields: Record<string, FieldDefinition> = {
+      street: requiredField('string'),
+      city: requiredField('string'),
+      state: field('string'),
+      zip: field('string'),
+    };
+    const result = detectFieldPatterns(fields);
+    const addr = result.patterns.find(p => p.patternId === 'address-block');
+    expect(addr).toBeDefined();
+    expect(addr!.confidence).toBeGreaterThanOrEqual(0.7);
+  });
+
+  it('date-range always has confidence 1.0 (exactly 2 fields matched of 2 max)', () => {
+    const fields: Record<string, FieldDefinition> = {
+      startDate: requiredField('date'),
+      endDate: field('date'),
+    };
+    const result = detectFieldPatterns(fields);
+    const range = result.patterns.find(p => p.patternId === 'date-range');
+    expect(range).toBeDefined();
+    expect(range!.confidence).toBe(1.0);
+  });
+
+  it('metric-trend always has confidence 1.0 (exactly 2 fields matched of 2 max)', () => {
+    const fields: Record<string, FieldDefinition> = {
+      value: requiredField('number'),
+      change: field('number'),
+    };
+    const result = detectFieldPatterns(fields);
+    const trend = result.patterns.find(p => p.patternId === 'metric-trend');
+    expect(trend).toBeDefined();
+    expect(trend!.confidence).toBe(1.0);
+  });
+
+  it('user-identity with first+last (no avatar) has confidence 0.5', () => {
+    const fields: Record<string, FieldDefinition> = {
+      firstName: requiredField('string'),
+      lastName: requiredField('string'),
+    };
+    const result = detectFieldPatterns(fields);
+    const identity = result.patterns.find(p => p.patternId === 'user-identity');
+    expect(identity).toBeDefined();
+    expect(identity!.confidence).toBe(0.5);
+  });
+
+  it('user-identity with first+last+avatar+displayName has confidence 1.0', () => {
+    const fields: Record<string, FieldDefinition> = {
+      firstName: requiredField('string'),
+      lastName: requiredField('string'),
+      avatar: field('url'),
+      displayName: field('string'),
+    };
+    const result = detectFieldPatterns(fields);
+    const identity = result.patterns.find(p => p.patternId === 'user-identity');
+    expect(identity).toBeDefined();
+    expect(identity!.confidence).toBe(1.0);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Pattern-driven slot grouping (s83-m01)                             */
+/* ------------------------------------------------------------------ */
+
+describe('field-patterns — pattern-driven slot grouping', () => {
+  it('high-confidence patterns produce grouped slots via groupFieldsIntoSlots', async () => {
+    const { groupFieldsIntoSlots } = await import('../../src/compose/slot-expander.js');
+
+    const fields: Record<string, FieldDefinition> = {
+      street: requiredField('string'),
+      city: requiredField('string'),
+      state: field('string'),
+      zip: field('string'),
+      name: requiredField('string'),
+      age: field('integer'),
+    };
+
+    // Detect patterns (address-block should be detected with confidence >= 0.7)
+    const patternResult = detectFieldPatterns(fields);
+    const addrPattern = patternResult.patterns.find(p => p.patternId === 'address-block');
+    expect(addrPattern).toBeDefined();
+    expect(addrPattern!.confidence).toBeGreaterThanOrEqual(0.7);
+
+    // Group fields with pattern awareness
+    const slotNames = ['tab-0', 'tab-1', 'tab-2'];
+    const groups = groupFieldsIntoSlots(fields, slotNames, undefined, patternResult.patterns);
+
+    // The address fields should all be in the same slot
+    const addressFields = ['street', 'city', 'state', 'zip'];
+    const slotWithAddress = slotNames.find(
+      slot => addressFields.every(f => groups[slot].includes(f)),
+    );
+    expect(slotWithAddress).toBeDefined();
+  });
+
+  it('low-confidence patterns do NOT produce grouped slots', async () => {
+    const { groupFieldsIntoSlots } = await import('../../src/compose/slot-expander.js');
+
+    const fields: Record<string, FieldDefinition> = {
+      street: requiredField('string'),
+      city: requiredField('string'),
+      name: requiredField('string'),
+      age: field('integer'),
+      status: field('string'),
+    };
+
+    const patternResult = detectFieldPatterns(fields);
+    const addrPattern = patternResult.patterns.find(p => p.patternId === 'address-block');
+    expect(addrPattern).toBeDefined();
+    // Only 2 of 5 max fields → confidence 0.4 < 0.7 threshold
+    expect(addrPattern!.confidence).toBeLessThan(0.7);
+
+    // Group fields — patterns with low confidence should NOT force grouping
+    const slotNames = ['tab-0', 'tab-1'];
+    const groups = groupFieldsIntoSlots(fields, slotNames, undefined, patternResult.patterns);
+
+    // Address fields might still end up together (by category), but it's not forced
+    // Verify all fields are distributed
+    const allAssigned = slotNames.flatMap(s => groups[s]);
+    expect(allAssigned.length).toBe(Object.keys(fields).length);
+  });
+
+  it('multiple high-confidence patterns each get their own grouped slot', async () => {
+    const { groupFieldsIntoSlots } = await import('../../src/compose/slot-expander.js');
+
+    const fields: Record<string, FieldDefinition> = {
+      startDate: requiredField('date'),
+      endDate: field('date'),
+      value: requiredField('number'),
+      change: field('number'),
+      name: requiredField('string'),
+    };
+
+    const patternResult = detectFieldPatterns(fields);
+    expect(patternResult.patterns.length).toBeGreaterThanOrEqual(2);
+    // Both date-range and metric-trend should have confidence 1.0
+    for (const p of patternResult.patterns) {
+      expect(p.confidence).toBeGreaterThanOrEqual(0.7);
+    }
+
+    const slotNames = ['tab-0', 'tab-1', 'tab-2'];
+    const groups = groupFieldsIntoSlots(fields, slotNames, undefined, patternResult.patterns);
+
+    // Date range fields should be together
+    const dateFields = ['startDate', 'endDate'];
+    const slotWithDates = slotNames.find(
+      slot => dateFields.every(f => groups[slot].includes(f)),
+    );
+    expect(slotWithDates).toBeDefined();
+
+    // Metric trend fields should be together
+    const metricFields = ['value', 'change'];
+    const slotWithMetrics = slotNames.find(
+      slot => metricFields.every(f => groups[slot].includes(f)),
+    );
+    expect(slotWithMetrics).toBeDefined();
+
+    // They should be in different slots
+    expect(slotWithDates).not.toBe(slotWithMetrics);
+  });
+
+  it('no patterns means no change from default grouping behavior', async () => {
+    const { groupFieldsIntoSlots } = await import('../../src/compose/slot-expander.js');
+
+    const fields: Record<string, FieldDefinition> = {
+      name: requiredField('string'),
+      age: field('integer'),
+      active: field('boolean'),
+    };
+
+    const slotNames = ['tab-0', 'tab-1'];
+    const withPatterns = groupFieldsIntoSlots(fields, slotNames, undefined, []);
+    const withoutPatterns = groupFieldsIntoSlots(fields, slotNames, undefined);
+
+    // Both should produce the same distribution
+    expect(withPatterns).toEqual(withoutPatterns);
   });
 });

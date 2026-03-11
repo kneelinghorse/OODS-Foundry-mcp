@@ -2,9 +2,9 @@
  * Viz Trait Resolution Engine
  *
  * Resolves viz trait names (from objects or explicit input) into structured
- * configuration for chart composition. Handles all 15 viz trait categories:
- *   - Mark traits (4): bar, line, area, point → chart type
- *   - Encoding traits (4): position-x, position-y, color, size → axis/scale config
+ * configuration for chart composition. Handles all 19 viz trait categories:
+ *   - Mark traits (6): bar, line, area, point, scatter, heatmap → chart type
+ *   - Encoding traits (6): position-x, position-y, color, size, opacity, shape → axis/scale config
  *   - Layout traits (3): layer, facet, concat → composition strategy
  *   - Scale traits (2): linear, temporal → scale type config
  *   - Interaction traits (2): tooltip, highlight → interaction components
@@ -21,7 +21,7 @@ export type ScaleType = 'linear' | 'temporal';
 export type LayoutStrategy = 'layer' | 'facet' | 'concat' | 'single';
 
 export interface EncodingConfig {
-  channel: 'x' | 'y' | 'color' | 'size';
+  channel: 'x' | 'y' | 'color' | 'size' | 'opacity' | 'shape';
   traitName: string;
   defaultScale: ScaleType;
   axisTitle?: string;
@@ -89,6 +89,8 @@ const MARK_TRAITS: Record<string, ChartType> = {
   'mark-line': 'line',
   'mark-area': 'area',
   'mark-point': 'point',
+  'mark-scatter': 'scatter',
+  'mark-heatmap': 'heatmap',
 };
 
 const ENCODING_TRAITS: Record<string, Omit<EncodingConfig, 'traitName'>> = {
@@ -96,6 +98,8 @@ const ENCODING_TRAITS: Record<string, Omit<EncodingConfig, 'traitName'>> = {
   'encoding-position-y': { channel: 'y', defaultScale: 'linear', axisTitle: 'Y Axis' },
   'encoding-color': { channel: 'color', defaultScale: 'linear' },
   'encoding-size': { channel: 'size', defaultScale: 'linear' },
+  'encoding-opacity': { channel: 'opacity', defaultScale: 'linear' },
+  'encoding-shape': { channel: 'shape', defaultScale: 'linear' },
 };
 
 const LAYOUT_TRAITS: Record<string, LayoutStrategy> = {

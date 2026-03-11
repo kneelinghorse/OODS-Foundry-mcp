@@ -124,6 +124,14 @@ const STRATEGY_MAP: Record<string, ContentStrategy> = {
   VizMarkPreview: 'none',
   VizPointControls: 'value-prop',
   VizPointPreview: 'none',
+  VizScatterControls: 'value-prop',
+  VizScatterPreview: 'none',
+  VizHeatmapControls: 'value-prop',
+  VizHeatmapPreview: 'none',
+  VizOpacityControls: 'value-prop',
+  VizOpacitySummary: 'children',
+  VizShapeControls: 'value-prop',
+  VizShapeLegend: 'children',
   VizRoleBadge: 'label-prop',
 
   // --- Viz Scale ---

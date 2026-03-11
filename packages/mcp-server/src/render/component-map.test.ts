@@ -68,6 +68,14 @@ describe('component map coverage', () => {
       'VizLinePreview',
       'VizPointControls',
       'VizPointPreview',
+      'VizScatterControls',
+      'VizScatterPreview',
+      'VizHeatmapControls',
+      'VizHeatmapPreview',
+      'VizOpacityControls',
+      'VizOpacitySummary',
+      'VizShapeControls',
+      'VizShapeLegend',
       'VizColorControls',
       'VizColorLegendConfig',
       'VizEncodingBadge',
@@ -823,6 +831,30 @@ describe('component map coverage', () => {
       expectedControls: ['name="shape"', 'name="size"'],
     },
     {
+      component: 'VizScatterControls',
+      props: { title: 'Scatter Controls', shape: 'circle', size: '12' },
+      formType: 'viz-scatter-controls',
+      expectedControls: ['name="shape"', 'name="size"'],
+    },
+    {
+      component: 'VizHeatmapControls',
+      props: { title: 'Heatmap Controls', scheme: 'viridis', cellPadding: '2' },
+      formType: 'viz-heatmap-controls',
+      expectedControls: ['name="scheme"', 'name="cellPadding"'],
+    },
+    {
+      component: 'VizOpacityControls',
+      props: { title: 'Opacity Controls', min: '0.1', max: '1.0' },
+      formType: 'viz-opacity-controls',
+      expectedControls: ['name="minOpacity"', 'name="maxOpacity"'],
+    },
+    {
+      component: 'VizShapeControls',
+      props: { title: 'Shape Controls', shapeSet: 'default' },
+      formType: 'viz-shape-controls',
+      expectedControls: ['name="shapeSet"'],
+    },
+    {
       component: 'VizColorControls',
       props: { title: 'Color Controls', scheme: 'viridis', channel: 'fill' },
       formType: 'viz-color-controls',
@@ -862,6 +894,8 @@ describe('component map coverage', () => {
     { component: 'VizMarkPreview', previewType: 'mark' },
     { component: 'VizLinePreview', previewType: 'line' },
     { component: 'VizPointPreview', previewType: 'point' },
+    { component: 'VizScatterPreview', previewType: 'scatter' },
+    { component: 'VizHeatmapPreview', previewType: 'heatmap' },
   ])('renders $component as preview placeholder container', ({ component, previewType }) => {
     const html = renderMappedComponent(makeNode(component, { width: 800, height: 400 }));
 
