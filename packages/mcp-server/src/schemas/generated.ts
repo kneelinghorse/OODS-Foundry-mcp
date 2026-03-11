@@ -117,6 +117,8 @@ export namespace A11yScanInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**
@@ -552,6 +554,8 @@ export namespace CodeGenerateInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**
@@ -1040,6 +1044,8 @@ export namespace DesignComposeOutputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**
@@ -2173,6 +2179,14 @@ export namespace ReplRenderInputSchema {
        * Reserved for v2 fragment-depth controls; currently ignored.
        */
       depth?: number;
+      /**
+       * When true, emit data-oods-confidence attributes on rendered components. Default false.
+       */
+      showConfidence?: boolean;
+      /**
+       * Confidence threshold for low-confidence CSS class. Default 0.5.
+       */
+      confidenceThreshold?: number;
     };
     apply?: boolean;
   }
@@ -2232,6 +2246,8 @@ export namespace ReplRenderInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**
@@ -2416,6 +2432,8 @@ export namespace ReplRenderOutputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**
@@ -2517,6 +2535,8 @@ export namespace UiSchemaSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**
@@ -2638,6 +2658,8 @@ export namespace ReplValidateInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**
@@ -2801,6 +2823,8 @@ export namespace ReplValidateOutputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
   }
   export interface FieldSchemaEntry {
     /**

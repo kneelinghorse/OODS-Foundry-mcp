@@ -5,6 +5,7 @@ import { handle as validateHandle } from './repl.validate.js';
 import { handle as renderHandle } from './repl.render.js';
 import { handle as codeGenerateHandle } from './code.generate.js';
 import { handle as schemaSaveHandle } from './schema/save.js';
+import { loadOodsrc } from '../lib/oodsrc.js';
 
 type PipelineStep = 'compose' | 'validate' | 'render' | 'codegen' | 'save';
 
@@ -30,6 +31,10 @@ export type PipelineInput = {
     styling?: CodegenStyling;
     /** Alias: accepted in options for agent ergonomics. */
     framework?: CodegenFramework;
+    /** Emit data-oods-confidence attributes on rendered components. Default false. */
+    showConfidence?: boolean;
+    /** Confidence threshold for low-confidence CSS class. Default 0.5. */
+    confidenceThreshold?: number;
   };
 };
 
@@ -162,13 +167,14 @@ function errorMessage(error: unknown): string {
 export async function handle(input: PipelineInput): Promise<PipelineOutput> {
   const startedAt = Date.now();
   const steps: PipelineStep[] = [];
-  const framework = input.framework ?? input.options?.framework ?? 'react';
-  const styling = input.styling ?? input.options?.styling ?? 'tokens';
+  const rc = loadOodsrc();
+  const framework = input.framework ?? input.options?.framework ?? rc.framework ?? 'react';
+  const styling = input.styling ?? input.options?.styling ?? rc.styling ?? 'tokens';
   const skipValidation = input.options?.skipValidation === true;
   const skipRender = input.options?.skipRender === true;
-  const checkA11y = input.options?.checkA11y === true;
+  const checkA11y = input.options?.checkA11y ?? rc.pipeline?.checkA11y ?? false;
   const renderApply = input.options?.renderApply ?? true;
-  const renderCompact = input.options?.compact ?? true;
+  const renderCompact = input.options?.compact ?? rc.pipeline?.compact ?? true;
 
   const output: PipelineOutput = {
     compose: {
@@ -313,6 +319,8 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
         },
         output: {
           compact: renderCompact,
+          ...(input.options?.showConfidence ? { showConfidence: true } : {}),
+          ...(input.options?.confidenceThreshold !== undefined ? { confidenceThreshold: input.options.confidenceThreshold } : {}),
         },
       });
       stepLatency.render = Date.now() - stepStart;

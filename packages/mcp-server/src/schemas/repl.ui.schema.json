@@ -68,7 +68,9 @@
       "properties": {
         "label": { "type": "string" },
         "intent": { "type": "string" },
-        "notes": { "type": "string" }
+        "notes": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "confidenceLevel": { "type": "string", "enum": ["high", "medium", "low"] }
       },
       "additionalProperties": false
     },

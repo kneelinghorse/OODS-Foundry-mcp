@@ -588,6 +588,88 @@ describe('Stage1 integration contract', () => {
     });
   });
 
+  describe('ORCA v2.1.0 inferred props compatibility', () => {
+    const createdIds: string[] = [];
+
+    /** V2.1.0 cluster with inferred props (source + confidence on each prop) */
+    const CLUSTER_V21 = {
+      clusterId: 'cl-subscription-card',
+      patternName: 'SubscriptionCard',
+      semanticRole: 'card',
+      props: {
+        name: { type: 'string', required: true, source: 'static_analysis', confidence: 0.95 },
+        status: { type: 'string', values: ['active', 'cancelled', 'trial'], source: 'storybook', confidence: 0.91 },
+        price: { type: 'number', required: true, source: 'runtime_trace', confidence: 0.88 },
+        autoRenew: { type: 'boolean', source: 'inferred', confidence: 0.72 },
+        features: { type: 'array', source: 'inferred', confidence: 0.60 },
+      },
+      confidence: 0.85,
+      totalInstances: 14,
+    };
+
+    it('creates mapping from v2.1.0 inferred props with derived coercions', async () => {
+      const { orcaPropsToMappings } = await import('../../src/tools/orca-prop-compat.js');
+      const propMappings = orcaPropsToMappings(CLUSTER_V21.props);
+
+      const result = await mapCreateHandle({
+        externalSystem: 'orca-v21-test',
+        externalComponent: CLUSTER_V21.patternName,
+        oodsTraits: ['Priceable', 'Stateful'],
+        propMappings,
+        confidence: CLUSTER_V21.confidence >= 0.7 ? 'manual' : 'auto',
+        metadata: {
+          author: 'stage1-orca-v2.1',
+          notes: `V2.1.0 inferred props, cluster confidence ${CLUSTER_V21.confidence}`,
+        },
+        apply: true,
+      });
+
+      expect(result.status).toBe('ok');
+      expect(result.applied).toBe(true);
+      expect(result.mapping.propMappings).toHaveLength(5);
+      if (result.mapping?.id) createdIds.push(result.mapping.id as string);
+    });
+
+    it('resolves v2.1.0 mapping with correct coercion types', async () => {
+      const result = await mapResolveHandle({
+        externalSystem: 'orca-v21-test',
+        externalComponent: 'SubscriptionCard',
+      });
+      expect(result.status).toBe('ok');
+
+      // status prop should have enum coercion
+      const statusMapping = result.propTranslations?.find(
+        (t: any) => t.externalProp === 'status',
+      );
+      expect(statusMapping?.coercionType).toBe('enum');
+
+      // autoRenew prop should have boolean_to_string coercion
+      const autoRenewMapping = result.propTranslations?.find(
+        (t: any) => t.externalProp === 'autoRenew',
+      );
+      expect(autoRenewMapping?.coercionType).toBe('boolean_to_string');
+
+      // name prop: no coercion specified → normalizes to identity at resolve time
+      const nameMapping = result.propTranslations?.find(
+        (t: any) => t.externalProp === 'name',
+      );
+      expect(nameMapping?.coercionType).toBe('identity');
+    });
+
+    it('v2.1.0 source/confidence metadata does not affect coercion derivation', async () => {
+      const { auditCompatibility } = await import('../../src/tools/orca-prop-compat.js');
+      const audit = auditCompatibility(CLUSTER_V21.props);
+      expect(audit.compatible).toBe(true);
+      expect(audit.unsupportedTypes).toEqual([]);
+    });
+
+    afterAll(async () => {
+      for (const id of createdIds) {
+        await mapDeleteHandle({ id, apply: true });
+      }
+    });
+  });
+
   describe('confidence gating in mapping confidence field', () => {
     it('sets confidence to manual for cluster confidence >= 0.7', () => {
       const clusterConf = CLUSTER_METRIC_WIDGET.confidence; // 0.87

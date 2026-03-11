@@ -913,6 +913,8 @@ export function wireFieldProps(
 export interface SelectionEntry {
   slotName: string;
   selectedComponent?: string;
+  confidence?: number;
+  confidenceLevel?: 'high' | 'medium' | 'low';
 }
 
 /**
@@ -929,10 +931,10 @@ export function applySelectionsToSchema(
   schema: UiSchema,
   selections: SelectionEntry[],
 ): number {
-  const selectionMap = new Map<string, string>();
+  const selectionMap = new Map<string, SelectionEntry>();
   for (const sel of selections) {
     if (sel.selectedComponent) {
-      selectionMap.set(sel.slotName, sel.selectedComponent);
+      selectionMap.set(sel.slotName, sel);
     }
   }
 
@@ -944,7 +946,16 @@ export function applySelectionsToSchema(
     if (isSlotElement(el)) {
       const slotName = resolveSlotName(el);
       if (slotName && selectionMap.has(slotName)) {
-        el.component = selectionMap.get(slotName)!;
+        const sel = selectionMap.get(slotName)!;
+        el.component = sel.selectedComponent!;
+        // Attach confidence metadata to the element for render-time affordances
+        if (sel.confidence !== undefined) {
+          el.meta = {
+            ...el.meta,
+            confidence: sel.confidence,
+            ...(sel.confidenceLevel ? { confidenceLevel: sel.confidenceLevel } : {}),
+          };
+        }
         applied++;
       }
     }

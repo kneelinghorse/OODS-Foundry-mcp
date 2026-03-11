@@ -1,13 +1,13 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-03-11 | Sprint 82 review
+> Updated: 2026-03-11 | Sprint 84 in-progress
 
 ## Current State
 
-- **Platform Score:** 96/100 (Sprint 81 retest — Composition Intelligence 20→23, Codegen Quality 17→20, Pipeline 14→15)
+- **Platform Score:** 100/100 (Sprint 83 confirmed — all V1 categories at full marks)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 114 files, 1840 tests, 0 failures (mcp-server)
+- **Test Suite:** 118 files, 1950 tests, 0 failures (mcp-server)
 - **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
 
@@ -91,6 +91,26 @@
 | `s82-m05` | 3 brand presets (Corporate Blue, Startup Warm, Dark Minimal) + theming guide | Done | `packages/tokens/src/presets/`, `docs/theming.md` |
 | `s82-m06` | Composition intelligence field-affinity improvements (stretch) | Done | Field-affinity tests updated, 114 files / 1,840 tests / 0 failures |
 
+## Sprint 83 Validated Changes (100/100 confirmed)
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s83-m01` | Composition Intelligence 23→25: pattern-driven slot grouping with confidence ≥0.7 threshold, contact-info regex fix | Done | Phase 0 pre-assignment in slot-expander, 115 files / 1899 tests |
+| `s83-m02` | API Surface 14→15: propMappings sub-property docs in map-create.md | Done | Tool-Specs.md and map-create.md updated |
+| `s83-m03` | Visualization 9→10: scatter + heatmap chart types, opacity + shape encoding channels, 8 new viz components | Done | viz-trait-resolver tests, component registry updated |
+| `s83-m04` | Stage1 Bridge Integration Test: 29 tests covering ORCA payloads, token pipeline, confidence gating, evidence chain | Done | test/contracts/stage1-integration.spec.ts |
+| `s83-m05` | Retest + Score Refresh: build clean, 115 files / 1899 tests / 0 failures | Done | Platform Score: 100/100 |
+
+## Sprint 84 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s84-m01` | .oodsrc project-level configuration: JSON config file loader with fallback resolution in pipeline/compose/codegen | Done | 18 tests in oodsrc.test.ts, docs in Tool-Specs.md |
+| `s84-m02` | data-oods-confidence affordance: confidence in rendered HTML via opt-in data attributes + low-confidence CSS class | Done | 15 tests in confidence-affordance.spec.ts, opt-in via output.showConfidence |
+| `s84-m03` | propMappings v2.1.0 compatibility: ORCA inferred props audit, orca-prop-compat.ts helper, 3 new integration tests | Done | 15 unit tests + 32 integration tests (was 29), contract doc updated |
+| `s84-m04` | Context & roadmap refresh: roadmap updated, 18→5 next-steps pruned, contract doc v2.1.0 status | Done | Context: master 62%, project 14% |
+| `s84-m05` | Retest + build verification: build clean, 118 files / 1950 tests / 0 failures | Done | Platform Score: 100/100 maintained |
+
 ## Carry-Forward Backlog
 
 ### P1 — Composition Quality
@@ -145,4 +165,4 @@
 | Artifact tools | `packages/mcp-server/src/tools/reviewKit.create.ts`, `purity.audit.ts`, `vrt.run.ts` |
 | Bridge tool surface | `packages/mcp-bridge/src/server.ts`, `packages/mcp-bridge/src/tool-surface.ts` |
 
-All V1 categories at full score (100/100). S83 closed final gaps: Composition Intelligence 25/25 (pattern-driven slot grouping), API Surface 15/15 (propMappings docs), Visualization 10/10 (scatter+heatmap, opacity+shape encodings). Stage1 integration contract is bilateral; awaiting Stage1 Sprint 26 bridge delivery.
+All V1 categories at full score (100/100). S83 closed final gaps. S84 adds DX polish (.oodsrc config, confidence affordance) and Stage1 v2.1.0 compatibility. Stage1 integration contract bilateral; OODS v2.1.0 prop compatibility verified, awaiting Stage1 Sprint 27 live prop inference data.
