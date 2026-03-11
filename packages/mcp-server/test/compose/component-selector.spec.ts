@@ -385,3 +385,30 @@ describe('selectComponent — broad intent coverage', () => {
     });
   }
 });
+
+describe('patternBoost option', () => {
+  it('boosts the named component when patternBoost is provided', () => {
+    const baseline = selectComponent('data-display', catalog);
+    const baselineScore = baseline.candidates.find(c => c.name === 'StatusTimeline')?.confidence ?? 0;
+
+    const boosted = selectComponent('data-display', catalog, {
+      patternBoost: { componentName: 'StatusTimeline', boost: 0.30, patternId: 'status-timeline' },
+    });
+    const boostedScore = boosted.candidates.find(c => c.name === 'StatusTimeline')?.confidence ?? 0;
+
+    expect(boostedScore).toBeGreaterThan(baselineScore);
+    const boostedEntry = boosted.candidates.find(c => c.name === 'StatusTimeline');
+    expect(boostedEntry?.reason).toContain('field pattern');
+    expect(boostedEntry?.reason).toContain('status-timeline');
+  });
+
+  it('does not boost non-matching components', () => {
+    const result = selectComponent('action-button', catalog, {
+      patternBoost: { componentName: 'PricingSummary', boost: 0.30, patternId: 'pricing-summary' },
+    });
+    // Button should still be top for action-button regardless of pricing pattern
+    expect(result.candidates[0]?.name).toBe('Button');
+    const buttonEntry = result.candidates.find(c => c.name === 'Button');
+    expect(buttonEntry?.reason).not.toContain('field pattern');
+  });
+});

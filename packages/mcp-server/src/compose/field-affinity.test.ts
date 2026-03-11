@@ -82,6 +82,49 @@ describe('computeFieldAffinity', () => {
     expect(result.boost).toBe(0.30);
     expect(result.preferredComponents[0]).toBe('PreferenceEditor');
   });
+
+  it('maps priority to Badge/Select', () => {
+    const result = computeFieldAffinity({ type: 'string', semanticType: 'priority' });
+    expect(result.boost).toBe(0.20);
+    expect(result.preferredComponents).toContain('Badge');
+    expect(result.preferredComponents).toContain('Select');
+  });
+
+  it('maps severity to StatusBadge', () => {
+    const result = computeFieldAffinity({ type: 'string', semanticType: 'severity' });
+    expect(result.boost).toBe(0.25);
+    expect(result.preferredComponents[0]).toBe('StatusBadge');
+  });
+
+  it('maps category to Badge', () => {
+    const result = computeFieldAffinity({ type: 'string', semanticType: 'category' });
+    expect(result.boost).toBe(0.20);
+    expect(result.preferredComponents).toContain('Badge');
+  });
+
+  it('maps description to Textarea', () => {
+    const result = computeFieldAffinity({ type: 'string', semanticType: 'description' });
+    expect(result.boost).toBe(0.20);
+    expect(result.preferredComponents[0]).toBe('Textarea');
+  });
+
+  it('maps score to ProgressBar', () => {
+    const result = computeFieldAffinity({ type: 'number', semanticType: 'score' });
+    expect(result.boost).toBe(0.25);
+    expect(result.preferredComponents[0]).toBe('ProgressBar');
+  });
+
+  it('maps duration to Text', () => {
+    const result = computeFieldAffinity({ type: 'number', semanticType: 'duration' });
+    expect(result.boost).toBe(0.15);
+    expect(result.preferredComponents).toContain('Text');
+  });
+
+  it('maps address to Text', () => {
+    const result = computeFieldAffinity({ type: 'string', semanticType: 'address' });
+    expect(result.boost).toBe(0.15);
+    expect(result.preferredComponents).toContain('Text');
+  });
 });
 
 describe('scoreFieldAffinity', () => {

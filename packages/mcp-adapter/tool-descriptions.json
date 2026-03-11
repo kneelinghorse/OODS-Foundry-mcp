@@ -9,7 +9,7 @@
   "design.compose": "Compose a complete UiSchema from a natural-language intent description. Returns schemaRef for reuse in validate/render/code.generate. schemaRef includes createdAt/expiresAt timestamps (default TTL: 30 minutes). Use schema.save to persist beyond TTL.",
   "pipeline": "Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call. Defaults to compact render mode (token CSS omitted, ~40% smaller). Supports optional validation/render skipping, accessibility checks, and schema persistence via save parameter. Returns schemaRefCreatedAt/schemaRefExpiresAt (default TTL: 30 minutes). Use save to persist the schema.",
   "health": "Check MCP server readiness and subsystem status, including registry counts, token artifact availability, and schema store state.",
-  "map.create": "Create a component-to-trait mapping between an external design system and OODS. Parameters: externalSystem, externalComponent, oodsTraits, propMappings, confidence, notes. Use apply=true to persist (default: dry-run, returns preview only).",
+  "map.create": "Create a component-to-trait mapping between an external design system and OODS. Parameters: externalSystem, externalComponent, oodsTraits, propMappings, confidence, metadata (object with optional author and notes fields). Use apply=true to persist (default: dry-run, returns preview only).",
   "map.list": "List all component-to-trait mappings. Optionally filter by external design system name.",
   "map.resolve": "Resolve an external component to its OODS trait mapping with property translations.",
   "map.update": "Update an existing component-to-trait mapping by ID. Supports changing traits, property mappings, confidence, and notes.",

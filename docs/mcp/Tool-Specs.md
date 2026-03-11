@@ -545,6 +545,7 @@ Example input:
     { "externalProp": "disabled", "oodsProp": "disabled", "coercion": { "type": "identity" } }
   ],
   "confidence": "manual",
+  "metadata": { "author": "design-team", "notes": "Verified against Material UI v5 API" },
   "apply": true
 }
 ```
@@ -584,6 +585,9 @@ Input fields:
 | `propMappings` | array | No | Property translations with optional coercion |
 | `propMappings[].coercion.type` | `"enum"` \| `"boolean_to_string"` \| `"template"` \| `"identity"` | No | Coercion strategy |
 | `confidence` | `"auto"` \| `"manual"` | No (default `"manual"`) | Mapping provenance |
+| `metadata` | object | No | Optional metadata object |
+| `metadata.author` | string | No | Author of the mapping |
+| `metadata.notes` | string | No | Free-text notes about the mapping |
 | `apply` | boolean | No | Write to disk when true |
 
 ---

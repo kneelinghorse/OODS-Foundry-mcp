@@ -1,13 +1,13 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-03-06 | Sprint 79 retest `s79-m04`
+> Updated: 2026-03-11 | Sprint 82 review
 
 ## Current State
 
-- **Platform Score:** 89/100 (Sprint 79 retest — Codegen Quality 13→17)
+- **Platform Score:** 96/100 (Sprint 81 retest — Composition Intelligence 20→23, Codegen Quality 17→20, Pipeline 14→15)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 107 files, 1698 tests, 0 failures (mcp-server)
+- **Test Suite:** 114 files, 1840 tests, 0 failures (mcp-server)
 - **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
 
@@ -59,6 +59,38 @@
 | `s79-m03` | Styling mode 3×3 matrix: 54 tests covering React/Vue/HTML × inline/tokens/tailwind | Done | styling-mode-coverage.spec.ts — all 9 combos pass on first run |
 | `s79-m04` | Latest-dist retest + score refresh: build clean, 107 files / 1698 tests / 0 failures | Done | Score: 89/100 (Codegen Quality 13→17) |
 
+## Sprint 80 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s80-m01` | Intent synonyms & paraphrase: 80+ word synonyms, 3-tier resolution (exact→phrase-pattern→word-level) integrated into component-selector via resolveIntent() | Done | 35 new tests in intent-synonyms.spec.ts, paraphrased intents resolve to canonical INTENT_MAP keys |
+| `s80-m02` | Multi-field semantic patterns: 8 PatternRule definitions (status-timeline, pricing-summary, user-identity, address-block, date-range, metric-trend, contact-info, dimensions) | Done | 20 new tests in field-patterns.spec.ts. Metadata-only — detectedPatterns on ExpansionResult, no slot grouping changes |
+| `s80-m03` | Confidence-aware composition: rawConfidence on SelectionResult, per-slot confidence, alternativeCandidates for low-confidence slots (<0.5), compositionConfidence in intelligence metadata | Done | 10 new tests in confidence-scoring.spec.ts, updated design.compose.output.json schema |
+| `s80-m04` | Vue 3 Composition API reactivity: ref() for form fields, computed() for derived values, v-model on Input/Select/Textarea/Toggle, JSDoc from descriptions | Done | 12 new tests in vue-reactivity.spec.ts, cross-framework parity maintained |
+| `s80-m05` | Responsive Tailwind variants: responsiveLayoutClasses() for mobile-first grid/sidebar/inline breakpoints, CVA size variants with responsive prefixes | Done | 20 new tests in responsive-tailwind.spec.ts, applied to React and Vue emitters |
+| `s80-m06` | Retest + score refresh: build clean, 113 files / 1809 tests / 0 failures | Done | Score: 96/100 (Composition Intelligence 20→23, Codegen Quality 17→20, Pipeline 14→15) |
+
+## Sprint 81 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s81-m01` | Contract fidelity: pipeline.save accepts documented string and {name, tags} forms, mapping response contract alignment | Done | Targeted contract/integration tests, updated docs/examples |
+| `s81-m02` | Example payload + pipeline coverage: fixed stale mapping examples, added pipeline framework/typescript option handling tests | Done | Pipeline tests covering framework selection and options.typescript/options.framework behavior |
+| `s81-m03` | Composition explainability: confidenceLevel, explanation, reviewHint on selections; lowConfidenceSlotNames in intelligence metadata | Done | Tests covering high-confidence rationale and ambiguous low-confidence cases |
+| `s81-m04` | Override + escape hatch guidance: copyable componentOverrides example in docs, pipeline preferences passthrough | Done | Automated test for override behavior in compose/pipeline flows |
+| `s81-m05` | Fresh-build retest + feedback closure report | Done | Report at cmos/reports/s81-m05-public-beta-trust-polish-closure-2026-03-06.md |
+
+## Sprint 82 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s82-m01` | CMOS project registration + cross-project messaging with Stage1 operational | Done | Message exchange verified, project visible in CMOS directory |
+| `s82-m02` | Stage1→OODS integration contract: artifact→tool mapping, 2 worked examples, token path translation, confidence gating | Done | `docs/integration/stage1-oods-contract.md` — all 5 open questions now resolved by Stage1 |
+| `s82-m03` | map.create metadata field doc fix + adapter tool-description alignment | Done | Tool-Specs.md and tool-descriptions.json updated |
+| `s82-m04` | Master context condensation: 79.1% → 41.4% capacity | Done | Collapsed per-mission entries to sprint summaries, deduplicated learnings |
+| `s82-m05` | 3 brand presets (Corporate Blue, Startup Warm, Dark Minimal) + theming guide | Done | `packages/tokens/src/presets/`, `docs/theming.md` |
+| `s82-m06` | Composition intelligence field-affinity improvements (stretch) | Done | Field-affinity tests updated, 114 files / 1,840 tests / 0 failures |
+
 ## Carry-Forward Backlog
 
 ### P1 — Composition Quality
@@ -83,18 +115,19 @@
 | Category | Weight | Current | Notes |
 |----------|--------|---------|-------|
 | API Surface Completeness | 15 | 14 | Bridge tool-surface honesty fixed |
-| Composition Intelligence | 25 | 20 | Object filtering, search disambiguation, and slot vocabulary now validate on latest dist |
-| Code Generation Quality | 20 | 17 | S79: prop-binding enrichment from objectSchema (labels, placeholders, required, types, enum options), cross-framework parity verified (28 tests), all 9 framework×styling combos validated (54 tests), section layout bindings fixed |
-| Pipeline & Persistence | 15 | 14 | Artifact apply paths now reliable |
-| Error Handling & DX | 10 | 10 | Better metadata and fewer trust-breaking runtime surprises |
+| Composition Intelligence | 25 | 23 | S80: intent synonyms (80+ words, 3-tier resolution), multi-field semantic patterns (8 rules, metadata-only), confidence-aware composition with alternativeCandidates. S81: explainability polish (confidenceLevel, explanation, reviewHint). Remaining gap: multi-field patterns not yet driving slot grouping |
+| Code Generation Quality | 20 | 20 | S80: Vue 3 Composition API reactivity (ref, computed, v-model), responsive Tailwind variants (mobile-first breakpoints, CVA size variants). All 9 framework×styling combos validated |
+| Pipeline & Persistence | 15 | 15 | S81: contract fidelity (pipeline.save dual forms, mapping contract alignment), pipeline framework/typescript option handling |
+| Error Handling & DX | 10 | 10 | S81: composition explainability, override guidance, escape hatch documentation |
 | Visualization | 10 | 9 | Latest-dist viz path validates cleanly |
-| Documentation & Discoverability | 5 | 5 | README + core MCP docs now align to the live 31-tool surface and current cross-tool semantics |
-| **Total** | **100** | **89** | |
+| Documentation & Discoverability | 5 | 5 | README + MCP docs aligned, override examples added, confidence/explainability documented |
+| **Total** | **100** | **96** | |
 
 ## Latest Reports
 
 | Date | Agent | Score | Scope | Report |
 |------|-------|-------|-------|--------|
+| 2026-03-10 | Claude Opus 4.6 | 96/100 | Sprint 81 retest — Composition Intelligence 20→23, Codegen Quality 17→20, Pipeline 14→15 | `s80-m06` build+test gate |
 | 2026-03-06 | Claude Opus 4.6 | 89/100 | Sprint 79 retest — Codegen Quality 13→17 | `s79-m04` build+test gate |
 | 2026-03-06 | Codex GPT-5 | 84/100 | Sprint 76 latest-dist retest | `cmos/reports/s76-retest-latest-dist.md` |
 | 2026-03-06 | Codex GPT-5 | Docs aligned | README + MCP tool-surface alignment | `cmos/reports/s77-m04-docs-tool-surface-alignment-2026-03-06.md` |
@@ -112,4 +145,4 @@
 | Artifact tools | `packages/mcp-server/src/tools/reviewKit.create.ts`, `purity.audit.ts`, `vrt.run.ts` |
 | Bridge tool surface | `packages/mcp-bridge/src/server.ts`, `packages/mcp-bridge/src/tool-surface.ts` |
 
-The V1 path remaining gaps: Composition Intelligence (21/25) — semantic intent→component binding, and Codegen Quality (15/20) — Vue reactivity patterns, responsive Tailwind variants. Platform score: 89/100.
+The V1 path remaining gaps: Composition Intelligence (23/25) — multi-field patterns not yet driving slot grouping, API Surface (14/15), Visualization (9/10). Platform score: 96/100. Stage1 integration contract is bilateral; awaiting Stage1 Sprint 26 bridge delivery.
