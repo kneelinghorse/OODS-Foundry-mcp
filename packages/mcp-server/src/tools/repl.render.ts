@@ -17,6 +17,7 @@ import type {
   ReplRenderInput,
   ReplRenderOutput,
   ReplValidationMeta,
+  UiElement,
   UiSchema,
 } from '../schemas/generated.js';
 import { resolveSchemaRef } from './schema-ref.js';
@@ -47,6 +48,47 @@ function normalizeIncludeCss(input: ReplRenderInput): boolean {
 
 function toComponentCssRef(componentName: string): string {
   return `cmp.${componentName.trim().toLowerCase()}.base`;
+}
+
+function normalizeShowConfidence(input: ReplRenderInput): boolean {
+  return input.output?.showConfidence === true;
+}
+
+function normalizeConfidenceThreshold(input: ReplRenderInput): number {
+  const raw = input.output?.confidenceThreshold;
+  if (typeof raw === 'number' && raw >= 0 && raw <= 1) return raw;
+  return 0.5;
+}
+
+/**
+ * Strip confidence metadata from all nodes in the tree.
+ * Used when showConfidence is not enabled to preserve backward compat.
+ */
+function stripConfidence(schema: UiSchema): void {
+  const walk = (el: UiElement): void => {
+    if (el.meta) {
+      delete el.meta.confidence;
+      delete el.meta.confidenceLevel;
+    }
+    el.children?.forEach(walk);
+  };
+  schema.screens.forEach(walk);
+}
+
+/**
+ * Apply low-confidence CSS class to nodes below the threshold.
+ * Adds 'oods-low-confidence' to the node's existing className prop.
+ */
+function applyLowConfidenceClass(schema: UiSchema, threshold: number): void {
+  const walk = (el: UiElement): void => {
+    if (el.meta?.confidence !== undefined && el.meta.confidence < threshold) {
+      el.props = el.props ?? {};
+      const existing = typeof el.props.className === 'string' ? el.props.className : '';
+      el.props.className = existing ? `${existing} oods-low-confidence` : 'oods-low-confidence';
+    }
+    el.children?.forEach(walk);
+  };
+  schema.screens.forEach(walk);
 }
 
 function toFragmentRenderIssue(nodeId: string, component: string, message: string): ReplIssue {
@@ -158,6 +200,14 @@ export async function handle(input: ReplRenderInput): Promise<ReplRenderOutput> 
   }
 
   if (input.apply === true && status === 'ok' && workingTree) {
+    // Confidence affordance: opt-in gate
+    const showConfidence = normalizeShowConfidence(input);
+    if (showConfidence) {
+      applyLowConfidenceClass(workingTree, normalizeConfidenceThreshold(input));
+    } else {
+      stripConfidence(workingTree);
+    }
+
     if (format === 'fragments') {
       const includeCss = compact ? false : normalizeIncludeCss(input);
       const { fragments: fragmentMap, errors: fragmentErrors } = renderFragmentsWithErrors(workingTree);

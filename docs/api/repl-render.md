@@ -23,6 +23,8 @@
 | `output.includeCss` | boolean | No | `true` |  |
 | `output.compact` | boolean | No | `false` | When true, omit the full token CSS from the response and return a tokenCssRef instead. Reduces response size by ~40%. Default false for repl.render, true for pipeline. |
 | `output.depth` | number | No |  | Reserved for v2 fragment-depth controls; currently ignored. |
+| `output.showConfidence` | boolean | No | `false` | When true, emit data-oods-confidence and data-confidence-level attributes on rendered components that carry composition confidence metadata. Low-confidence components (below confidenceThreshold) also receive an oods-low-confidence CSS class. Default false. |
+| `output.confidenceThreshold` | number | No | `0.5` | Confidence threshold for low-confidence affordance. Components with confidence below this value receive the oods-low-confidence CSS class. Only effective when showConfidence is true. Default 0.5. |
 | `apply` | boolean | No |  |  |
 
 ## Output Shape

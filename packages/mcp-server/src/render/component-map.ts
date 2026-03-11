@@ -120,6 +120,10 @@ function buildAttributes(node: UiElement, options: BuildAttrOptions): string {
   dataAttrs.set('data-oods-node-id', node.id);
   if (node.layout?.type) dataAttrs.set('data-layout', node.layout.type);
   if (node.meta?.label) dataAttrs.set('data-oods-label', node.meta.label);
+  if (node.meta?.confidence !== undefined) {
+    dataAttrs.set('data-oods-confidence', String(node.meta.confidence));
+    if (node.meta.confidenceLevel) dataAttrs.set('data-confidence-level', node.meta.confidenceLevel);
+  }
 
   for (const [key, value] of Object.entries(options.htmlOverrides ?? {})) {
     htmlAttrs.set(key, value);

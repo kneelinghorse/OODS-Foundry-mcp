@@ -65,6 +65,16 @@ Design system Storybook: https://kneelinghorse.github.io/OODS-Foundry/
    ```
 5. Connect an MCP client (Cursor/Claude/Desktop/etc) using `docs/mcp/Connections.md`.
 
+## Project-level defaults (`.oodsrc`)
+
+Drop a `.oodsrc` JSON file in your project root to set default options for `pipeline`, `design.compose`, and `code.generate`. Explicit tool params always win; a missing or invalid `.oodsrc` is silently ignored.
+
+```json
+{ "framework": "vue", "styling": "tailwind", "typescript": false }
+```
+
+Full schema and field reference: `docs/mcp/Tool-Specs.md` → "Project-level defaults".
+
 ## Cross-tool semantics
 
 - `schemaRef` TTL: refs returned by `design.compose`, `viz.compose`, `pipeline`, and `schema.load` last 30 minutes. Persist them with `schema.save` when the workflow spans sessions or multiple review loops.

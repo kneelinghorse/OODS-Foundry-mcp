@@ -6,6 +6,7 @@ import type { UiSchema } from '../schemas/generated.js';
 import type { CodeGenerateInput, CodeGenerateOutput } from './types.js';
 import type { Emitter, CodegenOptions, CodegenIssue } from '../codegen/types.js';
 import { resolveSchemaRef } from './schema-ref.js';
+import { loadOodsrc } from '../lib/oodsrc.js';
 
 const emitters: Record<string, Emitter> = {
   html: emitHtml,
@@ -149,10 +150,11 @@ export async function handle(input: CodeGenerateInput): Promise<CodeGenerateOutp
     };
   }
 
-  // Build codegen options
+  // Build codegen options (.oodsrc fallbacks between explicit and hardcoded defaults)
+  const rc = loadOodsrc();
   const options: CodegenOptions = {
-    typescript: input.options?.typescript ?? true,
-    styling: input.options?.styling ?? 'tokens',
+    typescript: input.options?.typescript ?? rc.typescript ?? true,
+    styling: input.options?.styling ?? rc.styling ?? 'tokens',
   };
 
   // Dispatch to framework emitter

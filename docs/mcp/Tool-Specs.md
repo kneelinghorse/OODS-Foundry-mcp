@@ -15,6 +15,46 @@ Registry source of truth: `packages/mcp-server/src/tools/registry.json` (copied 
 
 Removed in v1.0: `design.generate` (it was a stub and is no longer shipped).
 
+## Project-level defaults (`.oodsrc`)
+
+Place a `.oodsrc` JSON file in the project root to set default options for `pipeline`, `design.compose`, and `code.generate`. Explicit tool params always override `.oodsrc` values. A missing or invalid `.oodsrc` is silently ignored.
+
+```json
+{
+  "framework": "vue",
+  "styling": "tailwind",
+  "typescript": false,
+  "brand": "acme",
+  "context": "detail",
+  "layout": "dashboard",
+  "preferences": {
+    "theme": "dark",
+    "metricColumns": 4,
+    "fieldGroups": 2,
+    "tabCount": 3,
+    "tabLabels": ["Info", "Settings", "Advanced"]
+  },
+  "pipeline": {
+    "checkA11y": true,
+    "compact": false
+  }
+}
+```
+
+| Field | Type | Default | Consumed by |
+|-------|------|---------|-------------|
+| `framework` | `react` \| `vue` \| `html` | `react` | pipeline, code.generate |
+| `styling` | `inline` \| `tokens` \| `tailwind` | `tokens` | pipeline, code.generate |
+| `typescript` | boolean | `true` | code.generate |
+| `brand` | string | — | reserved |
+| `context` | `detail` \| `list` \| `form` \| `timeline` \| `card` \| `inline` | — | design.compose |
+| `layout` | `dashboard` \| `form` \| `detail` \| `list` \| `auto` | `auto` | design.compose |
+| `preferences` | object | — | design.compose |
+| `pipeline.checkA11y` | boolean | `false` | pipeline |
+| `pipeline.compact` | boolean | `true` | pipeline |
+
+Precedence: explicit param → `.oodsrc` value → hardcoded default.
+
 ## Cross-tool semantics
 
 - `schemaRef` TTL: refs returned by `design.compose`, `viz.compose`, `pipeline`, and `schema.load` expire after 30 minutes. Persist work with `schema.save` before expiry if you need cross-session reuse.

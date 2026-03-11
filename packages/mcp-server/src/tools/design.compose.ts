@@ -50,6 +50,7 @@ import {
   parseIntentSections,
   prefersDashboardLayout,
 } from '../compose/intent-sections.js';
+import { loadOodsrc } from '../lib/oodsrc.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -1103,6 +1104,22 @@ function normalizeObjectPlanForCatalog(
 
 export async function handle(input: DesignComposeInput): Promise<DesignComposeOutput> {
   const warnings: ComposeIssue[] = [];
+
+  // Apply .oodsrc preference fallbacks (explicit input always wins)
+  const rc = loadOodsrc();
+  if (rc.preferences) {
+    const merged = { ...rc.preferences, ...input.preferences };
+    // Only apply if there's something to merge
+    if (Object.keys(merged).length > 0) {
+      input = { ...input, preferences: merged };
+    }
+  }
+  if (!input.context && rc.context) {
+    input = { ...input, context: rc.context };
+  }
+  if (!input.layout && rc.layout) {
+    input = { ...input, layout: rc.layout };
+  }
 
   // Reject empty or whitespace-only intent when no object is provided
   if (input.intent !== undefined && !input.intent.trim() && !input.object) {

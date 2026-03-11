@@ -447,7 +447,7 @@ Stage1 inspect_app(url)
 
 2. **Low-confidence token handling:** **Stage1 filters.** Tokens below 0.5 confidence are excluded from bridge output (threshold is configurable). OODS receives only actionable tokens.
 
-3. **Prop type alignment:** **Deferred to Stage1 Sprint 27** (orca.infer Phase 2, Strategy 3: Variant→Prop Inference). Will produce structured prop definitions matching OODS `propMappings` format with coercion types.
+3. **Prop type alignment:** **OODS v2.1.0 compatibility verified (Sprint 84).** ORCA inferred prop definitions `{type, values[], source, confidence}` map to OODS coercion types: `string+values[]`→`enum`, `boolean`→`boolean_to_string`, all others→`identity`. `source` and `confidence` are metadata fields that do not affect coercion. Helper: `orca-prop-compat.ts` provides `deriveCoercion()`, `orcaPropsToMappings()`, and `auditCompatibility()`. Integration tests cover v2.1.0 payloads end-to-end. Awaiting Stage1 Sprint 27 delivery for live prop inference data.
 
 4. **Evidence passthrough:** **Yes.** ORCA `evidence_chain` serialized into `metadata.notes` on `map.create` calls. Full traceability from OODS composition back to Stage1 source artifacts.
 

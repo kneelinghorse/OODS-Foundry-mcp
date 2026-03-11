@@ -73,6 +73,18 @@
         "depth": {
           "type": "number",
           "description": "Reserved for v2 fragment-depth controls; currently ignored."
+        },
+        "showConfidence": {
+          "type": "boolean",
+          "description": "When true, emit data-oods-confidence and data-confidence-level attributes on rendered components that carry composition confidence metadata. Low-confidence components (below confidenceThreshold) also receive an oods-low-confidence CSS class. Default false.",
+          "default": false
+        },
+        "confidenceThreshold": {
+          "type": "number",
+          "description": "Confidence threshold for low-confidence affordance. Components with confidence below this value receive the oods-low-confidence CSS class. Only effective when showConfidence is true. Default 0.5.",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "additionalProperties": false

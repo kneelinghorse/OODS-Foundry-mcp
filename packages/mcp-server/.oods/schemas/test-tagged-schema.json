@@ -1,6 +1,6 @@
 {
   "name": "test-tagged-schema",
-  "schemaRef": "compose-2d1a1c9a",
+  "schemaRef": "compose-6f700be6",
   "schema": {
     "version": "2026.02",
     "screens": [
@@ -160,7 +160,9 @@
                         "component": "Card",
                         "meta": {
                           "intent": "slot:tab-1",
-                          "label": "tab-1"
+                          "label": "tab-1",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -181,7 +183,9 @@
                         "component": "Text",
                         "meta": {
                           "intent": "slot:tab-2",
-                          "label": "tab-2"
+                          "label": "tab-2",
+                          "confidence": 0.76,
+                          "confidenceLevel": "low"
                         },
                         "props": {
                           "field": "created_at",
@@ -206,7 +210,9 @@
                         "component": "Card",
                         "meta": {
                           "intent": "slot:tab-3",
-                          "label": "tab-3"
+                          "label": "tab-3",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -227,7 +233,9 @@
                         "component": "Stack",
                         "meta": {
                           "intent": "slot:tab-4",
-                          "label": "tab-4"
+                          "label": "tab-4",
+                          "confidence": 0.71,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -248,7 +256,9 @@
                         "component": "Stack",
                         "meta": {
                           "intent": "slot:tab-5",
-                          "label": "tab-5"
+                          "label": "tab-5",
+                          "confidence": 0.71,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -269,7 +279,9 @@
                         "component": "Card",
                         "meta": {
                           "intent": "slot:tab-6",
-                          "label": "tab-6"
+                          "label": "tab-6",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -290,7 +302,9 @@
                         "component": "Card",
                         "meta": {
                           "intent": "slot:tab-7",
-                          "label": "tab-7"
+                          "label": "tab-7",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -597,9 +611,9 @@
     }
   },
   "object": "Product",
-  "version": 48,
+  "version": 61,
   "createdAt": "2026-03-05T23:29:45.932Z",
-  "updatedAt": "2026-03-11T15:10:21.245Z",
+  "updatedAt": "2026-03-11T16:41:06.127Z",
   "tags": [
     "test",
     "sprint74"
