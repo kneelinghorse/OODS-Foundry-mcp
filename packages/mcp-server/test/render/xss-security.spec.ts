@@ -462,8 +462,8 @@ describe('XSS: tree-renderer style attribute injection', () => {
       },
     ]);
     const html = renderTree(schema);
-    expect(html).toContain('gap:var(--ref-spacing-inset-default)');
-    expect(html).toContain('padding:var(--ref-spacing-inset-compact)');
+    expect(html).toContain('gap:var(--sys-spacing-inset-default, var(--ref-spacing-inset-default))');
+    expect(html).toContain('padding:var(--sys-spacing-inset-compact, var(--ref-spacing-inset-compact))');
     // No unintended escaping of safe values
     expect(html).not.toContain('&amp;');
     expect(html).not.toContain('&lt;');

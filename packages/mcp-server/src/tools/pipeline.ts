@@ -72,6 +72,7 @@ export type PipelineOutput = {
     totalNodes: number;
     componentsUsed: number;
     fieldsBound: number;
+    fieldsOmitted?: Array<{ field: string; reason: string }>;
     responseBytes: number;
   };
   pipeline: {
@@ -118,21 +119,44 @@ function countNodes(schema: UiSchema | undefined): number {
   return count;
 }
 
-function countFieldsBound(schema: UiSchema | undefined): number {
-  if (!schema?.objectSchema) return 0;
-  let count = 0;
+type FieldBinding = {
+  bound: number;
+  boundFields: Set<string>;
+};
+
+function analyzeFieldBindings(schema: UiSchema | undefined): FieldBinding {
+  if (!schema?.objectSchema) return { bound: 0, boundFields: new Set() };
+  const boundFields = new Set<string>();
   const stack = [...schema.screens];
   while (stack.length > 0) {
     const node = stack.pop();
     if (!node) continue;
     if (typeof node.props?.field === 'string' && schema.objectSchema[node.props.field]) {
-      count++;
+      boundFields.add(node.props.field);
     }
     if (Array.isArray(node.children) && node.children.length > 0) {
       stack.push(...node.children);
     }
   }
-  return count;
+  return { bound: boundFields.size, boundFields };
+}
+
+type FieldOmission = { field: string; reason: string };
+
+function computeFieldsOmitted(schema: UiSchema | undefined, boundFields: Set<string>): FieldOmission[] {
+  if (!schema?.objectSchema) return [];
+  const omitted: FieldOmission[] = [];
+  for (const fieldName of Object.keys(schema.objectSchema)) {
+    if (!boundFields.has(fieldName)) {
+      const def = schema.objectSchema[fieldName];
+      const isComplex = def && typeof def === 'object' && ('items' in def || 'properties' in def);
+      const reason = isComplex
+        ? 'Complex/nested field has no matching component slot'
+        : 'No view slot available for this field in the current layout context';
+      omitted.push({ field: fieldName, reason });
+    }
+  }
+  return omitted;
 }
 
 function buildSummary(input: PipelineInput, componentCount: number, fieldsBound: number, framework: string, styling: string): string {
@@ -202,14 +226,16 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
     if (composedSchema && !output.error) {
       const totalNodes = countNodes(composedSchema);
       const componentsUsed = countComponents(composedSchema);
-      const fieldsBound = countFieldsBound(composedSchema);
-      output.summary = buildSummary(input, componentsUsed, fieldsBound, framework, styling);
+      const binding = analyzeFieldBindings(composedSchema);
+      const fieldsOmitted = computeFieldsOmitted(composedSchema, binding.boundFields);
+      output.summary = buildSummary(input, componentsUsed, binding.bound, framework, styling);
 
       const responseJson = JSON.stringify(output);
       output.metrics = {
         totalNodes,
         componentsUsed,
-        fieldsBound,
+        fieldsBound: binding.bound,
+        ...(fieldsOmitted.length > 0 ? { fieldsOmitted } : {}),
         responseBytes: Buffer.byteLength(responseJson, 'utf8'),
       };
     }

@@ -215,10 +215,9 @@ describe('design.compose — form intent', () => {
     expect(result.layout).toBe('form');
     expect(result.validation?.status).toBe('ok');
 
-    // Should have form-related slots
+    // Should have form-related slots (actions is pre-filled, not a slot)
     const names = slotNames(result);
     expect(names).toContain('title');
-    expect(names).toContain('actions');
     // Field slots
     expect(names.some(n => n.startsWith('field-'))).toBe(true);
   });

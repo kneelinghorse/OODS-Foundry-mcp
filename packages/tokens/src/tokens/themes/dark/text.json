@@ -23,11 +23,11 @@
       },
       "muted": {
         "$type": "color",
-        "$value": "oklch(0.68 0.015 260)",
-        "$description": "Muted captions and tertiary text.",
+        "$value": "oklch(0.74 0.015 260)",
+        "$description": "Muted captions and tertiary text. WCAG AA ≥4.5:1 on sys.surface.canvas.",
         "$extensions": {
           "ods": {
-            "fallback": "#9399A2"
+            "fallback": "#ABB1B9"
           }
         }
       },

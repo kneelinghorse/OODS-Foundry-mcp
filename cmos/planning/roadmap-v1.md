@@ -1,13 +1,13 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-03-11 | Sprint 84 in-progress
+> Updated: 2026-03-15 | Sprint 85 complete
 
 ## Current State
 
 - **Platform Score:** 100/100 (Sprint 83 confirmed — all V1 categories at full marks)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 118 files, 1950 tests, 0 failures (mcp-server)
+- **Test Suite:** 119 files, 1959 tests, 0 failures (mcp-server)
 - **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
 
@@ -110,6 +110,16 @@
 | `s84-m03` | propMappings v2.1.0 compatibility: ORCA inferred props audit, orca-prop-compat.ts helper, 3 new integration tests | Done | 15 unit tests + 32 integration tests (was 29), contract doc updated |
 | `s84-m04` | Context & roadmap refresh: roadmap updated, 18→5 next-steps pruned, contract doc v2.1.0 status | Done | Context: master 62%, project 14% |
 | `s84-m05` | Retest + build verification: build clean, 118 files / 1950 tests / 0 failures | Done | Platform Score: 100/100 maintained |
+
+## Sprint 85 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s85-m01` | Dark mode fix + pipeline DX: --sys-* semantic tokens in component CSS, [data-theme="dark"] override block, WCAG AA text-muted fix, themes[] on brand.apply, fieldsOmitted metric, form Button defaults | Done | 119 files, 1959 tests, 0 failures; 7 deliverables verified |
+| `s85-m02` | Playground app scaffold: Vite + React + TS under apps/playground/, Tailwind CSS, bridge HTTP client, layout shell with selectors | Done | TypeScript strict, Vite build 207KB JS + 11.7KB CSS |
+| `s85-m03` | Live compose + render preview: pipeline wiring, theme switching in iframe, confidence overlays, error display | Done | Preview updates within 400ms debounce, dark theme validated |
+| `s85-m04` | Code gen panel + starters: syntax highlighting, framework switching, 8 starter prompts, save schema, download HTML | Done | Zero-dep highlighter, copy-to-clipboard, export buttons |
+| `s85-m05` | Carry-forward + retest: stale next-steps pruned, roadmap updated, build clean, all tests pass | Done | 119 files, 1959 tests, 0 failures |
 
 ## Carry-Forward Backlog
 

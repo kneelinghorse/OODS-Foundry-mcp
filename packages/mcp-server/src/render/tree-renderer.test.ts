@@ -112,15 +112,15 @@ describe('tree-renderer', () => {
     expect(html).toContain('<aside data-sidebar-aside="true">');
   });
 
-  it('resolves style tokens to CSS variable references', () => {
+  it('resolves style tokens to CSS variable references with sys fallback to ref', () => {
     const html = renderTree(schemaFixture);
 
-    expect(html).toContain('gap:var(--ref-spacing-inset-default)');
-    expect(html).toContain('padding:var(--ref-spacing-inset-default)');
-    expect(html).toContain('border-radius:var(--ref-radius-md)');
-    expect(html).toContain('box-shadow:var(--ref-shadow-lg)');
-    expect(html).toContain('color:var(--ref-color-text-primary)');
-    expect(html).toContain('font:var(--ref-typography-body-default)');
+    expect(html).toContain('gap:var(--sys-spacing-inset-default, var(--ref-spacing-inset-default))');
+    expect(html).toContain('padding:var(--sys-spacing-inset-default, var(--ref-spacing-inset-default))');
+    expect(html).toContain('border-radius:var(--sys-radius-md, var(--ref-radius-md))');
+    expect(html).toContain('box-shadow:var(--sys-shadow-lg, var(--ref-shadow-lg))');
+    expect(html).toContain('color:var(--sys-color-text-primary, var(--ref-color-text-primary))');
+    expect(html).toContain('font:var(--sys-typography-body-default, var(--ref-typography-body-default))');
   });
 
   it('uses fallback renderer for unmapped components', () => {
@@ -130,7 +130,7 @@ describe('tree-renderer', () => {
     expect(html).toContain('data-oods-fallback="true"');
   });
 
-  it('exports token resolver helper for downstream renderer stages', () => {
+  it('exports token resolver helper with sys-primary and ref-fallback', () => {
     const resolved = resolveStyleTokensToCssVars({
       spacingToken: 'inset-default',
       radiusToken: 'sm',
@@ -139,11 +139,11 @@ describe('tree-renderer', () => {
       typographyToken: 'body-default',
     });
 
-    expect(resolved.padding).toBe('var(--ref-spacing-inset-default)');
-    expect(resolved['border-radius']).toBe('var(--ref-radius-sm)');
-    expect(resolved['box-shadow']).toBe('var(--ref-shadow-md)');
-    expect(resolved.color).toBe('var(--ref-color-text-primary)');
-    expect(resolved.font).toBe('var(--ref-typography-body-default)');
+    expect(resolved.padding).toBe('var(--sys-spacing-inset-default, var(--ref-spacing-inset-default))');
+    expect(resolved['border-radius']).toBe('var(--sys-radius-sm, var(--ref-radius-sm))');
+    expect(resolved['box-shadow']).toBe('var(--sys-shadow-md, var(--ref-shadow-md))');
+    expect(resolved.color).toBe('var(--sys-color-text-primary, var(--ref-color-text-primary))');
+    expect(resolved.font).toBe('var(--sys-typography-body-default, var(--ref-typography-body-default))');
   });
 
   it('creates fragments for each top-level screen child in a single-screen tree', () => {

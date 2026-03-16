@@ -442,6 +442,11 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
   const requestedStrategy: BrandApplyStrategy =
     input.strategy ?? (Array.isArray(input.delta) ? 'patch' : 'alias');
 
+  // Scope to requested themes or default to all
+  const activeThemes: readonly Theme[] = input.themes?.length
+    ? input.themes.filter((t): t is Theme => THEMES.includes(t as Theme))
+    : THEMES;
+
   const originals = loadBrandDocuments(brand);
   const updated: ThemeMap = {
     base: cloneJson(originals.base),
@@ -454,7 +459,7 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
       throw new ToolError('OODS-V001', 'Alias strategy expects an object delta.', { strategy: 'alias' });
     }
     const themeDelta = buildAliasDelta(input.delta as Record<string, unknown>);
-    for (const theme of THEMES) {
+    for (const theme of activeThemes) {
       const deltaForTheme = themeDelta[theme];
       if (!deltaForTheme) continue;
       deepMerge(updated[theme], deltaForTheme);
@@ -464,7 +469,7 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
       throw new ToolError('OODS-V001', 'Patch strategy requires an array of RFC 6902 operations.', { strategy: 'patch' });
     }
     const operations = (input.delta as unknown[]).map((entry) => entry as PatchOperation);
-    for (const theme of THEMES) {
+    for (const theme of activeThemes) {
       applyPatchDocument(updated[theme], operations);
     }
   } else {
@@ -472,7 +477,7 @@ export async function handle(input: BrandApplyInput): Promise<GenericOutput> {
   }
 
   const changeRecords: ChangeRecord[] = [];
-  for (const theme of THEMES) {
+  for (const theme of activeThemes) {
     const previous = originals[theme];
     const next = updated[theme];
     const partialChanges = collectChanges(previous, next)

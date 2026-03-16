@@ -34,7 +34,8 @@ function normalizeToken(token: string): string {
 }
 
 function tokenVar(group: string, token: string): string {
-  return `var(--ref-${group}-${normalizeToken(token)})`;
+  const normalized = normalizeToken(token);
+  return `var(--sys-${group}-${normalized}, var(--ref-${group}-${normalized}))`;
 }
 
 function toCssString(declarations: CssDeclarations): string {
