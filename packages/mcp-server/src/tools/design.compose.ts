@@ -242,6 +242,70 @@ function walkFindElement(el: UiElement, pred: (el: UiElement) => boolean): UiEle
   return undefined;
 }
 
+/**
+ * Derive a human-readable tab label from the fields assigned to a tab slot.
+ * Uses dominant semantic category of the fields to produce labels like
+ * "Pricing", "Dates & History", "Settings", etc.
+ */
+function inferTabLabelFromFields(
+  fieldNames: string[],
+  schema: Record<string, FieldDefinition>,
+  semantics?: Record<string, SemanticMapping>,
+): string {
+  if (fieldNames.length === 0) return 'Details';
+
+  const categories: Record<string, number> = {};
+
+  for (const name of fieldNames) {
+    const field = schema[name];
+    if (!field) continue;
+
+    const lowerName = name.toLowerCase();
+    const sem = semantics?.[name]?.semantic_type?.toLowerCase();
+
+    if (sem && /(^|\.)(status|lifecycle)(\.|$)/.test(sem) || lowerName === 'status' || lowerName.endsWith('_status') || lowerName.endsWith('_state')) {
+      categories['status'] = (categories['status'] ?? 0) + 1;
+    } else if (sem && /(currency|price|percentage|count|metric)/.test(sem) || field.type === 'number' || field.type === 'integer') {
+      categories['pricing'] = (categories['pricing'] ?? 0) + 1;
+    } else if (sem && /(timestamp|date|time|audit)/.test(sem) || field.type === 'datetime' || field.type === 'date' || lowerName.endsWith('_at')) {
+      categories['temporal'] = (categories['temporal'] ?? 0) + 1;
+    } else if (field.type === 'boolean') {
+      categories['settings'] = (categories['settings'] ?? 0) + 1;
+    } else if (field.validation?.enum && field.validation.enum.length > 0) {
+      categories['options'] = (categories['options'] ?? 0) + 1;
+    } else if (field.type.endsWith('[]') || field.type === 'object[]') {
+      categories['collections'] = (categories['collections'] ?? 0) + 1;
+    } else if (sem && /(email|phone|contact)/.test(sem) || lowerName.includes('email') || lowerName.includes('phone')) {
+      categories['contact'] = (categories['contact'] ?? 0) + 1;
+    } else {
+      categories['details'] = (categories['details'] ?? 0) + 1;
+    }
+  }
+
+  // Find dominant category
+  let dominant = 'details';
+  let maxCount = 0;
+  for (const [cat, count] of Object.entries(categories)) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominant = cat;
+    }
+  }
+
+  const CATEGORY_TO_LABEL: Record<string, string> = {
+    status: 'Status',
+    pricing: 'Pricing',
+    temporal: 'Dates & History',
+    settings: 'Settings',
+    options: 'Options',
+    collections: 'Collections',
+    contact: 'Contact',
+    details: 'Details',
+  };
+
+  return CATEGORY_TO_LABEL[dominant] ?? 'Details';
+}
+
 /* ------------------------------------------------------------------ */
 /*  Template selection                                                 */
 /* ------------------------------------------------------------------ */
@@ -1323,24 +1387,54 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       if (labelResult.labels.length > 0) {
         // Patch tab panel labels in the schema tree
         const tabsEl = findTabsElement(schema.screens);
+        const fieldGroups = expansionResult?.fieldGroups;
+
         if (tabsEl?.children) {
+          // Track used labels to deduplicate field-derived labels
+          const usedLabels = new Set(labelResult.labels);
+
           for (let i = 0; i < tabsEl.children.length; i++) {
+            let label: string;
             if (i < labelResult.labels.length) {
-              const child = tabsEl.children[i];
-              if (child.props) {
-                child.props.label = labelResult.labels[i];
+              // Trait-category-derived label
+              label = labelResult.labels[i];
+            } else {
+              // Derive label from field group for expanded tabs beyond category count
+              const slotName = `tab-${i}`;
+              const groupFields = fieldGroups?.[slotName];
+              if (groupFields && groupFields.length > 0 && composed) {
+                let derived = inferTabLabelFromFields(groupFields, composed.schema, composed.semantics);
+                // Deduplicate: append index if label already used
+                if (usedLabels.has(derived)) {
+                  derived = `${derived} ${i + 1}`;
+                }
+                usedLabels.add(derived);
+                label = derived;
               } else {
-                child.props = { label: labelResult.labels[i] };
+                label = `Additional ${i + 1}`;
               }
+            }
+
+            const child = tabsEl.children[i];
+            if (child.props) {
+              child.props.label = label;
+            } else {
+              child.props = { label };
             }
           }
         }
 
-        // Also update slot descriptions to reflect semantic labels
-        for (let i = 0; i < labelResult.labels.length; i++) {
-          const slot = slots.find(s => s.name === `tab-${i}`);
-          if (slot) {
-            slot.description = `Content for "${labelResult.labels[i]}" tab`;
+        // Update slot descriptions for all tabs with semantic labels
+        const tabsElForDesc = findTabsElement(schema.screens);
+        if (tabsElForDesc?.children) {
+          for (let i = 0; i < tabsElForDesc.children.length; i++) {
+            const label = tabsElForDesc.children[i].props?.label;
+            if (label) {
+              const slot = slots.find(s => s.name === `tab-${i}`);
+              if (slot) {
+                slot.description = `Content for "${label}" tab`;
+              }
+            }
           }
         }
       }

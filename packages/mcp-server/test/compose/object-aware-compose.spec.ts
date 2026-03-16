@@ -183,11 +183,16 @@ describe('object-aware compose — pipeline tab label wiring (s86-m01)', () => {
     const labels = getTabLabels(result.schema as unknown as Record<string, unknown>);
     expect(labels.length).toBeGreaterThan(0);
 
-    // At least the first N labels (matching trait category count) should be semantic
+    // ALL tabs should have semantic labels — no "Tab N" generics
+    for (const label of labels) {
+      expect(label).not.toMatch(/^Tab \d+$/);
+      expect(label.length).toBeGreaterThan(0);
+    }
+
+    // First N labels should match trait-category-derived labels
     const composed = composeObject(loadObject('Subscription'));
     const generated = generateLabels(composed, 'detail');
     for (let i = 0; i < generated.labels.length; i++) {
-      expect(labels[i]).not.toMatch(/^Tab \d+$/);
       expect(labels[i]).toBe(generated.labels[i]);
     }
   });
