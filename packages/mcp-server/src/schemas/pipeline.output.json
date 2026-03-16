@@ -114,7 +114,19 @@
         "totalNodes": { "type": "integer", "minimum": 0 },
         "componentsUsed": { "type": "integer", "minimum": 0 },
         "fieldsBound": { "type": "integer", "minimum": 0 },
-        "responseBytes": { "type": "integer", "minimum": 0 }
+        "responseBytes": { "type": "integer", "minimum": 0 },
+        "fieldsOmitted": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "reason"],
+            "properties": {
+              "field": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
       },
       "description": "Quality metrics for the pipeline output."
     },
