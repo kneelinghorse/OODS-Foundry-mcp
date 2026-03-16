@@ -1,13 +1,13 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-03-15 | Sprint 85 complete
+> Updated: 2026-03-16 | Sprint 86 complete
 
 ## Current State
 
 - **Platform Score:** 100/100 (Sprint 83 confirmed — all V1 categories at full marks)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 119 files, 1959 tests, 0 failures (mcp-server)
+- **Test Suite:** 122 files, 2005 tests, 0 failures (mcp-server)
 - **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
 
@@ -121,6 +121,16 @@
 | `s85-m04` | Code gen panel + starters: syntax highlighting, framework switching, 8 starter prompts, save schema, download HTML | Done | Zero-dep highlighter, copy-to-clipboard, export buttons |
 | `s85-m05` | Carry-forward + retest: stale next-steps pruned, roadmap updated, build clean, all tests pass | Done | 119 files, 1959 tests, 0 failures |
 
+## Sprint 86 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s86-m01` | Semantic tab labels: wired generateLabels() into design.compose pipeline for object-aware detail layouts | Done | Tab labels derived from trait categories (e.g., "Billing", "Status & History") instead of "Tab 1/2/3". 3 new tests |
+| `s86-m02` | Card + Timeline layout templates: first-class layout types with context-appropriate structure | Done | Card: compact 3-slot (header/body/footer, no tabs). Timeline: header + N chronological entry slots. 24 new tests |
+| `s86-m03` | SchemaRef TTL proactive warning: computeTtlWarning() utility + pipeline integration | Done | Warning emitted when TTL < 5 minutes with actionable recommendation. 9 new tests |
+| `s86-m04` | BUG-7 viz metadata fix: chartType-only path now populates traitsResolved/encodingsApplied | Done | Synthetic trait derivation from chartType + dataBindings channels. All 6 chart types verified. 10 new tests |
+| `s86-m05` | Retest gate: build clean, 122 files / 2005 tests / 0 failures | Done | +46 tests from 1959 baseline |
+
 ## Carry-Forward Backlog
 
 ### P1 — Composition Quality
@@ -170,9 +180,9 @@
 | Area | Files |
 |------|-------|
 | Composition engine | `packages/mcp-server/src/compose/object-slot-filler.ts`, `component-selector.ts`, `position-affinity.ts`, `field-affinity.ts`, `intent-sections.ts` |
-| Dashboard layout | `packages/mcp-server/src/compose/templates/dashboard.ts`, `packages/mcp-server/src/tools/design.compose.ts` |
+| Layout templates | `packages/mcp-server/src/compose/templates/dashboard.ts`, `detail.ts`, `form.ts`, `list.ts`, `card.ts`, `timeline.ts` |
 | Visualization | `packages/mcp-server/src/tools/viz.compose.ts` |
 | Artifact tools | `packages/mcp-server/src/tools/reviewKit.create.ts`, `purity.audit.ts`, `vrt.run.ts` |
 | Bridge tool surface | `packages/mcp-bridge/src/server.ts`, `packages/mcp-bridge/src/tool-surface.ts` |
 
-All V1 categories at full score (100/100). S83 closed final gaps. S84 adds DX polish (.oodsrc config, confidence affordance) and Stage1 v2.1.0 compatibility. Stage1 integration contract bilateral; OODS v2.1.0 prop compatibility verified, awaiting Stage1 Sprint 27 live prop inference data.
+All V1 categories at full score (100/100). S86 fixes composition quality gaps reported by external agent testing: semantic tab labels, card/timeline layouts, schemaRef TTL warnings, and BUG-7 viz metadata. 122 files, 2005 tests, 0 failures.
