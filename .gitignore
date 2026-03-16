@@ -39,6 +39,9 @@ cmos/runtime/boomerang/
 cmos/**/__pycache__/
 cmos/**/*.pyc
 
+# OODS schema store (per-project design artifacts, not source)
+**/.oods/
+
 # Local environment secrets
 .env
 .env.*

@@ -144,6 +144,83 @@ describe('object-aware compose — tab labels', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/*  4b. Pipeline tab label integration (s86-m01)                       */
+/* ------------------------------------------------------------------ */
+
+/** Walk the schema tree to find the Tabs element. */
+function findTabs(node: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (node.component === 'Tabs') return node;
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      const found = findTabs(child as Record<string, unknown>);
+      if (found) return found;
+    }
+  }
+  if (Array.isArray((node as Record<string, unknown[]>).screens)) {
+    for (const screen of (node as Record<string, unknown[]>).screens) {
+      const found = findTabs(screen as Record<string, unknown>);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+function getTabLabels(schema: Record<string, unknown>): string[] {
+  const tabs = findTabs(schema);
+  if (!tabs?.children || !Array.isArray(tabs.children)) return [];
+  return (tabs.children as Record<string, Record<string, string>>[])
+    .map(child => child.props?.label)
+    .filter(Boolean) as string[];
+}
+
+describe('object-aware compose — pipeline tab label wiring (s86-m01)', () => {
+  it('Subscription detail pipeline produces semantic tab labels, not Tab 1/2/3', async () => {
+    const result = await handle({
+      object: 'Subscription',
+      context: 'detail',
+    });
+    expect(result.status).toBe('ok');
+    const labels = getTabLabels(result.schema as unknown as Record<string, unknown>);
+    expect(labels.length).toBeGreaterThan(0);
+
+    // At least the first N labels (matching trait category count) should be semantic
+    const composed = composeObject(loadObject('Subscription'));
+    const generated = generateLabels(composed, 'detail');
+    for (let i = 0; i < generated.labels.length; i++) {
+      expect(labels[i]).not.toMatch(/^Tab \d+$/);
+      expect(labels[i]).toBe(generated.labels[i]);
+    }
+  });
+
+  it('user-provided tabLabels override generated labels', async () => {
+    const customLabels = ['My Tab A', 'My Tab B'];
+    const result = await handle({
+      object: 'Subscription',
+      context: 'detail',
+      preferences: { tabLabels: customLabels },
+    });
+    expect(result.status).toBe('ok');
+    const labels = getTabLabels(result.schema as unknown as Record<string, unknown>);
+    expect(labels[0]).toBe('My Tab A');
+    expect(labels[1]).toBe('My Tab B');
+  });
+
+  it('intent-only compose (no object) falls back to generic labels without error', async () => {
+    const result = await handle({
+      intent: 'a detail view for user profiles',
+    });
+    expect(result.status).toBe('ok');
+    // No objectUsed means no generateLabels call — generic labels are fine
+    if (!result.objectUsed) {
+      const labels = getTabLabels(result.schema as unknown as Record<string, unknown>);
+      for (const label of labels) {
+        expect(label).toMatch(/^Tab \d+$/);
+      }
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /*  5. Hybrid mode: intent for layout + object for components          */
 /* ------------------------------------------------------------------ */
 

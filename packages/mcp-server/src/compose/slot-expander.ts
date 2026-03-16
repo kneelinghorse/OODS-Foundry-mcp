@@ -42,7 +42,7 @@ export interface ExpansionResult {
 
 export interface ExpansionContext {
   /** Layout type */
-  layout: 'detail' | 'dashboard' | 'form' | 'list';
+  layout: 'detail' | 'dashboard' | 'form' | 'list' | 'card' | 'timeline';
   /** Object field schema */
   fields: Record<string, FieldDefinition>;
   /** Semantic types from object (maps field name to semantic type) */
@@ -482,6 +482,24 @@ export function expandSlots(
         slotsAdded: 0,
         expanded: false,
         reason: 'List layout manages columns automatically',
+      };
+      break;
+
+    case 'card':
+      result = {
+        template,
+        slotsAdded: 0,
+        expanded: false,
+        reason: 'Card layout is compact single-panel — no expansion needed',
+      };
+      break;
+
+    case 'timeline':
+      result = {
+        template,
+        slotsAdded: 0,
+        expanded: false,
+        reason: 'Timeline layout manages entry slots via template — no expansion needed',
       };
       break;
   }

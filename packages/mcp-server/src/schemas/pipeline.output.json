@@ -21,6 +21,26 @@
       "format": "date-time",
       "description": "ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry."
     },
+    "schemaRefTtlWarning": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Proactive warning when schemaRef TTL is approaching expiration (< 5 minutes remaining).",
+      "required": ["message", "remainingMs", "recommendation"],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Human-readable warning message."
+        },
+        "remainingMs": {
+          "type": "number",
+          "description": "Milliseconds remaining until schemaRef expires."
+        },
+        "recommendation": {
+          "type": "string",
+          "description": "Actionable recommendation for the agent."
+        }
+      }
+    },
     "compose": {
       "type": "object",
       "additionalProperties": false,
@@ -114,7 +134,19 @@
         "totalNodes": { "type": "integer", "minimum": 0 },
         "componentsUsed": { "type": "integer", "minimum": 0 },
         "fieldsBound": { "type": "integer", "minimum": 0 },
-        "responseBytes": { "type": "integer", "minimum": 0 }
+        "responseBytes": { "type": "integer", "minimum": 0 },
+        "fieldsOmitted": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "reason"],
+            "properties": {
+              "field": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
       },
       "description": "Quality metrics for the pipeline output."
     },

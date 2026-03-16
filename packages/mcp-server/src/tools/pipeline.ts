@@ -5,6 +5,7 @@ import { handle as validateHandle } from './repl.validate.js';
 import { handle as renderHandle } from './repl.render.js';
 import { handle as codeGenerateHandle } from './code.generate.js';
 import { handle as schemaSaveHandle } from './schema/save.js';
+import { resolveSchemaRef, computeTtlWarning } from './schema-ref.js';
 import { loadOodsrc } from '../lib/oodsrc.js';
 
 type PipelineStep = 'compose' | 'validate' | 'render' | 'codegen' | 'save';
@@ -14,7 +15,7 @@ export type PipelineInput = {
   object?: string;
   intent?: string;
   context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
-  layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
+  layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'card' | 'timeline' | 'auto';
   preferences?: DesignComposeInput['preferences'];
   framework?: CodegenFramework;
   styling?: CodegenStyling;
@@ -42,6 +43,11 @@ export type PipelineOutput = {
   schemaRef?: string;
   schemaRefCreatedAt?: string;
   schemaRefExpiresAt?: string;
+  schemaRefTtlWarning?: {
+    message: string;
+    remainingMs: number;
+    recommendation: string;
+  };
   compose: {
     object?: string;
     context?: string;
@@ -285,6 +291,15 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
     }
     if (composeResult.schemaRefExpiresAt) {
       output.schemaRefExpiresAt = composeResult.schemaRefExpiresAt;
+    }
+
+    // Proactive TTL warning (s86-m03)
+    const resolved = resolveSchemaRef(composeResult.schemaRef);
+    if (resolved.ok) {
+      const ttlWarning = computeTtlWarning(resolved.record);
+      if (ttlWarning) {
+        output.schemaRefTtlWarning = ttlWarning;
+      }
     }
   }
 

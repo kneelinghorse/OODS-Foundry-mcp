@@ -12,7 +12,7 @@
 | `object` | string | No |  | Object name from the OODS registry (e.g., Subscription, User). |
 | `intent` | string | No |  | Natural-language description of the desired UI. |
 | `context` | `detail` \| `list` \| `form` \| `timeline` \| `card` \| `inline` | No |  | View context for object-aware composition. |
-| `layout` | `dashboard` \| `form` \| `detail` \| `list` \| `auto` | No |  | Layout template to use. |
+| `layout` | `dashboard` \| `form` \| `detail` \| `list` \| `card` \| `timeline` \| `auto` | No |  | Layout template to use. |
 | `preferences` | object | No |  |  |
 | `preferences.theme` | string | No |  | Theme token (e.g., 'light', 'dark'). |
 | `preferences.metricColumns` | integer | No |  | Number of metric columns for dashboard layout. |
@@ -40,6 +40,7 @@
 | `schemaRef` | string | No | Schema reference returned by compose, reusable across tools. |
 | `schemaRefCreatedAt` | string | No | ISO timestamp when the schemaRef was created. |
 | `schemaRefExpiresAt` | string | No | ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry. |
+| `schemaRefTtlWarning` | object | No | Proactive warning when schemaRef TTL is approaching expiration (< 5 minutes remaining). |
 | `compose` | object | Yes |  |
 | `validation` | object | No |  |
 | `render` | object | No |  |

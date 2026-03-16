@@ -128,22 +128,22 @@ describe('design.compose — context layout inference', () => {
     expect(result.layout).toBe('form');
   });
 
-  it('context=timeline maps to detail layout', async () => {
+  it('context=timeline maps to timeline layout', async () => {
     const result = await handle({
       intent: 'subscription view',
       object: 'Subscription',
       context: 'timeline',
     });
-    expect(result.layout).toBe('detail');
+    expect(result.layout).toBe('timeline');
   });
 
-  it('context=card maps to detail layout', async () => {
+  it('context=card maps to card layout', async () => {
     const result = await handle({
       intent: 'subscription view',
       object: 'Subscription',
       context: 'card',
     });
-    expect(result.layout).toBe('detail');
+    expect(result.layout).toBe('card');
   });
 
   it('context=inline maps to list layout', async () => {

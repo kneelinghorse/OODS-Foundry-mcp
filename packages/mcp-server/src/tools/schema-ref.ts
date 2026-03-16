@@ -113,3 +113,42 @@ export function describeSchemaRef(record: SchemaRefRecord): Pick<SchemaRefRecord
     expiresAt: record.expiresAt,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  TTL warning (s86-m03)                                              */
+/* ------------------------------------------------------------------ */
+
+const TTL_WARNING_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+export interface TtlWarning {
+  message: string;
+  remainingMs: number;
+  recommendation: string;
+}
+
+/**
+ * Compute a proactive TTL warning when a schemaRef is approaching expiration.
+ * Returns undefined when the TTL is healthy (> 5 minutes remaining).
+ */
+export function computeTtlWarning(record: SchemaRefRecord, now = nowMs()): TtlWarning | undefined {
+  const remainingMs = record.expiresAtMs - now;
+
+  if (remainingMs <= 0) {
+    return {
+      message: `SchemaRef "${record.ref}" has expired.`,
+      remainingMs: 0,
+      recommendation: 'Re-compose to obtain a fresh schemaRef, or use schema.save to persist before expiry.',
+    };
+  }
+
+  if (remainingMs <= TTL_WARNING_THRESHOLD_MS) {
+    const remainingMin = Math.ceil(remainingMs / 60_000);
+    return {
+      message: `SchemaRef "${record.ref}" expires in ~${remainingMin} minute${remainingMin === 1 ? '' : 's'}.`,
+      remainingMs,
+      recommendation: 'Call schema.save to persist the schema, or re-compose to obtain a fresh schemaRef.',
+    };
+  }
+
+  return undefined;
+}

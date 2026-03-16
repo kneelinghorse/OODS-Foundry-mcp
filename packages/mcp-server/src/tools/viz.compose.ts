@@ -350,6 +350,29 @@ export async function handle(input: VizComposeInput): Promise<VizComposeOutput> 
     };
   }
 
+  // Synthesize trait resolution from chartType + dataBindings (s86-m04 BUG-7 fix).
+  // When chartType is provided directly (no object/traits), derive the mark trait
+  // and encoding traits so metadata arrays are populated.
+  if (input.chartType && VALID_CHART_TYPES.has(input.chartType)) {
+    const syntheticTraits: string[] = [`mark-${input.chartType}`];
+    const bindings = input.dataBindings ?? input.data;
+    if (bindings) {
+      const BINDING_TO_TRAIT: Record<string, string> = {
+        x: 'encoding-position-x',
+        y: 'encoding-position-y',
+        color: 'encoding-color',
+        size: 'encoding-size',
+        opacity: 'encoding-opacity',
+        shape: 'encoding-shape',
+      };
+      for (const channel of Object.keys(bindings)) {
+        const trait = BINDING_TO_TRAIT[channel];
+        if (trait) syntheticTraits.push(trait);
+      }
+    }
+    resolution = applyScalesToEncodings(resolveVizTraits(syntheticTraits));
+  }
+
   // Resolve from object if provided
   if (input.object) {
     try {
