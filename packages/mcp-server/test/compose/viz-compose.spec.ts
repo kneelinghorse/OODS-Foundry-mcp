@@ -338,4 +338,60 @@ describe('viz.compose handler', () => {
       expect(result.meta?.componentCount).toBeGreaterThanOrEqual(2);
     });
   });
+
+  /* ------------------------------------------------------------------ */
+  /*  BUG-7: chartType-only metadata population (s86-m04)               */
+  /* ------------------------------------------------------------------ */
+
+  describe('BUG-7 fix — chartType-only metadata', () => {
+    it('bar chart with dataBindings populates traitsResolved', async () => {
+      const result = await handle({
+        chartType: 'bar',
+        dataBindings: { x: 'category', y: 'revenue' },
+      });
+      expect(result.status).toBe('ok');
+      expect(result.meta?.traitsResolved).toContain('mark-bar');
+      expect(result.meta?.traitsResolved!.length).toBeGreaterThan(0);
+    });
+
+    it('scatter chart populates encodingsApplied from dataBindings', async () => {
+      const result = await handle({
+        chartType: 'scatter',
+        dataBindings: { x: 'date', y: 'amount', color: 'status' },
+      });
+      expect(result.status).toBe('ok');
+      expect(result.meta?.traitsResolved).toContain('mark-scatter');
+      expect(result.meta?.encodingsApplied).toContain('encoding-position-x');
+      expect(result.meta?.encodingsApplied).toContain('encoding-position-y');
+      expect(result.meta?.encodingsApplied).toContain('encoding-color');
+    });
+
+    it('heatmap chart populates traitsResolved', async () => {
+      const result = await handle({
+        chartType: 'heatmap',
+        dataBindings: { x: 'hour', y: 'day', color: 'count' },
+      });
+      expect(result.status).toBe('ok');
+      expect(result.meta?.traitsResolved).toContain('mark-heatmap');
+    });
+
+    it.each(['bar', 'line', 'area', 'point', 'scatter', 'heatmap'] as const)(
+      '%s chartType with dataBindings has non-empty traitsResolved',
+      async (chartType) => {
+        const result = await handle({
+          chartType,
+          dataBindings: { x: 'x', y: 'y' },
+        });
+        expect(result.status).toBe('ok');
+        expect(result.meta?.traitsResolved!.length).toBeGreaterThan(0);
+        expect(result.meta?.traitsResolved).toContain(`mark-${chartType}`);
+      },
+    );
+
+    it('chartType without dataBindings still populates mark trait', async () => {
+      const result = await handle({ chartType: 'line' });
+      expect(result.status).toBe('ok');
+      expect(result.meta?.traitsResolved).toContain('mark-line');
+    });
+  });
 });

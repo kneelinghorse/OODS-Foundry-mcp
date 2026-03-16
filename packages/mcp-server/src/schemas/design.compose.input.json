@@ -30,7 +30,7 @@
     },
     "layout": {
       "type": "string",
-      "enum": ["dashboard", "form", "detail", "list", "auto"],
+      "enum": ["dashboard", "form", "detail", "list", "card", "timeline", "auto"],
       "default": "auto",
       "description": "Layout template to use. 'auto' infers the best template from intent keywords."
     },

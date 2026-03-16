@@ -384,8 +384,8 @@ describe('design.compose — validation', () => {
     expect(result.validation?.status).toBe('skipped');
   });
 
-  it('all 4 layouts produce valid schemas', async () => {
-    for (const layout of ['dashboard', 'form', 'detail', 'list'] as const) {
+  it('all 6 layouts produce valid schemas', async () => {
+    for (const layout of ['dashboard', 'form', 'detail', 'list', 'card', 'timeline'] as const) {
       const result = await handle({ intent: layout, layout });
       expect(result.validation?.status, `${layout} validation failed`).toBe('ok');
       expect(result.validation?.errors, `${layout} has validation errors`).toHaveLength(0);
@@ -430,3 +430,84 @@ describe('design.compose — whitespace intent validation', () => {
     expect(result.status).toBe('ok');
   });
 });
+
+/* ------------------------------------------------------------------ */
+/*  Card and Timeline layout templates (s86-m02)                       */
+/* ------------------------------------------------------------------ */
+
+describe('design.compose — card layout', () => {
+  it('context=card selects card layout', async () => {
+    const result = await handle({ intent: 'product details', context: 'card' });
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('card');
+  });
+
+  it('card layout produces compact schema with no tabs', async () => {
+    const result = await handle({ intent: 'user summary', context: 'card' });
+    expect(result.status).toBe('ok');
+    const components = collectAllComponents(result.schema.screens[0]);
+    expect(components).not.toContain('Tabs');
+  });
+
+  it('card layout has header, body, footer slots', async () => {
+    const result = await handle({ intent: 'product preview', context: 'card' });
+    expect(result.status).toBe('ok');
+    const names = slotNames(result);
+    expect(names).toContain('header');
+    expect(names).toContain('body');
+    expect(names).toContain('footer');
+  });
+
+  it('card with object produces objectUsed', async () => {
+    const result = await handle({ object: 'Subscription', context: 'card' });
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('card');
+    expect(result.objectUsed).toBeDefined();
+  });
+
+  it('layout=card explicit selection works', async () => {
+    const result = await handle({ intent: 'anything', layout: 'card' });
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('card');
+  });
+});
+
+describe('design.compose — timeline layout', () => {
+  it('context=timeline selects timeline layout', async () => {
+    const result = await handle({ intent: 'activity log', context: 'timeline' });
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('timeline');
+  });
+
+  it('timeline layout produces entry slots', async () => {
+    const result = await handle({ intent: 'event history', context: 'timeline' });
+    expect(result.status).toBe('ok');
+    const names = slotNames(result);
+    expect(names).toContain('header');
+    expect(names.some(n => n.startsWith('entry-'))).toBe(true);
+  });
+
+  it('timeline with object produces objectUsed', async () => {
+    const result = await handle({ object: 'Subscription', context: 'timeline' });
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('timeline');
+    expect(result.objectUsed).toBeDefined();
+  });
+
+  it('layout=timeline explicit selection works', async () => {
+    const result = await handle({ intent: 'anything', layout: 'timeline' });
+    expect(result.status).toBe('ok');
+    expect(result.layout).toBe('timeline');
+  });
+});
+
+function collectAllComponents(node: Record<string, unknown>): string[] {
+  const names: string[] = [];
+  if (typeof node.component === 'string') names.push(node.component);
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      names.push(...collectAllComponents(child as Record<string, unknown>));
+    }
+  }
+  return names;
+}

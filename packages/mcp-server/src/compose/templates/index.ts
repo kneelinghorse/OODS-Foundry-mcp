@@ -10,5 +10,11 @@ export type { DetailOptions } from './detail.js';
 export { listTemplate } from './list.js';
 export type { ListOptions } from './list.js';
 
+export { cardTemplate } from './card.js';
+export type { CardOptions } from './card.js';
+
+export { timelineTemplate } from './timeline.js';
+export type { TimelineOptions } from './timeline.js';
+
 export type { Slot, TemplateResult } from './types.js';
 export { isSlotElement, resetIdCounter, uid, wrapSchema, slotElement } from './types.js';

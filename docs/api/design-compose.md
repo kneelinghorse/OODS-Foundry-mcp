@@ -12,7 +12,7 @@
 | `intent` | string | Yes |  | Natural-language description of the desired UI (e.g., 'dashboard with metrics and sidebar', 'user registration form'). |
 | `object` | string | Yes |  | Object name from the OODS registry (e.g., 'Subscription', 'User'). When provided, composition uses trait-driven component placement via view_extensions. |
 | `context` | `detail` \| `list` \| `form` \| `timeline` \| `card` \| `inline` | No |  | View context for object-aware composition. Determines which view_extensions are applied. When object is provided without layout, context infers the layout (detail→detail, list→list, form→form). |
-| `layout` | `dashboard` \| `form` \| `detail` \| `list` \| `auto` | No | `"auto"` | Layout template to use. 'auto' infers the best template from intent keywords. |
+| `layout` | `dashboard` \| `form` \| `detail` \| `list` \| `card` \| `timeline` \| `auto` | No | `"auto"` | Layout template to use. 'auto' infers the best template from intent keywords. |
 | `preferences` | object | No |  |  |
 | `preferences.theme` | string | No |  | Theme token (e.g., 'light', 'dark'). |
 | `preferences.metricColumns` | integer | No |  | Number of metric columns for dashboard layout. |

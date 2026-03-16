@@ -18,6 +18,8 @@ import {
   formTemplate,
   detailTemplate,
   listTemplate,
+  cardTemplate,
+  timelineTemplate,
   resetIdCounter,
   isSlotElement,
   uid,
@@ -51,6 +53,7 @@ import {
   prefersDashboardLayout,
 } from '../compose/intent-sections.js';
 import { loadOodsrc } from '../lib/oodsrc.js';
+import { generateLabels } from '../compose/label-generator.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -61,7 +64,7 @@ export interface DesignComposeInput {
   intent?: string;
   object?: string;
   context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
-  layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
+  layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'card' | 'timeline' | 'auto';
   preferences?: {
     theme?: string;
     metricColumns?: number;
@@ -165,7 +168,7 @@ export interface DesignComposeOutput {
 /*  Layout detection                                                   */
 /* ------------------------------------------------------------------ */
 
-type LayoutType = 'dashboard' | 'form' | 'detail' | 'list';
+type LayoutType = 'dashboard' | 'form' | 'detail' | 'list' | 'card' | 'timeline';
 type FormFieldSlotConfig = {
   description?: string;
   intent?: string;
@@ -177,6 +180,8 @@ const LAYOUT_KEYWORDS: Record<LayoutType, string[]> = {
   form: ['form', 'registration', 'signup', 'sign-up', 'edit', 'input', 'submit', 'settings', 'configure'],
   detail: ['detail', 'profile', 'view', 'show', 'record', 'entity', 'page', 'inspect'],
   list: ['list', 'table', 'browse', 'search', 'catalog', 'directory', 'index', 'inventory'],
+  card: ['card', 'summary', 'compact', 'preview', 'snippet'],
+  timeline: ['timeline', 'events', 'history', 'audit', 'changelog', 'activity'],
 };
 
 function hasLayoutKeyword(intent: string, keyword: string): boolean {
@@ -190,7 +195,7 @@ function escapeRegex(value: string): string {
 
 function detectLayout(intent: string): { layout: LayoutType; confidence: number } {
   const lower = intent.toLowerCase();
-  const scores: Record<LayoutType, number> = { dashboard: 0, form: 0, detail: 0, list: 0 };
+  const scores: Record<LayoutType, number> = { dashboard: 0, form: 0, detail: 0, list: 0, card: 0, timeline: 0 };
 
   for (const [layout, keywords] of Object.entries(LAYOUT_KEYWORDS) as [LayoutType, string[]][]) {
     for (const kw of keywords) {
@@ -211,6 +216,30 @@ function detectLayout(intent: string): { layout: LayoutType; confidence: number 
 
   const totalScore = entries.reduce((sum, [, s]) => sum + s, 0);
   return { layout: bestLayout, confidence: bestScore / totalScore };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Schema tree helpers                                                */
+/* ------------------------------------------------------------------ */
+
+/** Walk the schema tree to find the Tabs element. */
+function findTabsElement(screens: UiElement[]): UiElement | undefined {
+  for (const screen of screens) {
+    const found = walkFindElement(screen, el => el.component === 'Tabs');
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function walkFindElement(el: UiElement, pred: (el: UiElement) => boolean): UiElement | undefined {
+  if (pred(el)) return el;
+  if (el.children) {
+    for (const child of el.children) {
+      const found = walkFindElement(child, pred);
+      if (found) return found;
+    }
+  }
+  return undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -246,6 +275,14 @@ function selectTemplate(
       });
     case 'list':
       return listTemplate({
+        theme: preferences?.theme,
+      });
+    case 'card':
+      return cardTemplate({
+        theme: preferences?.theme,
+      });
+    case 'timeline':
+      return timelineTemplate({
         theme: preferences?.theme,
       });
   }
@@ -537,8 +574,8 @@ const CONTEXT_TO_LAYOUT: Record<string, LayoutType> = {
   detail: 'detail',
   list: 'list',
   form: 'form',
-  timeline: 'detail',
-  card: 'detail',
+  timeline: 'timeline',
+  card: 'card',
   inline: 'list',
 };
 
@@ -1270,6 +1307,45 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       schema = template.schema;
       slots = template.slots;
     }
+
+    // Wire semantic tab labels from trait categories (s86-m01).
+    // When the detail layout has tabs and object composition produced traits,
+    // derive human-readable labels instead of generic "Tab 1", "Tab 2".
+    // User-provided preferences.tabLabels still take precedence.
+    if (layoutType === 'detail' && composed) {
+      const contextForLabels = effectiveContext ?? 'detail';
+      const labelResult = generateLabels(composed, contextForLabels, input.preferences?.tabLabels);
+
+      for (const w of labelResult.warnings) {
+        warnings.push({ code: 'OODS-V122', message: w });
+      }
+
+      if (labelResult.labels.length > 0) {
+        // Patch tab panel labels in the schema tree
+        const tabsEl = findTabsElement(schema.screens);
+        if (tabsEl?.children) {
+          for (let i = 0; i < tabsEl.children.length; i++) {
+            if (i < labelResult.labels.length) {
+              const child = tabsEl.children[i];
+              if (child.props) {
+                child.props.label = labelResult.labels[i];
+              } else {
+                child.props = { label: labelResult.labels[i] };
+              }
+            }
+          }
+        }
+
+        // Also update slot descriptions to reflect semantic labels
+        for (let i = 0; i < labelResult.labels.length; i++) {
+          const slot = slots.find(s => s.name === `tab-${i}`);
+          if (slot) {
+            slot.description = `Content for "${labelResult.labels[i]}" tab`;
+          }
+        }
+      }
+    }
+
     // Differentiate tab slot intents based on field group semantics.
     // This ensures each tab selects a different component instead of
     // all tabs getting the same 'data-display' → Card result.

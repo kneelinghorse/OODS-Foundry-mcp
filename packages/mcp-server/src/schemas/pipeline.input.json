@@ -27,7 +27,7 @@
     },
     "layout": {
       "type": "string",
-      "enum": ["dashboard", "form", "detail", "list", "auto"],
+      "enum": ["dashboard", "form", "detail", "list", "card", "timeline", "auto"],
       "description": "Layout template to use."
     },
     "preferences": {
