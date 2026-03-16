@@ -731,4 +731,80 @@ describe('pipeline orchestration', () => {
       expect(result.compose.componentCount).toBe(3);
     });
   });
+
+  // ── fieldsOmitted metric ─────────────────────────────────────────
+
+  describe('fieldsOmitted metric', () => {
+    it('reports omitted fields when objectSchema has unbound fields', async () => {
+      mockComposeHandle.mockResolvedValue({
+        ...composeOk(),
+        schema: {
+          version: '2026.03',
+          objectSchema: {
+            name: { type: 'string' },
+            email: { type: 'string' },
+            status: { type: 'string' },
+            featureMatrix: { type: 'object', properties: { a: { type: 'string' } } },
+          },
+          screens: [
+            {
+              id: 'screen-root',
+              component: 'Stack',
+              children: [
+                { id: 'field-name', component: 'Text', props: { field: 'name' } },
+                { id: 'field-email', component: 'Text', props: { field: 'email' } },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = await handle({
+        object: 'Subscription',
+        framework: 'react',
+      });
+
+      expect(result.metrics).toBeDefined();
+      expect(result.metrics!.fieldsBound).toBe(2);
+      expect(result.metrics!.fieldsOmitted).toBeDefined();
+      expect(result.metrics!.fieldsOmitted).toHaveLength(2);
+
+      const omittedFields = result.metrics!.fieldsOmitted!.map((o) => o.field);
+      expect(omittedFields).toContain('status');
+      expect(omittedFields).toContain('featureMatrix');
+
+      // Complex field gets specific reason
+      const featureEntry = result.metrics!.fieldsOmitted!.find((o) => o.field === 'featureMatrix');
+      expect(featureEntry!.reason).toContain('Complex');
+    });
+
+    it('omits fieldsOmitted when all fields are bound', async () => {
+      mockComposeHandle.mockResolvedValue({
+        ...composeOk(),
+        schema: {
+          version: '2026.03',
+          objectSchema: {
+            name: { type: 'string' },
+          },
+          screens: [
+            {
+              id: 'screen-root',
+              component: 'Stack',
+              children: [
+                { id: 'field-name', component: 'Text', props: { field: 'name' } },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = await handle({
+        object: 'Subscription',
+        framework: 'react',
+      });
+
+      expect(result.metrics!.fieldsBound).toBe(1);
+      expect(result.metrics!.fieldsOmitted).toBeUndefined();
+    });
+  });
 });

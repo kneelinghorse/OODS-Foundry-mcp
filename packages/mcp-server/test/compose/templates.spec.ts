@@ -237,14 +237,23 @@ describe('formTemplate', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('declares title, field-N, and actions slots', () => {
-    const { slots } = formTemplate();
+  it('declares title and field-N slots (actions pre-filled as Button)', () => {
+    const { slots, schema } = formTemplate();
     const names = slots.map(s => s.name);
     expect(names).toContain('title');
     expect(names).toContain('field-0');
     expect(names).toContain('field-1');
     expect(names).toContain('field-2');
-    expect(names).toContain('actions');
+    // actions is pre-filled with a Button, not a fillable slot
+    expect(names).not.toContain('actions');
+
+    // Verify the pre-filled Button has label and type
+    const screen = schema.screens[0];
+    const actionsBar = screen.children?.find((c: any) => c.layout?.type === 'inline');
+    const submitBtn = actionsBar?.children?.[0];
+    expect(submitBtn?.component).toBe('Button');
+    expect(submitBtn?.props?.label).toBe('Save');
+    expect(submitBtn?.props?.type).toBe('submit');
   });
 
   it('respects fieldGroups parameter', () => {

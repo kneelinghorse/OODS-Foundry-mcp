@@ -44,6 +44,44 @@ describe('renderDocument', () => {
     expect(html).toContain('.custom-preview { outline: 1px solid red; }');
   });
 
+  it('uses --sys-* semantic tokens in component CSS', () => {
+    const html = renderDocument({ screenHtml: '<div>Test</div>' });
+
+    expect(html).toContain('var(--sys-surface-canvas');
+    expect(html).toContain('var(--sys-text-primary');
+    expect(html).toContain('var(--sys-surface-interactive-primary-default');
+    expect(html).toContain('var(--sys-text-on-interactive');
+    expect(html).toContain('var(--sys-border-subtle');
+    expect(html).toContain('var(--sys-surface-raised');
+    expect(html).toContain('var(--sys-status-info-surface');
+    // Reference tokens remain as fallbacks
+    expect(html).toContain('var(--ref-color-neutral-50');
+    expect(html).toContain('var(--ref-border-radius-md');
+  });
+
+  it('injects dark theme overrides when theme is dark', () => {
+    const html = renderDocument({
+      screenHtml: '<div>Dark</div>',
+      theme: 'dark',
+    });
+
+    expect(html).toContain('<style data-source="theme-overrides">');
+    expect(html).toContain('--theme-surface-canvas: var(--theme-dark-surface-canvas)');
+    expect(html).toContain('--theme-text-primary: var(--theme-dark-text-primary)');
+    expect(html).toContain('--theme-text-muted: var(--theme-dark-text-muted)');
+    expect(html).toContain('--theme-border-subtle: var(--theme-dark-border-subtle)');
+    expect(html).toContain('--theme-status-info-surface: var(--theme-dark-status-info-surface)');
+  });
+
+  it('does not inject dark theme overrides for light theme', () => {
+    const html = renderDocument({
+      screenHtml: '<div>Light</div>',
+      theme: 'light',
+    });
+
+    expect(html).not.toContain('data-source="theme-overrides"');
+  });
+
   it('escapes title/attributes and returns well-formed closing tags', () => {
     const html = renderDocument({
       screenHtml: '<div>Escaped</div>',

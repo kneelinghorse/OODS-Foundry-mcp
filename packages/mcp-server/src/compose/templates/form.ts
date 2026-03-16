@@ -50,7 +50,6 @@ export function formTemplate(opts: FormOptions = {}): TemplateResult {
 
   const slots: Slot[] = [
     { name: 'title', description: 'Form heading', intent: 'page-header', required: true },
-    { name: 'actions', description: 'Submit / cancel buttons', intent: 'action-button', required: true },
   ];
 
   // Add per-field-group slots
@@ -107,13 +106,17 @@ export function formTemplate(opts: FormOptions = {}): TemplateResult {
     children: fieldChildren,
   });
 
-  // -- action bar --
+  // -- action bar (pre-filled, not a slot — submit button has known defaults) --
   children.push({
     id: uid('form-actions'),
     component: 'Stack',
     layout: { type: 'inline', align: 'end' },
     style: { spacingToken: 'inset-default' },
-    children: [slotElement('actions', 'action-button')],
+    children: [{
+      id: uid('form-submit'),
+      component: 'Button',
+      props: { label: 'Save', type: 'submit' },
+    }],
   });
 
   // -- screen root --

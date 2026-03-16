@@ -66,6 +66,8 @@ export type BrandApplyInput = BaseInput & {
   brand?: 'A';
   delta: Record<string, unknown> | Record<string, unknown>[];
   strategy?: BrandApplyStrategy;
+  /** Scope modifications to specific theme files. Defaults to all themes. */
+  themes?: Array<'base' | 'dark' | 'hc'>;
   preview?: {
     verbosity?: PreviewVerbosity;
   };

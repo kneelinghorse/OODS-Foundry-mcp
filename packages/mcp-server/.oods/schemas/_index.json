@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-03-11T16:41:06.129Z",
+  "updatedAt": "2026-03-15T23:53:26.187Z",
   "schemas": [
     {
       "name": "tier1-acceptance-sub-detail",
@@ -12,12 +12,63 @@
       "object": "Subscription"
     },
     {
+      "name": "cmos-dashboard-redesign",
+      "schemaRef": "compose-c69c69e8",
+      "version": 1,
+      "createdAt": "2026-03-13T03:32:48.424Z",
+      "updatedAt": "2026-03-13T03:32:48.424Z",
+      "tags": []
+    },
+    {
+      "name": "cmos-activity-redesign",
+      "schemaRef": "compose-efd07ae7",
+      "version": 1,
+      "createdAt": "2026-03-13T03:32:52.371Z",
+      "updatedAt": "2026-03-13T03:32:52.371Z",
+      "tags": []
+    },
+    {
+      "name": "cmos-messages-redesign",
+      "schemaRef": "compose-3e6a2580",
+      "version": 1,
+      "createdAt": "2026-03-13T03:32:52.391Z",
+      "updatedAt": "2026-03-13T03:32:52.391Z",
+      "tags": []
+    },
+    {
+      "name": "subscription-detail-dark",
+      "schemaRef": "compose-a710f0a9",
+      "version": 1,
+      "createdAt": "2026-03-15T22:31:17.484Z",
+      "updatedAt": "2026-03-15T22:31:17.484Z",
+      "tags": [],
+      "object": "Subscription"
+    },
+    {
+      "name": "subscription-list-dark",
+      "schemaRef": "compose-bc4ef63a",
+      "version": 1,
+      "createdAt": "2026-03-15T22:31:17.525Z",
+      "updatedAt": "2026-03-15T22:31:17.525Z",
+      "tags": [],
+      "object": "Subscription"
+    },
+    {
+      "name": "plan-form-dark",
+      "schemaRef": "compose-a4cf04e0",
+      "version": 1,
+      "createdAt": "2026-03-15T22:31:38.571Z",
+      "updatedAt": "2026-03-15T22:31:38.571Z",
+      "tags": [],
+      "object": "Plan"
+    },
+    {
       "name": "test-tagged-schema",
-      "schemaRef": "compose-6f700be6",
+      "schemaRef": "compose-f4456b74",
       "object": "Product",
-      "version": 61,
+      "version": 68,
       "createdAt": "2026-03-05T23:29:45.932Z",
-      "updatedAt": "2026-03-11T16:41:06.127Z",
+      "updatedAt": "2026-03-15T23:53:26.179Z",
       "tags": [
         "test",
         "sprint74"
