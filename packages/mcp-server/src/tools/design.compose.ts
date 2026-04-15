@@ -59,6 +59,20 @@ import { generateLabels } from '../compose/label-generator.js';
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
+export interface ActionMapping {
+  /** Verb label (e.g., "archive", "cancel"). */
+  verb: string;
+  /** OODS trait this verb is attributed to. `trait` is accepted as an alias. */
+  oodsTrait?: string;
+  trait?: string;
+  /** Optional narrowing hints. */
+  object?: string;
+  component?: string;
+  slot?: string;
+  confidence?: number;
+  [k: string]: unknown;
+}
+
 export interface DesignComposeInput {
   dslVersion?: string;
   intent?: string;
@@ -77,6 +91,13 @@ export interface DesignComposeInput {
     validate?: boolean;
     topN?: number;
   };
+  /** Sprint 88: Stage1 BridgeSummary action_mappings — flat verb-keyed entries. */
+  actionMappings?: ActionMapping[];
+}
+
+export interface ResolvedTraitActions {
+  trait: string;
+  verbs: string[];
 }
 
 export interface ComposeIssue {
@@ -131,6 +152,8 @@ export interface ObjectUsedInfo {
   traitStateMachines?: TraitStateMachineEntry[];
   /** Traits that define actions, collected for Stage1 action_candidates integration */
   traitActions?: TraitActionsEntry[];
+  /** Sprint 88: verbs grouped by trait after actionMappings reconciliation. */
+  resolvedActions?: ResolvedTraitActions[];
 }
 
 export interface DesignComposeOutput {
@@ -1825,6 +1848,14 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
     validation = { status: 'skipped' };
   }
 
+  // 4b. Sprint 88: Annotate slots/components with actions[] from Stage1 action_mappings.
+  if (input.actionMappings && input.actionMappings.length > 0) {
+    const resolved = annotateWithActionMappings(schema, input.actionMappings, composed);
+    if (objectUsed && resolved.length > 0) {
+      objectUsed.resolvedActions = resolved;
+    }
+  }
+
   // 5. Return result
   const schemaRefRecord = createSchemaRef(schema, 'compose');
   const schemaRefMeta = describeSchemaRef(schemaRefRecord);
@@ -1897,4 +1928,109 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
       } : {}),
     },
   };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sprint 88: action_mappings annotation                              */
+/* ------------------------------------------------------------------ */
+
+function traitOf(m: ActionMapping): string | undefined {
+  return m.oodsTrait ?? m.trait;
+}
+
+function slotNameFromIntent(el: UiElement): string | undefined {
+  const intent = el.meta?.intent;
+  if (typeof intent === 'string' && intent.startsWith('slot:')) {
+    return intent.slice('slot:'.length);
+  }
+  return undefined;
+}
+
+function pushUnique(arr: string[], value: string): void {
+  if (!arr.includes(value)) arr.push(value);
+}
+
+function attachVerb(el: UiElement, verb: string): void {
+  if (!el.props) el.props = {};
+  const existing = el.props.actions;
+  if (Array.isArray(existing)) {
+    pushUnique(existing as string[], verb);
+  } else {
+    el.props.actions = [verb];
+  }
+}
+
+/**
+ * Walk the composed schema and attach `actions[]` on slots/components based on
+ * flat verb-keyed action_mappings. Returns the resolved per-trait verb groups
+ * for surfacing on objectUsed.resolvedActions.
+ */
+export function annotateWithActionMappings(
+  schema: UiSchema,
+  mappings: ActionMapping[],
+  composed: ComposedObject | undefined,
+): ResolvedTraitActions[] {
+  // Traits may be path-qualified (e.g. "lifecycle/Stateful"). Match on the
+  // final segment so callers can pass either "Stateful" or "lifecycle/Stateful".
+  const traitKey = (name: string) => name.split('/').pop() ?? name;
+  const composedTraits = composed
+    ? new Set(composed.traits.map(t => traitKey(t.ref.name)))
+    : undefined;
+  const perTraitVerbs = new Map<string, string[]>();
+
+  // Collect elements once for component/slot scans
+  const allElements: UiElement[] = [];
+  const walk = (el: UiElement) => {
+    allElements.push(el);
+    el.children?.forEach(walk);
+  };
+  schema.screens.forEach(walk);
+
+  for (const mapping of mappings) {
+    const trait = traitOf(mapping);
+    if (!trait || !mapping.verb) continue;
+    // If composed with traits, filter to traits the object actually carries.
+    if (composedTraits && !composedTraits.has(traitKey(trait))) continue;
+
+    // Track resolved verb for this trait, keyed by unqualified trait name
+    // so path-qualified and unqualified mappings roll up together.
+    const key = traitKey(trait);
+    const list = perTraitVerbs.get(key) ?? [];
+    pushUnique(list, mapping.verb);
+    perTraitVerbs.set(key, list);
+
+    let matched = false;
+
+    if (mapping.slot) {
+      for (const el of allElements) {
+        if (slotNameFromIntent(el) === mapping.slot) {
+          attachVerb(el, mapping.verb);
+          matched = true;
+        }
+      }
+    }
+
+    if (mapping.component) {
+      for (const el of allElements) {
+        if (el.component === mapping.component) {
+          attachVerb(el, mapping.verb);
+          matched = true;
+        }
+      }
+    }
+
+    // No component/slot hint — fall back to slot-name == trait (lowercase) if present,
+    // otherwise rely on the objectUsed.resolvedActions grouping only.
+    if (!mapping.slot && !mapping.component && !matched) {
+      const traitLower = trait.toLowerCase();
+      for (const el of allElements) {
+        const slotName = slotNameFromIntent(el);
+        if (slotName && slotName.toLowerCase() === traitLower) {
+          attachVerb(el, mapping.verb);
+        }
+      }
+    }
+  }
+
+  return Array.from(perTraitVerbs.entries()).map(([trait, verbs]) => ({ trait, verbs }));
 }

@@ -49,7 +49,23 @@
         "object": { "type": "string" },
         "context": { "type": "string" },
         "layout": { "type": "string" },
-        "componentCount": { "type": "number", "minimum": 0 }
+        "componentCount": { "type": "number", "minimum": 0 },
+        "resolvedActions": {
+          "type": "array",
+          "description": "Sprint 88: verbs grouped by trait after action_mappings reconciliation.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["trait", "verbs"],
+            "properties": {
+              "trait": { "type": "string" },
+              "verbs": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
       }
     },
     "validation": {
