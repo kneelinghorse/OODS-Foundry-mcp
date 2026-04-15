@@ -1,6 +1,6 @@
 {
   "name": "test-tagged-schema",
-  "schemaRef": "compose-a7ea36e4",
+  "schemaRef": "compose-f3eed6d6",
   "schema": {
     "version": "2026.02",
     "screens": [
@@ -101,16 +101,46 @@
                       "gapToken": "cluster-default"
                     },
                     "props": {
-                      "label": "Tab 1"
+                      "label": "Content"
                     },
                     "children": [
                       {
                         "id": "slot-tab-0-4",
-                        "component": "Card",
+                        "component": "Stack",
                         "meta": {
                           "intent": "slot:tab-0",
-                          "label": "tab-0"
-                        }
+                          "label": "tab-0",
+                          "notes": "pattern-group:status-timeline"
+                        },
+                        "props": {
+                          "patternComponent": "StatusTimeline",
+                          "fields": [
+                            "status",
+                            "allowed_transitions"
+                          ]
+                        },
+                        "layout": {
+                          "type": "stack",
+                          "gapToken": "cluster-tight"
+                        },
+                        "children": [
+                          {
+                            "id": "pg-status-timeline-31",
+                            "component": "Text",
+                            "props": {
+                              "field": "status",
+                              "label": "Canonical lifecycle state derived from the states parameter. This is the single source\nof truth for the entity's current lifecycle position. Consumed by Colorized to resolve\nvisual tokens, and by view extensions to render StatusBadge and StatusTimeline.\n"
+                            }
+                          },
+                          {
+                            "id": "pg-status-timeline-32",
+                            "component": "Text",
+                            "props": {
+                              "field": "allowed_transitions",
+                              "label": "Materialized list of valid next states from the current status, computed from the\ntransitionRules parameter. When transitionRules is null (open model), this contains\nall states except the current one. Used by StatusSelector to disable invalid options\nand by StatusBadge to indicate available paths.\n"
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -122,19 +152,17 @@
                       "gapToken": "cluster-default"
                     },
                     "props": {
-                      "label": "Tab 2"
+                      "label": "Status & History"
                     },
                     "children": [
                       {
                         "id": "slot-tab-1-6",
-                        "component": "StatusBadge",
+                        "component": "Card",
                         "meta": {
                           "intent": "slot:tab-1",
-                          "label": "tab-1"
-                        },
-                        "props": {
-                          "field": "inventory_status",
-                          "label": "Availability state synchronized with inventory service."
+                          "label": "tab-1",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -147,7 +175,7 @@
                       "gapToken": "cluster-default"
                     },
                     "props": {
-                      "label": "Tab 3"
+                      "label": "Overview"
                     },
                     "children": [
                       {
@@ -155,7 +183,9 @@
                         "component": "Text",
                         "meta": {
                           "intent": "slot:tab-2",
-                          "label": "tab-2"
+                          "label": "tab-2",
+                          "confidence": 0.76,
+                          "confidenceLevel": "low"
                         },
                         "props": {
                           "field": "created_at",
@@ -172,7 +202,7 @@
                       "gapToken": "cluster-default"
                     },
                     "props": {
-                      "label": "Tab 4"
+                      "label": "Behavior"
                     },
                     "children": [
                       {
@@ -180,7 +210,9 @@
                         "component": "Card",
                         "meta": {
                           "intent": "slot:tab-3",
-                          "label": "tab-3"
+                          "label": "tab-3",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -193,7 +225,7 @@
                       "gapToken": "cluster-default"
                     },
                     "props": {
-                      "label": "Tab 5"
+                      "label": "Billing"
                     },
                     "children": [
                       {
@@ -201,7 +233,9 @@
                         "component": "Stack",
                         "meta": {
                           "intent": "slot:tab-4",
-                          "label": "tab-4"
+                          "label": "tab-4",
+                          "confidence": 0.71,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -222,7 +256,9 @@
                         "component": "Stack",
                         "meta": {
                           "intent": "slot:tab-5",
-                          "label": "tab-5"
+                          "label": "tab-5",
+                          "confidence": 0.71,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -243,7 +279,9 @@
                         "component": "Card",
                         "meta": {
                           "intent": "slot:tab-6",
-                          "label": "tab-6"
+                          "label": "tab-6",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -264,7 +302,9 @@
                         "component": "Card",
                         "meta": {
                           "intent": "slot:tab-7",
-                          "label": "tab-7"
+                          "label": "tab-7",
+                          "confidence": 0.94,
+                          "confidenceLevel": "low"
                         }
                       }
                     ]
@@ -571,9 +611,9 @@
     }
   },
   "object": "Product",
-  "version": 10,
+  "version": 12,
   "createdAt": "2026-03-06T04:46:17.426Z",
-  "updatedAt": "2026-03-11T03:33:40.932Z",
+  "updatedAt": "2026-03-16T02:43:22.668Z",
   "tags": [
     "test",
     "sprint74"

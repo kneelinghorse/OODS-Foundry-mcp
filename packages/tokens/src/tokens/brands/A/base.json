@@ -234,5 +234,45 @@
         }
       }
     }
+  },
+  "ref": {
+    "typography": {
+      "families": {
+        "sans": {
+          "$type": "fontFamily",
+          "$value": "DM Sans, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+          "$description": "Brand A primary sans-serif — Aeonik with system fallbacks."
+        },
+        "display": {
+          "$type": "fontFamily",
+          "$value": "Cormorant Garamond, Cormorant, Georgia, \"Times New Roman\", serif",
+          "$description": "Brand A display serif — Canela for large editorial headings."
+        }
+      },
+      "weights": {
+        "light": {
+          "$type": "number",
+          "$value": 300,
+          "$description": "Light weight for editorial display headings."
+        }
+      },
+      "sizes": {
+        "display-sm": {
+          "$type": "dimension",
+          "$value": "48px",
+          "$description": "Small display heading — section heroes and feature titles."
+        },
+        "display-md": {
+          "$type": "dimension",
+          "$value": "64px",
+          "$description": "Medium display heading — page hero titles."
+        },
+        "display-lg": {
+          "$type": "dimension",
+          "$value": "80px",
+          "$description": "Large display heading — homepage hero statement."
+        }
+      }
+    }
   }
 }
