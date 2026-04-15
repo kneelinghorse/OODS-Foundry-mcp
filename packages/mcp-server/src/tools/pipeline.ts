@@ -1,6 +1,6 @@
 import type { ReplIssue, UiSchema } from '../schemas/generated.js';
 import type { CodegenFramework, CodegenIssue, CodegenStyling } from './types.js';
-import { handle as composeHandle, type ActionMapping, type DesignComposeInput, type ResolvedTraitActions } from './design.compose.js';
+import { handle as composeHandle, type ActionMapping, type ActionInstance, type DesignComposeInput, type ResolvedTraitActions } from './design.compose.js';
 import { handle as validateHandle } from './repl.validate.js';
 import { handle as renderHandle } from './repl.render.js';
 import { handle as codeGenerateHandle } from './code.generate.js';
@@ -19,6 +19,8 @@ export type PipelineInput = {
   preferences?: DesignComposeInput['preferences'];
   /** Sprint 88: Stage1 BridgeSummary action_mappings, flat verb-keyed. */
   actionMappings?: ActionMapping[];
+  /** Sprint 88.1: Stage1 BridgeSummary.actions[] per-component action instances. Requires actionMappings[] for trait lookup. */
+  actionInstances?: ActionInstance[];
   framework?: CodegenFramework;
   styling?: CodegenStyling;
   save?: string | { name: string; tags?: string[] };
@@ -270,6 +272,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
       layout: input.layout,
       preferences: input.preferences,
       ...(input.actionMappings ? { actionMappings: input.actionMappings } : {}),
+      ...(input.actionInstances ? { actionInstances: input.actionInstances } : {}),
       options: {
         validate: false,
       },

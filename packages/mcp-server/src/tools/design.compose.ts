@@ -60,16 +60,36 @@ import { generateLabels } from '../compose/label-generator.js';
 /* ------------------------------------------------------------------ */
 
 export interface ActionMapping {
-  /** Verb label (e.g., "archive", "cancel"). */
-  verb: string;
+  /** Verb label (e.g., "archive", "cancel"). `orcaVerb` is accepted as an alias for Stage1 BridgeSummary.summary.action_mappings entries. */
+  verb?: string;
+  orcaVerb?: string;
   /** OODS trait this verb is attributed to. `trait` is accepted as an alias. */
   oodsTrait?: string;
   trait?: string;
+  /** Optional display label (Stage1 BridgeSummary emits this on action_mappings entries). */
+  suggestedAction?: string;
   /** Optional narrowing hints. */
   object?: string;
   component?: string;
   slot?: string;
   confidence?: number;
+  [k: string]: unknown;
+}
+
+/**
+ * Per-component action evidence from Stage1 BridgeSummary.actions[]. Each
+ * instance ties a verb to a specific component. When paired with action_mappings[]
+ * (verb→trait vocabulary), the consumer can attach per-slot actions[] for
+ * components whose trait lookup matches.
+ */
+export interface ActionInstance {
+  actionId?: string;
+  name?: string;
+  verb: string;
+  sourceComponent?: string;
+  targetEntity?: string;
+  confidence?: number;
+  confidenceLabel?: 'low' | 'medium' | 'high' | string;
   [k: string]: unknown;
 }
 
@@ -93,6 +113,8 @@ export interface DesignComposeInput {
   };
   /** Sprint 88: Stage1 BridgeSummary action_mappings — flat verb-keyed entries. */
   actionMappings?: ActionMapping[];
+  /** Sprint 88.1: Stage1 BridgeSummary.actions[] — per-component action instances. Merged with actionMappings[] for trait lookup. */
+  actionInstances?: ActionInstance[];
 }
 
 export interface ResolvedTraitActions {
@@ -1849,10 +1871,26 @@ export async function handle(input: DesignComposeInput): Promise<DesignComposeOu
   }
 
   // 4b. Sprint 88: Annotate slots/components with actions[] from Stage1 action_mappings.
-  if (input.actionMappings && input.actionMappings.length > 0) {
-    const resolved = annotateWithActionMappings(schema, input.actionMappings, composed);
-    if (objectUsed && resolved.length > 0) {
-      objectUsed.resolvedActions = resolved;
+  //     Sprint 88.1: Also merge per-component action instances if provided.
+  const mappingsIn = input.actionMappings ?? [];
+  const instancesIn = input.actionInstances ?? [];
+  if (mappingsIn.length > 0 || instancesIn.length > 0) {
+    const mergedMap = new Map<string, string[]>();
+    const mergeResolved = (entries: ResolvedTraitActions[]) => {
+      for (const { trait, verbs } of entries) {
+        const list = mergedMap.get(trait) ?? [];
+        for (const v of verbs) if (!list.includes(v)) list.push(v);
+        mergedMap.set(trait, list);
+      }
+    };
+    if (mappingsIn.length > 0) {
+      mergeResolved(annotateWithActionMappings(schema, mappingsIn, composed));
+    }
+    if (instancesIn.length > 0 && mappingsIn.length > 0) {
+      mergeResolved(annotateWithActionInstances(schema, instancesIn, mappingsIn, composed));
+    }
+    if (objectUsed && mergedMap.size > 0) {
+      objectUsed.resolvedActions = Array.from(mergedMap.entries()).map(([trait, verbs]) => ({ trait, verbs }));
     }
   }
 
@@ -1938,6 +1976,10 @@ function traitOf(m: ActionMapping): string | undefined {
   return m.oodsTrait ?? m.trait;
 }
 
+function verbOf(m: ActionMapping): string | undefined {
+  return m.verb ?? m.orcaVerb;
+}
+
 function slotNameFromIntent(el: UiElement): string | undefined {
   const intent = el.meta?.intent;
   if (typeof intent === 'string' && intent.startsWith('slot:')) {
@@ -1988,7 +2030,8 @@ export function annotateWithActionMappings(
 
   for (const mapping of mappings) {
     const trait = traitOf(mapping);
-    if (!trait || !mapping.verb) continue;
+    const verb = verbOf(mapping);
+    if (!trait || !verb) continue;
     // If composed with traits, filter to traits the object actually carries.
     if (composedTraits && !composedTraits.has(traitKey(trait))) continue;
 
@@ -1996,7 +2039,7 @@ export function annotateWithActionMappings(
     // so path-qualified and unqualified mappings roll up together.
     const key = traitKey(trait);
     const list = perTraitVerbs.get(key) ?? [];
-    pushUnique(list, mapping.verb);
+    pushUnique(list, verb);
     perTraitVerbs.set(key, list);
 
     let matched = false;
@@ -2004,7 +2047,7 @@ export function annotateWithActionMappings(
     if (mapping.slot) {
       for (const el of allElements) {
         if (slotNameFromIntent(el) === mapping.slot) {
-          attachVerb(el, mapping.verb);
+          attachVerb(el, verb);
           matched = true;
         }
       }
@@ -2013,7 +2056,7 @@ export function annotateWithActionMappings(
     if (mapping.component) {
       for (const el of allElements) {
         if (el.component === mapping.component) {
-          attachVerb(el, mapping.verb);
+          attachVerb(el, verb);
           matched = true;
         }
       }
@@ -2026,11 +2069,54 @@ export function annotateWithActionMappings(
       for (const el of allElements) {
         const slotName = slotNameFromIntent(el);
         if (slotName && slotName.toLowerCase() === traitLower) {
-          attachVerb(el, mapping.verb);
+          attachVerb(el, verb);
         }
       }
     }
   }
 
   return Array.from(perTraitVerbs.entries()).map(([trait, verbs]) => ({ trait, verbs }));
+}
+
+/**
+ * Sprint 88.1 — merge per-component ActionInstance entries against the
+ * verb→trait vocabulary in `mappings`. For each instance whose verb appears in
+ * the vocabulary and whose resolved trait is carried by the composed object,
+ * the verb is attached to matching slots/components and rolled into
+ * `resolvedActions`. `sourceComponent` narrows attachment when it matches a
+ * UiElement component; otherwise behavior matches trait-only fallback.
+ */
+export function annotateWithActionInstances(
+  schema: UiSchema,
+  instances: ActionInstance[],
+  mappings: ActionMapping[],
+  composed: ComposedObject | undefined,
+): ResolvedTraitActions[] {
+  if (instances.length === 0) return [];
+  // Build verb → [trait] lookup from the mappings vocabulary.
+  const verbToTraits = new Map<string, string[]>();
+  for (const m of mappings) {
+    const v = verbOf(m);
+    const t = traitOf(m);
+    if (!v || !t) continue;
+    const list = verbToTraits.get(v) ?? [];
+    pushUnique(list, t);
+    verbToTraits.set(v, list);
+  }
+  if (verbToTraits.size === 0) return [];
+
+  // Project instances into synthetic ActionMappings and reuse the main path.
+  const synthetic: ActionMapping[] = [];
+  for (const inst of instances) {
+    const traits = verbToTraits.get(inst.verb) ?? [];
+    for (const trait of traits) {
+      synthetic.push({
+        verb: inst.verb,
+        oodsTrait: trait,
+        component: inst.sourceComponent,
+        confidence: inst.confidence,
+      });
+    }
+  }
+  return annotateWithActionMappings(schema, synthetic, composed);
 }
