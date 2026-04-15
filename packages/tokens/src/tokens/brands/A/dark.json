@@ -6,50 +6,50 @@
         "surface": {
           "canvas": {
             "$type": "color",
-            "$value": "oklch(0.18 0.05 45)",
-            "$description": "Dark canvas anchored in Brand A warm neutrals."
+            "$value": "oklch(0.14 0.008 200)",
+            "$description": "Dark canvas — deep teal-tinged charcoal for aquex.ai."
           },
           "raised": {
             "$type": "color",
-            "$value": "oklch(0.24 0.05 45)",
+            "$value": "oklch(0.18 0.007 200)",
             "$description": "Raised panel surface separating cards from canvas."
           },
           "subtle": {
             "$type": "color",
-            "$value": "oklch(0.3 0.06 45)",
-            "$description": "Secondary surface for sidebars and timelines."
+            "$value": "oklch(0.22 0.008 200)",
+            "$description": "Secondary surface for sidebars and panels."
           },
           "disabled": {
             "$type": "color",
-            "$value": "oklch(0.32 0.04 45)",
+            "$value": "oklch(0.28 0.006 200)",
             "$description": "Disabled surface maintaining ≥3:1 against disabled text."
           },
           "backdrop": {
             "$type": "color",
-            "$value": "oklch(0.12 0.04 45)",
-            "$description": "Backdrop scrim avoiding bloom on dark UI."
+            "$value": "oklch(0.09 0.006 200)",
+            "$description": "Backdrop scrim — near-black with cool teal undertone."
           },
           "inverse": {
             "$type": "color",
-            "$value": "oklch(0.95 0.01 45)",
-            "$description": "Inverse surface for sheets rendered inside dark panels."
+            "$value": "oklch(0.96 0.004 80)",
+            "$description": "Inverse surface — warm off-white for light-on-dark overlays."
           },
           "interactive": {
             "primary": {
               "default": {
                 "$type": "color",
-                "$value": "oklch(0.54 0.21 43)",
-                "$description": "Primary action surface warmed +2° with +0.02 ΔL to mirror the light theme shift."
+                "$value": "oklch(0.72 0.16 183)",
+                "$description": "Electric teal primary interactive — aquex.ai brand accent."
               },
               "hover": {
                 "$type": "color",
-                "$value": "oklch(0.59 0.22 43)",
-                "$description": "Hover lifts luminance by +0.05 while keeping chroma growth within guardrails."
+                "$value": "oklch(0.78 0.17 183)",
+                "$description": "Hover brightens teal by ΔL +0.06 / ΔC +0.01."
               },
               "pressed": {
                 "$type": "color",
-                "$value": "oklch(0.64 0.24 43)",
-                "$description": "Pressed deepens saturation slightly (+0.03 ΔC) to balance the warmer hue."
+                "$value": "oklch(0.68 0.15 183)",
+                "$description": "Pressed deepens teal by ΔL −0.04 / ΔC −0.01."
               }
             }
           }
@@ -57,67 +57,67 @@
         "border": {
           "subtle": {
             "$type": "color",
-            "$value": "oklch(0.44 0.04 45)",
-            "$description": "Default outline for cards on dark surfaces."
+            "$value": "oklch(0.30 0.01 200)",
+            "$description": "Subtle border — cool dark mid-tone for cards and inputs."
           },
           "strong": {
             "$type": "color",
-            "$value": "oklch(0.53 0.05 45)",
-            "$description": "High-emphasis border for focus and emphasis frames."
+            "$value": "oklch(0.50 0.02 200)",
+            "$description": "Strong border — brighter cool mid-tone for focus and separators."
           }
         },
         "text": {
           "primary": {
             "$type": "color",
-            "$value": "oklch(0.92 0.02 92)",
-            "$description": "Primary body text on dark backgrounds."
+            "$value": "oklch(0.96 0.005 80)",
+            "$description": "Primary body text — warm near-white on dark canvas."
           },
           "secondary": {
             "$type": "color",
-            "$value": "oklch(0.81 0.015 92)",
-            "$description": "Secondary copy for supporting detail."
+            "$value": "oklch(0.80 0.012 200)",
+            "$description": "Secondary copy — cool mid-light for supporting detail."
           },
           "muted": {
             "$type": "color",
-            "$value": "oklch(0.7 0.01 92)",
+            "$value": "oklch(0.62 0.012 200)",
             "$description": "Muted captions with ≥4.5:1 on subtle surfaces."
           },
           "inverse": {
             "$type": "color",
-            "$value": "oklch(0.24 0.05 265)",
-            "$description": "Inverse text for light surfaces within dark contexts."
+            "$value": "oklch(0.14 0.008 200)",
+            "$description": "Inverse text — dark canvas tone for light-surface contexts."
           },
           "accent": {
             "$type": "color",
-            "$value": "oklch(0.79 0.17 45)",
-            "$description": "Accent text aligning with warm Brand A ramps."
+            "$value": "oklch(0.78 0.18 183)",
+            "$description": "Accent text — bright electric teal for inline highlights and links."
           },
           "onInteractive": {
             "$type": "color",
-            "$value": "oklch(0.97 0.01 95)",
-            "$description": "Foreground on primary interactive surfaces."
+            "$value": "oklch(0.12 0.01 200)",
+            "$description": "Foreground on teal interactive surfaces — near-black for contrast."
           },
           "disabled": {
             "$type": "color",
-            "$value": "oklch(0.55 0.008 92)",
-            "$description": "Disabled text tuned for 3:1 on disabled surface."
+            "$value": "oklch(0.45 0.008 200)",
+            "$description": "Disabled text with 3:1 contrast on disabled surface."
           }
         },
         "accent": {
           "background": {
             "$type": "color",
-            "$value": "oklch(0.36 0.06 45)",
-            "$description": "Accent panel tone for promotional banners in dark mode."
+            "$value": "oklch(0.22 0.06 183)",
+            "$description": "Teal-tinted accent background panel for callouts and banners."
           },
           "border": {
             "$type": "color",
-            "$value": "oklch(0.5 0.11 45)",
-            "$description": "Accent border preserving separation on dark UI."
+            "$value": "oklch(0.72 0.16 183)",
+            "$description": "Full-chroma teal accent border."
           },
           "text": {
             "$type": "color",
-            "$value": "oklch(0.86 0.06 95)",
-            "$description": "Accent foreground on warm accent surfaces."
+            "$value": "oklch(0.78 0.18 183)",
+            "$description": "Bright teal accent text on dark accent backgrounds."
           }
         },
         "status": {
@@ -231,6 +231,46 @@
               "$description": "Neutral icon tone."
             }
           }
+        }
+      }
+    }
+  },
+  "ref": {
+    "typography": {
+      "families": {
+        "sans": {
+          "$type": "fontFamily",
+          "$value": "DM Sans, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+          "$description": "Brand A primary sans-serif — Aeonik with system fallbacks."
+        },
+        "display": {
+          "$type": "fontFamily",
+          "$value": "Cormorant Garamond, Cormorant, Georgia, \"Times New Roman\", serif",
+          "$description": "Brand A display serif — Canela for large editorial headings."
+        }
+      },
+      "weights": {
+        "light": {
+          "$type": "number",
+          "$value": 300,
+          "$description": "Light weight for editorial display headings."
+        }
+      },
+      "sizes": {
+        "display-sm": {
+          "$type": "dimension",
+          "$value": "48px",
+          "$description": "Small display heading — section heroes and feature titles."
+        },
+        "display-md": {
+          "$type": "dimension",
+          "$value": "64px",
+          "$description": "Medium display heading — page hero titles."
+        },
+        "display-lg": {
+          "$type": "dimension",
+          "$value": "80px",
+          "$description": "Large display heading — homepage hero statement."
         }
       }
     }
