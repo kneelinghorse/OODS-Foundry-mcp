@@ -1,6 +1,6 @@
 import type { ReplIssue, UiSchema } from '../schemas/generated.js';
 import type { CodegenFramework, CodegenIssue, CodegenStyling } from './types.js';
-import { handle as composeHandle, type DesignComposeInput } from './design.compose.js';
+import { handle as composeHandle, type ActionMapping, type DesignComposeInput, type ResolvedTraitActions } from './design.compose.js';
 import { handle as validateHandle } from './repl.validate.js';
 import { handle as renderHandle } from './repl.render.js';
 import { handle as codeGenerateHandle } from './code.generate.js';
@@ -17,6 +17,8 @@ export type PipelineInput = {
   context?: 'detail' | 'list' | 'form' | 'timeline' | 'card' | 'inline';
   layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'card' | 'timeline' | 'auto';
   preferences?: DesignComposeInput['preferences'];
+  /** Sprint 88: Stage1 BridgeSummary action_mappings, flat verb-keyed. */
+  actionMappings?: ActionMapping[];
   framework?: CodegenFramework;
   styling?: CodegenStyling;
   save?: string | { name: string; tags?: string[] };
@@ -53,6 +55,8 @@ export type PipelineOutput = {
     context?: string;
     layout: string;
     componentCount: number;
+    /** Sprint 88: verbs grouped by trait after action_mappings reconciliation. */
+    resolvedActions?: ResolvedTraitActions[];
   };
   validation?: {
     status: 'ok' | 'invalid' | 'skipped';
@@ -265,6 +269,7 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
       context: input.context,
       layout: input.layout,
       preferences: input.preferences,
+      ...(input.actionMappings ? { actionMappings: input.actionMappings } : {}),
       options: {
         validate: false,
       },
@@ -282,6 +287,9 @@ export async function handle(input: PipelineInput): Promise<PipelineOutput> {
     ...(input.context ? { context: input.context } : {}),
     layout: composeResult.layout,
     componentCount: countComponents(composeResult.schema),
+    ...(composeResult.objectUsed?.resolvedActions && composeResult.objectUsed.resolvedActions.length > 0
+      ? { resolvedActions: composeResult.objectUsed.resolvedActions }
+      : {}),
   };
 
   if (composeResult.schemaRef) {

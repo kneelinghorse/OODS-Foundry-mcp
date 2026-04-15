@@ -20,6 +20,7 @@
 | `preferences.tabCount` | integer | No |  | Number of tabs for detail layout. |
 | `preferences.tabLabels` | string[] | No |  | Custom tab labels for detail layout. |
 | `preferences.componentOverrides` | Record<string, string> | No |  | Slot-name to component-name overrides (e.g., { 'items': 'Table' }). |
+| `actionMappings` | object[] | No |  | Sprint 88: Stage1 BridgeSummary action_mappings, flat verb-keyed entries. See docs/integration/stage1-oods-contract.md §2c. |
 | `framework` | `react` \| `vue` \| `html` | No |  | Target framework for code generation. |
 | `styling` | `inline` \| `tokens` \| `tailwind` | No |  | Styling strategy for code generation. |
 | `save` | any | No |  | Optional schema save config. String for name-only, or { name, tags } for full control. |

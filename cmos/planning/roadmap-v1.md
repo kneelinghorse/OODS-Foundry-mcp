@@ -1,6 +1,6 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-04-15 | Sprint 87 complete
+> Updated: 2026-04-15 | Sprint 88 complete
 
 ## Current State
 
@@ -140,6 +140,16 @@
 | `s87-m02` | Stage1 Sprint 38 readiness: action_candidates serialization confirmed complete, contract updated to v1.1.0 with §2b (action_candidates pathway), capability→trait clarification | Done | `docs/integration/stage1-oods-contract.md` v1.1.0 |
 | `s87-m03` | CMOS housekeeping: next_steps pruned (5 stale items dropped), sprint-70 closed (was Planned with 6/6 missions done), PG sync backfill started, stale learning reviewed | Done | Context at 54%, sprint-70 now Completed |
 | `s87-m04` | Retest gate + roadmap update: fresh vitest run, roadmap updated | Done | 123 files, 2019 tests, 0 failures |
+
+## Sprint 88 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s88-m01` | Contract doc §2c: `action_mappings[]` documented as flat verb-keyed BridgeSummary array (not `{traitId, actions[]}`); contract bumped to v1.2.0 with consumer-side shape, invariants, `oodsTrait`/`trait` alias | Done | `docs/integration/stage1-oods-contract.md` v1.2.0 |
+| `s88-m02` | `design.compose` accepts `actionMappings[]`; `annotateWithActionMappings()` walks composed schema, matches by slot (meta.intent "slot:…"), component name, or trait-name fallback; attaches `props.actions[]` on nodes; `ObjectUsedInfo.resolvedActions` groups verbs by (unqualified) trait name; traits filtered against composed object traits (path-qualified normalized to last segment) | Done | 7 new unit tests in `test/compose/design-compose-actions.spec.ts`; 510 compose tests pass |
+| `s88-m03` | Pipeline wiring: `PipelineInput.actionMappings` forwarded to compose; `output.compose.resolvedActions` exposed; `pipeline.input.json` + `pipeline.output.json` schemas describe new fields | Done | 2 new pipeline tests (forward + omit); 46 pipeline tests pass |
+| `s88-m04` | E2E integration test: synthetic Stage1 BridgeSummary (modeled on run 6d75dde3) → `pipeline.handle({object:"Subscription", actionMappings})` → assertions on `compose.resolvedActions` (Cancellable+Stateful populated, Archivable filtered); also validates path-qualified + unqualified trait names roll up together | Done | 3 E2E tests in `test/e2e/action-mappings.e2e.spec.ts` |
+| `s88-m05` | Retest gate: mcp-server build clean; full vitest run 2030+/2031 passes — the lone flake (`schema-ref.test.ts` TTL boundary) is a pre-existing timing race under heavy parallelism, passes in isolation and is unrelated to Sprint 88 | Done | `pnpm --filter @oods/mcp-server run build` + `npx vitest run` |
 
 ## Carry-Forward Backlog
 

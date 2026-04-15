@@ -71,6 +71,24 @@
         }
       }
     },
+    "actionMappings": {
+      "type": "array",
+      "description": "Sprint 88: Stage1 BridgeSummary action_mappings, flat verb-keyed entries. See docs/integration/stage1-oods-contract.md §2c.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["verb"],
+        "properties": {
+          "verb": { "type": "string", "minLength": 1 },
+          "oodsTrait": { "type": "string" },
+          "trait": { "type": "string" },
+          "object": { "type": "string" },
+          "component": { "type": "string" },
+          "slot": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
     "framework": {
       "type": "string",
       "enum": ["react", "vue", "html"],

@@ -807,4 +807,52 @@ describe('pipeline orchestration', () => {
       expect(result.metrics!.fieldsOmitted).toBeUndefined();
     });
   });
+
+  // ── Sprint 88: actionMappings round-trip ──────────────────────────
+  describe('actionMappings', () => {
+    it('forwards actionMappings[] to compose and surfaces resolvedActions on output', async () => {
+      mockComposeHandle.mockResolvedValue({
+        ...composeOk(),
+        objectUsed: {
+          name: 'Subscription',
+          resolvedActions: [
+            { trait: 'Archivable', verbs: ['archive', 'restore'] },
+            { trait: 'Cancellable', verbs: ['cancel'] },
+          ],
+        },
+      });
+
+      const result = await handle({
+        object: 'Subscription',
+        actionMappings: [
+          { verb: 'archive', oodsTrait: 'Archivable' },
+          { verb: 'restore', oodsTrait: 'Archivable' },
+          { verb: 'cancel', oodsTrait: 'Cancellable' },
+        ],
+        framework: 'react',
+      });
+
+      expect(mockComposeHandle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionMappings: [
+            { verb: 'archive', oodsTrait: 'Archivable' },
+            { verb: 'restore', oodsTrait: 'Archivable' },
+            { verb: 'cancel', oodsTrait: 'Cancellable' },
+          ],
+        }),
+      );
+      expect(result.compose.resolvedActions).toEqual([
+        { trait: 'Archivable', verbs: ['archive', 'restore'] },
+        { trait: 'Cancellable', verbs: ['cancel'] },
+      ]);
+    });
+
+    it('omits resolvedActions when actionMappings is absent', async () => {
+      const result = await handle({ object: 'Subscription', framework: 'react' });
+      expect(result.compose.resolvedActions).toBeUndefined();
+      expect(mockComposeHandle).toHaveBeenCalledWith(
+        expect.not.objectContaining({ actionMappings: expect.anything() }),
+      );
+    });
+  });
 });

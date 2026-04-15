@@ -1,10 +1,11 @@
 # Stage1 → OODS Foundry Integration Contract
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Date:** 2026-04-15
-**Status:** Bilateral — updated for Stage1 Sprint 38 (action_candidates) + OODS Sprint 87 (trait actions loader)
+**Status:** Bilateral — Sprint 88 adds §2c action_mappings[] BridgeSummary consumer contract
 
 **Change log:**
+- v1.2.0 (2026-04-15): Added §2c `action_mappings[]` — the flat verb-keyed BridgeSummary array consumed by `design.compose`. Each entry is keyed by `verb` (not by trait). Clarifies the difference between raw `action_candidates` (§2b, per-component evidence) and reconciled `action_mappings` (§2c, verb-level mapping used by consumers).
 - v1.1.0 (2026-04-15): Added §2b action_candidates artifact pathway. OODS receiver side implemented in s87-m01: `state_machine` and `actions` fields now flow through TraitDefinition → design.compose `objectUsed.traitStateMachines` / `traitActions`. Stage1 Sprint 38 serialization fix confirmed complete.
 - v1.0.0 (2026-03-11): Initial bilateral contract, Stage1 Sprint 26 response.
 
@@ -20,6 +21,7 @@ This contract defines how Stage1 Inspector output artifacts map to OODS Foundry 
 | `component_clusters.json` | `map.create` | Component signatures with prop inference |
 | `ui_manifest_drafts.json` | `design.compose` | Component hints for composition |
 | `action_candidates` | `design.compose` → `objectUsed` | Cross-reference trait state_machine/actions (Sprint 38/87) |
+| `action_mappings` (BridgeSummary) | `design.compose` → slot `actions[]` | Flat verb-keyed mapping annotates composed slots/components (Sprint 88) |
 | `token-guess.json` | `tokens.build` + `brand.apply` | Inferred tokens → OODS token pipeline |
 | `style_fingerprint.json` | `brand.apply` | Typography, spacing, color scale overlays |
 | `orca_candidates.json` (traits) | `tokens.build` | CSS-variable-sourced token values |
@@ -242,6 +244,68 @@ Stage1 `action_candidates` should be cross-referenced with OODS `traitStateMachi
 ### Capability vs. Trait Clarification
 
 > **Resolved 2026-04-15:** Stage1 Sprint 38 asked whether OODS has a "capability" concept distinct from "trait." Answer: **No.** In OODS, the equivalent of a capability is a `trait`. `state_machine` and `actions` fields on traits represent the behavioral contract of that capability. Stage1 should map `capability` vocabulary to `trait` when bridging to OODS.
+
+---
+
+## 2c. Action Mappings: BridgeSummary → `design.compose` (Sprint 88)
+
+> **Status:** OODS receiver implemented in Sprint 88 (s88-m02). Contract is the authoritative shape for consumer code.
+
+### Shape: `action_mappings[]` — flat, verb-keyed
+
+`action_mappings[]` is a **flat array where each entry is keyed by `verb`**, NOT grouped by `traitId`. A single trait can appear across many entries (one per verb). The canonical OODS field name on the consumer side is `oodsTrait` (preferred) with `trait` accepted as an alias for back-compat with earlier Stage1 outputs.
+
+```json
+{
+  "action_mappings": [
+    {
+      "verb": "archive",
+      "object": "Subscription",
+      "oodsTrait": "Archivable",
+      "component": "SubscriptionCard",
+      "slot": "actions",
+      "confidence": 0.91,
+      "evidence": { "run": "6d75dde3", "selector": ".btn-archive" }
+    },
+    {
+      "verb": "cancel",
+      "object": "Subscription",
+      "oodsTrait": "Cancellable",
+      "component": "SubscriptionCard",
+      "slot": "actions",
+      "confidence": 0.88,
+      "evidence": { "run": "6d75dde3", "selector": ".btn-cancel" }
+    },
+    {
+      "verb": "restore",
+      "object": "Subscription",
+      "oodsTrait": "Archivable",
+      "confidence": 0.72
+    }
+  ]
+}
+```
+
+Notes:
+- **Do NOT** nest actions under a trait object — each verb is its own top-level entry. Grouping happens on the consumer side by matching `oodsTrait` against slot/component `oodsTrait` values.
+- `component` and `slot` are optional hints that narrow matching; when absent, the consumer falls back to trait-only matching across all nodes carrying that `oodsTrait`.
+- A given trait appearing with multiple verbs produces multiple entries (e.g. `Archivable` appears for both `archive` and `restore`).
+
+### Consumer behavior in `design.compose`
+
+Given `actionMappings: [...]` in the input, `design.compose`:
+
+1. Walks composed slots/components and reads `oodsTrait` on each node.
+2. For each node, selects mappings where `oodsTrait` matches AND (if `component`/`slot` is present on the mapping) the hint matches the node.
+3. Attaches `actions: [verb, verb, ...]` (de-duplicated, order-stable) to the matching node. Nodes with no match get no `actions` field.
+
+Example: for a `SubscriptionCard` slot carrying `oodsTrait: "Archivable"`, the mappings above produce `actions: ["archive", "restore"]` on that slot.
+
+### Invariants
+
+- Empty `action_mappings: []` → no `actions` fields added; composition output is unchanged.
+- `actionMappings` is optional. Absent → identical behavior to pre-Sprint-88 `design.compose`.
+- Order of verbs in `actions[]` follows the order of appearance in `action_mappings[]` (stable sort for determinism).
 
 ---
 
