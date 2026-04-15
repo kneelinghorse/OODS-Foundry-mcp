@@ -1,8 +1,12 @@
 # Stage1 → OODS Foundry Integration Contract
 
-**Version:** 1.0.0
-**Date:** 2026-03-11
-**Status:** Bilateral — all open questions resolved (Stage1 Sprint 26 response, 2026-03-11)
+**Version:** 1.1.0
+**Date:** 2026-04-15
+**Status:** Bilateral — updated for Stage1 Sprint 38 (action_candidates) + OODS Sprint 87 (trait actions loader)
+
+**Change log:**
+- v1.1.0 (2026-04-15): Added §2b action_candidates artifact pathway. OODS receiver side implemented in s87-m01: `state_machine` and `actions` fields now flow through TraitDefinition → design.compose `objectUsed.traitStateMachines` / `traitActions`. Stage1 Sprint 38 serialization fix confirmed complete.
+- v1.0.0 (2026-03-11): Initial bilateral contract, Stage1 Sprint 26 response.
 
 ## Overview
 
@@ -15,6 +19,7 @@ This contract defines how Stage1 Inspector output artifacts map to OODS Foundry 
 | `orca_candidates.json` | `map.create` | Map discovered components to OODS traits |
 | `component_clusters.json` | `map.create` | Component signatures with prop inference |
 | `ui_manifest_drafts.json` | `design.compose` | Component hints for composition |
+| `action_candidates` | `design.compose` → `objectUsed` | Cross-reference trait state_machine/actions (Sprint 38/87) |
 | `token-guess.json` | `tokens.build` + `brand.apply` | Inferred tokens → OODS token pipeline |
 | `style_fingerprint.json` | `brand.apply` | Typography, spacing, color scale overlays |
 | `orca_candidates.json` (traits) | `tokens.build` | CSS-variable-sourced token values |
@@ -170,6 +175,73 @@ Example: From a page with `route: "/billing"`, IA outline label "Billing & Plans
   "layout": "dashboard"
 }
 ```
+
+---
+
+## 2b. Action Candidates: Stage1 → `design.compose` (Sprint 38 / Sprint 87)
+
+> **Status:** OODS receiver side ready (s87-m01). Stage1 Sprint 38 serialization complete.
+
+### Overview
+
+Stage1 Sprint 38 adds an `action_candidates` artifact surfacing per-component actions inferred from DOM event listeners, form submissions, and interaction patterns. OODS Sprint 87 wires the receiver side: `state_machine` and `actions` fields from trait YAMLs now flow through the full stack, and `design.compose` exposes them in `objectUsed`.
+
+### Source: `action_candidates` artifact (Stage1 Sprint 38)
+
+Stage1 serializes action candidates per discovered component:
+
+```json
+{
+  "candidates": [
+    {
+      "componentId": "orca-obj-001",
+      "componentName": "SubscriptionCard",
+      "actions": [
+        { "name": "cancel", "trigger": "click", "selector": ".btn-cancel", "confidence": 0.87 },
+        { "name": "upgrade", "trigger": "click", "selector": ".btn-upgrade", "confidence": 0.91 }
+      ]
+    }
+  ]
+}
+```
+
+### Target: `design.compose` output — `objectUsed.traitStateMachines` / `traitActions`
+
+When `design.compose` is called with an object that has traits defining `state_machine` or `actions`, those are now included in the response:
+
+```json
+{
+  "objectUsed": {
+    "name": "Subscription",
+    "traits": ["Stateful", "Priceable", "InteractionHighlight"],
+    "traitStateMachines": [
+      {
+        "trait": "InteractionHighlight",
+        "stateMachine": {
+          "states": ["idle", "highlighted"],
+          "initial": "idle",
+          "transitions": [
+            { "from": "idle", "to": "highlighted", "trigger": "select" },
+            { "from": "highlighted", "to": "idle", "trigger": "clear" }
+          ]
+        }
+      }
+    ],
+    "traitActions": []
+  }
+}
+```
+
+### Mapping Strategy
+
+Stage1 `action_candidates` should be cross-referenced with OODS `traitStateMachines` to validate:
+1. Action names in Stage1 evidence align with `transition.trigger` values in OODS state machines
+2. Stage1-inferred `actions[]` augment OODS `traitActions[]` with real-world usage evidence
+3. Discrepancies (Stage1 finds an action OODS doesn't declare) → flag for trait authoring review
+
+### Capability vs. Trait Clarification
+
+> **Resolved 2026-04-15:** Stage1 Sprint 38 asked whether OODS has a "capability" concept distinct from "trait." Answer: **No.** In OODS, the equivalent of a capability is a `trait`. `state_machine` and `actions` fields on traits represent the behavioral contract of that capability. Stage1 should map `capability` vocabulary to `trait` when bridging to OODS.
 
 ---
 

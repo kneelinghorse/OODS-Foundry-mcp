@@ -299,25 +299,28 @@ def collect_traits() -> tuple[
         if tokens:
             trait_overlays.append({"trait": name, "tokens": tokens})
 
-        traits.append(
-            {
-                "name": name,
-                "version": trait_meta.get("version"),
-                "description": (trait_meta.get("description") or "").strip(),
-                "category": category,
-                "tags": tags,
-                "contexts": sorted(contexts),
-                "viewExtensions": view_extensions,
-                "parameters": raw.get("parameters") or [],
-                "schema": raw.get("schema") or {},
-                "semantics": raw.get("semantics") or {},
-                "tokens": tokens,
-                "dependencies": raw.get("dependencies") or [],
-                "metadata": metadata,
-                "objects": [],
-                "source": rel_path,
-            }
-        )
+        trait_entry: Dict[str, Any] = {
+            "name": name,
+            "version": trait_meta.get("version"),
+            "description": (trait_meta.get("description") or "").strip(),
+            "category": category,
+            "tags": tags,
+            "contexts": sorted(contexts),
+            "viewExtensions": view_extensions,
+            "parameters": raw.get("parameters") or [],
+            "schema": raw.get("schema") or {},
+            "semantics": raw.get("semantics") or {},
+            "tokens": tokens,
+            "dependencies": raw.get("dependencies") or [],
+            "metadata": metadata,
+            "objects": [],
+            "source": rel_path,
+        }
+        if raw.get("state_machine"):
+            trait_entry["stateMachine"] = raw["state_machine"]
+        if raw.get("actions"):
+            trait_entry["actions"] = raw["actions"]
+        traits.append(trait_entry)
 
     return traits, components_index, domain_traits, trait_overlays
 

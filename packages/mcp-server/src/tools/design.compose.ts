@@ -36,7 +36,7 @@ import type { ComponentCatalogSummary } from './types.js';
 import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
 import { loadObject } from '../objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
-import type { FieldDefinition, SemanticMapping } from '../objects/types.js';
+import type { FieldDefinition, SemanticMapping, StateMachineDefinition, TraitAction } from '../objects/types.js';
 import { resolveIntentObject, fuzzyMatchObject } from '../compose/intent-object-resolver.js';
 import { populateObjectSchema, populateBindings, fillSlotsWithObject, wireFieldProps, applySelectionsToSchema } from '../compose/object-slot-filler.js';
 import { collectDashboardViewExtensions, collectViewExtensions } from '../compose/view-extension-collector.js';
@@ -111,12 +111,26 @@ export interface SlotSelectionEntry {
   }>;
 }
 
+export interface TraitStateMachineEntry {
+  trait: string;
+  stateMachine: StateMachineDefinition;
+}
+
+export interface TraitActionsEntry {
+  trait: string;
+  actions: TraitAction[];
+}
+
 export interface ObjectUsedInfo {
   name: string;
   version: string;
   traits: string[];
   fieldsComposed: number;
   viewExtensionsApplied: Record<string, number>;
+  /** Traits that define a state_machine, collected for Stage1 action_candidates integration */
+  traitStateMachines?: TraitStateMachineEntry[];
+  /** Traits that define actions, collected for Stage1 action_candidates integration */
+  traitActions?: TraitActionsEntry[];
 }
 
 export interface DesignComposeOutput {
@@ -1130,12 +1144,26 @@ function buildObjectUsedInfo(composed: ComposedObject): ObjectUsedInfo {
     viewExtensionsApplied[ctx] = exts.length;
   }
 
+  const traitStateMachines: TraitStateMachineEntry[] = [];
+  const traitActionsEntries: TraitActionsEntry[] = [];
+  for (const resolvedTrait of composed.traits) {
+    const def = resolvedTrait.definition;
+    if (def.state_machine) {
+      traitStateMachines.push({ trait: resolvedTrait.ref.name, stateMachine: def.state_machine });
+    }
+    if (def.actions && def.actions.length > 0) {
+      traitActionsEntries.push({ trait: resolvedTrait.ref.name, actions: def.actions });
+    }
+  }
+
   return {
     name: composed.object.name,
     version: composed.object.version,
     traits: composed.traits.map((t) => t.ref.name),
     fieldsComposed: Object.keys(composed.schema).length,
     viewExtensionsApplied,
+    ...(traitStateMachines.length > 0 ? { traitStateMachines } : {}),
+    ...(traitActionsEntries.length > 0 ? { traitActions: traitActionsEntries } : {}),
   };
 }
 

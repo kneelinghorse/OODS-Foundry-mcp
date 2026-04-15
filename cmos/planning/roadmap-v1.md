@@ -1,15 +1,16 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-03-16 | Sprint 86 complete
+> Updated: 2026-04-15 | Sprint 87 complete
 
 ## Current State
 
 - **Platform Score:** 100/100 (Sprint 83 confirmed — all V1 categories at full marks)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 122 files, 2005 tests, 0 failures (mcp-server)
+- **Test Suite:** 123 files, 2019 tests, 0 failures (mcp-server)
 - **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
+- **Stage1 Integration:** Contract v1.1.0 — action_candidates pathway documented, trait actions receiver side live
 
 ## Validated Release Gates
 
@@ -130,6 +131,15 @@
 | `s86-m03` | SchemaRef TTL proactive warning: computeTtlWarning() utility + pipeline integration | Done | Warning emitted when TTL < 5 minutes with actionable recommendation. 9 new tests |
 | `s86-m04` | BUG-7 viz metadata fix: chartType-only path now populates traitsResolved/encodingsApplied | Done | Synthetic trait derivation from chartType + dataBindings channels. All 6 chart types verified. 10 new tests |
 | `s86-m05` | Retest gate: build clean, 122 files / 2005 tests / 0 failures | Done | +46 tests from 1959 baseline |
+
+## Sprint 87 Validated Changes
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s87-m01` | Trait Actions Loader: `state_machine` and `actions` fields wired through full stack — `StateMachineDefinition`/`TraitAction` types added to types.ts, normalize() updated in trait-loader.ts, `objectUsed.traitStateMachines`/`traitActions` exposed in design.compose, collect_traits() updated in refresh_structured_data.py | Done | 14 new tests in trait-loader.test.ts, 2 viz traits (InteractionHighlight, InteractionTooltip) now surface state machines end-to-end |
+| `s87-m02` | Stage1 Sprint 38 readiness: action_candidates serialization confirmed complete, contract updated to v1.1.0 with §2b (action_candidates pathway), capability→trait clarification | Done | `docs/integration/stage1-oods-contract.md` v1.1.0 |
+| `s87-m03` | CMOS housekeeping: next_steps pruned (5 stale items dropped), sprint-70 closed (was Planned with 6/6 missions done), PG sync backfill started, stale learning reviewed | Done | Context at 54%, sprint-70 now Completed |
+| `s87-m04` | Retest gate + roadmap update: fresh vitest run, roadmap updated | Done | 123 files, 2019 tests, 0 failures |
 
 ## Carry-Forward Backlog
 
