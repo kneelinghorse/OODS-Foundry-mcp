@@ -1,10 +1,11 @@
 # Stage1 → OODS Foundry Integration Contract
 
-**Version:** 1.2.0
+**Version:** 1.2.1
 **Date:** 2026-04-15
-**Status:** Bilateral — Sprint 88 adds §2c action_mappings[] BridgeSummary consumer contract
+**Status:** Bilateral — Sprint 88.1 clarifies §2c with the dual-feed consumer model observed on the first real Stage1 run (linear.app aa22b12d)
 
 **Change log:**
+- v1.2.1 (2026-04-15, Sprint 88.1): **Clarification of §2c** after inspecting the first real Stage1 BridgeSummary (linear.app run `aa22b12d-bd6a-4e71-90e0-399954a36a70`). `summary.action_mappings[]` on the wire uses `{orcaVerb, oodsTrait, suggestedAction}` (no per-entry `object`/`component`/`slot`/`confidence`) and is a small verb→trait **vocabulary**. Per-component evidence lives in a separate top-level `actions[]` array with `{actionId, verb, sourceComponent, targetEntity, confidence, confidenceLabel}`. Consumer now accepts both: `actionMappings` (verb→trait) + `actionInstances` (per-component). `orcaVerb` is an accepted alias for `verb`, `suggestedAction` is passed through as a display-label hint. Dual-feed behavior documented in §2c below.
 - v1.2.0 (2026-04-15): Added §2c `action_mappings[]` — the flat verb-keyed BridgeSummary array consumed by `design.compose`. Each entry is keyed by `verb` (not by trait). Clarifies the difference between raw `action_candidates` (§2b, per-component evidence) and reconciled `action_mappings` (§2c, verb-level mapping used by consumers).
 - v1.1.0 (2026-04-15): Added §2b action_candidates artifact pathway. OODS receiver side implemented in s87-m01: `state_machine` and `actions` fields now flow through TraitDefinition → design.compose `objectUsed.traitStateMachines` / `traitActions`. Stage1 Sprint 38 serialization fix confirmed complete.
 - v1.0.0 (2026-03-11): Initial bilateral contract, Stage1 Sprint 26 response.
@@ -251,9 +252,55 @@ Stage1 `action_candidates` should be cross-referenced with OODS `traitStateMachi
 
 > **Status:** OODS receiver implemented in Sprint 88 (s88-m02). Contract is the authoritative shape for consumer code.
 
-### Shape: `action_mappings[]` — flat, verb-keyed
+### Shape: dual-feed — `summary.action_mappings[]` (vocabulary) + `actions[]` (per-component instances)
 
-`action_mappings[]` is a **flat array where each entry is keyed by `verb`**, NOT grouped by `traitId`. A single trait can appear across many entries (one per verb). The canonical OODS field name on the consumer side is `oodsTrait` (preferred) with `trait` accepted as an alias for back-compat with earlier Stage1 outputs.
+Inspection of the first real Stage1 BridgeSummary (linear.app run `aa22b12d-bd6a-4e71-90e0-399954a36a70`, 2026-04-15) revealed that BridgeSummary actually exposes action information through **two complementary arrays**. The consumer (`design.compose`) now reads both.
+
+**Feed 1 — `summary.action_mappings[]`** (the verb→trait vocabulary)
+
+On the wire:
+```json
+{ "orcaVerb": "submit", "oodsTrait": "interactive", "suggestedAction": "Submit" }
+```
+
+- Small array (typically 2–10 entries on real runs). Defines which OODS trait each ORCA verb belongs to.
+- Consumer accepts `orcaVerb` as an alias for `verb`, and `oodsTrait` (preferred) or `trait` for the trait ref.
+- `suggestedAction` is an optional display label, passed through for rendering hints.
+- The richer per-entry shape shown in earlier revisions of this spec (`{verb, object, oodsTrait, component?, slot?, confidence?, evidence?}`) is STILL accepted — producers MAY emit either the minimal Stage1 shape or the expanded shape interchangeably.
+
+**Feed 2 — top-level `actions[]`** (per-component action instances)
+
+On the wire:
+```json
+{
+  "actionId": "action-submit-cluster-cluster-48",
+  "name": "Flex Root Doqcw",
+  "verb": "submit",
+  "sourceComponent": "Flex Root Doqcw",
+  "targetEntity": "entity-customer",
+  "confidence": 0.5,
+  "confidenceLabel": "medium"
+}
+```
+
+- One entry per discovered action instance on a component. Sized proportional to the inspected surface (13 entries on linear.app).
+- `sourceComponent` narrows attachment to specific composed nodes; `targetEntity` is an ORCA entity reference that may or may not resolve to an OODS object.
+- Consumer uses Feed 1 to resolve `verb → trait`, then walks Feed 2 to attach the verb to slots/components whose `sourceComponent` matches a node in the composed schema AND whose trait is actually carried by the composed object.
+
+### Consumer pipeline (design.compose)
+
+Inputs: `actionMappings: ActionMapping[]` (Feed 1), `actionInstances: ActionInstance[]` (Feed 2).
+
+1. Build verb→trait lookup from `actionMappings[]`.
+2. For each `actionInstance`, resolve its verb through the lookup; discard verbs not in vocabulary.
+3. Drop entries whose resolved trait is not carried by the composed object.
+4. Attach verbs to matching slots (by `component`/`slot` hints when present) and roll up to `objectUsed.resolvedActions`.
+
+Empty inputs are a safe no-op. Absent inputs preserve pre-Sprint-88 output shape.
+
+### Historical shape (still accepted)
+
+The expanded `{verb, object, oodsTrait, component, slot, confidence}` shape is still fully supported — see example below. It remains the cleanest way to emit per-object, per-slot verb assignments when the producer has that level of evidence.
 
 ```json
 {
