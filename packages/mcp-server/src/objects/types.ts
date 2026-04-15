@@ -106,6 +106,30 @@ export interface EventDefinition {
   payload: string[];
 }
 
+export interface StateMachineTransition {
+  from: string;
+  to: string;
+  trigger: string;
+  guard?: string;
+}
+
+export interface StateMachineDefinition {
+  states: string[];
+  initial: string;
+  transitions: StateMachineTransition[];
+}
+
+export interface TraitAction {
+  name: string;
+  label?: string;
+  icon?: string;
+  confirmation?: boolean;
+  confirmationMessage?: string;
+  condition?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
 export interface TraitAccessibility {
   keyboard?: string;
   screenreader?: string;
@@ -133,6 +157,8 @@ export interface TraitDefinition {
   view_extensions: Record<string, ViewExtension[]>;
   tokens: Record<string, unknown>;
   events?: Record<string, EventDefinition>;
+  state_machine?: StateMachineDefinition;
+  actions?: TraitAction[];
   dependencies: string[];
   metadata: TraitMetadata;
 }

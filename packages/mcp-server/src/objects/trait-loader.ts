@@ -80,6 +80,8 @@ function normalize(raw: Record<string, unknown>): TraitDefinition {
     view_extensions: (raw.view_extensions as TraitDefinition['view_extensions']) ?? {},
     tokens: (raw.tokens as TraitDefinition['tokens']) ?? {},
     events: raw.events as TraitDefinition['events'] | undefined,
+    state_machine: raw.state_machine as TraitDefinition['state_machine'] | undefined,
+    actions: raw.actions as TraitDefinition['actions'] | undefined,
     dependencies: (raw.dependencies as TraitDefinition['dependencies']) ?? [],
     metadata: (raw.metadata as TraitDefinition['metadata']) ?? {},
   };
