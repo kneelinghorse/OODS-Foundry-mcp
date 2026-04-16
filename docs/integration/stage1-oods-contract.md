@@ -1,10 +1,12 @@
 # Stage1 → OODS Foundry Integration Contract
 
-**Version:** 1.2.1
-**Date:** 2026-04-15
-**Status:** Bilateral — Sprint 88.1 clarifies §2c with the dual-feed consumer model observed on the first real Stage1 run (linear.app aa22b12d)
+**Version:** 1.2.2
+**Date:** 2026-04-16
+**Status:** Bilateral — Sprint 91 adds OODS-side v1.4.0 schema stubs for review-decision persistence and cross-surface identity without changing current v1.3.x write-side behavior
 
 **Change log:**
+
+- v1.2.2 (2026-04-16, Sprint 91): Added §2d documenting OODS-side **v1.4.0-gated schema stubs** only: `reconciliation_report.disambiguation_decisions[]`, a promoted `preferred_term` registry entity, a first-class `capability` entity, and dormant `projection_variants[]` on mappings. These are additive acceptance shapes only. Current OODS handlers do not consume them, and `map.apply` routing / `registry.snapshot` behavior remain unchanged.
 - v1.2.1 (2026-04-15, Sprint 88.1): **Clarification of §2c** after inspecting the first real Stage1 BridgeSummary (linear.app run `aa22b12d-bd6a-4e71-90e0-399954a36a70`). `summary.action_mappings[]` on the wire uses `{orcaVerb, oodsTrait, suggestedAction}` (no per-entry `object`/`component`/`slot`/`confidence`) and is a small verb→trait **vocabulary**. Per-component evidence lives in a separate top-level `actions[]` array with `{actionId, verb, sourceComponent, targetEntity, confidence, confidenceLabel}`. Consumer now accepts both: `actionMappings` (verb→trait) + `actionInstances` (per-component). `orcaVerb` is an accepted alias for `verb`, `suggestedAction` is passed through as a display-label hint. Dual-feed behavior documented in §2c below.
 - v1.2.0 (2026-04-15): Added §2c `action_mappings[]` — the flat verb-keyed BridgeSummary array consumed by `design.compose`. Each entry is keyed by `verb` (not by trait). Clarifies the difference between raw `action_candidates` (§2b, per-component evidence) and reconciled `action_mappings` (§2c, verb-level mapping used by consumers).
 - v1.1.0 (2026-04-15): Added §2b action_candidates artifact pathway. OODS receiver side implemented in s87-m01: `state_machine` and `actions` fields now flow through TraitDefinition → design.compose `objectUsed.traitStateMachines` / `traitActions`. Stage1 Sprint 38 serialization fix confirmed complete.
@@ -16,16 +18,16 @@ This contract defines how Stage1 Inspector output artifacts map to OODS Foundry 
 
 ## Artifact → Tool Mapping Summary
 
-| Stage1 Artifact | OODS Tool | Purpose |
-|----------------|-----------|---------|
-| `orca_candidates.json` | `map.create` | Map discovered components to OODS traits |
-| `component_clusters.json` | `map.create` | Component signatures with prop inference |
-| `ui_manifest_drafts.json` | `design.compose` | Component hints for composition |
-| `action_candidates` | `design.compose` → `objectUsed` | Cross-reference trait state_machine/actions (Sprint 38/87) |
+| Stage1 Artifact                   | OODS Tool                           | Purpose                                                                 |
+| --------------------------------- | ----------------------------------- | ----------------------------------------------------------------------- |
+| `orca_candidates.json`            | `map.create`                        | Map discovered components to OODS traits                                |
+| `component_clusters.json`         | `map.create`                        | Component signatures with prop inference                                |
+| `ui_manifest_drafts.json`         | `design.compose`                    | Component hints for composition                                         |
+| `action_candidates`               | `design.compose` → `objectUsed`     | Cross-reference trait state_machine/actions (Sprint 38/87)              |
 | `action_mappings` (BridgeSummary) | `design.compose` → slot `actions[]` | Flat verb-keyed mapping annotates composed slots/components (Sprint 88) |
-| `token-guess.json` | `tokens.build` + `brand.apply` | Inferred tokens → OODS token pipeline |
-| `style_fingerprint.json` | `brand.apply` | Typography, spacing, color scale overlays |
-| `orca_candidates.json` (traits) | `tokens.build` | CSS-variable-sourced token values |
+| `token-guess.json`                | `tokens.build` + `brand.apply`      | Inferred tokens → OODS token pipeline                                   |
+| `style_fingerprint.json`          | `brand.apply`                       | Typography, spacing, color scale overlays                               |
+| `orca_candidates.json` (traits)   | `tokens.build`                      | CSS-variable-sourced token values                                       |
 
 ---
 
@@ -41,7 +43,11 @@ Stage1 ORCA objects represent discovered components with evidence chains:
   "name": "PricingCard",
   "category": "component",
   "evidence_chain": [
-    { "pass": "dom.components", "artifact": "component_clusters.json", "selector": ".pricing-card" }
+    {
+      "pass": "dom.components",
+      "artifact": "component_clusters.json",
+      "selector": ".pricing-card"
+    }
   ],
   "domain_hints": ["pricing", "subscription"],
   "recurrence_count": 4
@@ -56,11 +62,24 @@ Stage1 ORCA objects represent discovered components with evidence chains:
   "externalComponent": "PricingCard",
   "oodsTraits": ["Priceable", "Labelled"],
   "propMappings": [
-    { "externalProp": "price", "oodsProp": "price", "coercion": { "type": "identity" } },
-    { "externalProp": "plan-name", "oodsProp": "label", "coercion": { "type": "identity" } },
-    { "externalProp": "billing-period", "oodsProp": "interval", "coercion": {
-      "type": "enum", "mapping": { "monthly": "month", "yearly": "year" }
-    }}
+    {
+      "externalProp": "price",
+      "oodsProp": "price",
+      "coercion": { "type": "identity" }
+    },
+    {
+      "externalProp": "plan-name",
+      "oodsProp": "label",
+      "coercion": { "type": "identity" }
+    },
+    {
+      "externalProp": "billing-period",
+      "oodsProp": "interval",
+      "coercion": {
+        "type": "enum",
+        "mapping": { "monthly": "month", "yearly": "year" }
+      }
+    }
   ],
   "confidence": "auto",
   "metadata": {
@@ -73,29 +92,29 @@ Stage1 ORCA objects represent discovered components with evidence chains:
 
 ### Mapping Rules
 
-| Stage1 Field | OODS Field | Transform |
-|-------------|------------|-----------|
-| `objects[].name` | `externalComponent` | Direct |
-| manifest `targets[].name` or `project_id` | `externalSystem` | Use project identifier as system name |
-| `objects[].domain_hints` | `oodsTraits` | Map via domain→trait lookup (see table below) |
-| `objects[].category` | — | Used to filter: only `component` and `entity` categories map |
-| `objects[].recurrence_count` | `metadata.notes` | Include as evidence quality signal |
-| cluster `props` | `propMappings` | Infer from `component_clusters.json` props |
-| cluster `confidence` | `confidence` | `>= 0.7` → `"manual"`, `< 0.7` → `"auto"` |
+| Stage1 Field                              | OODS Field          | Transform                                                    |
+| ----------------------------------------- | ------------------- | ------------------------------------------------------------ |
+| `objects[].name`                          | `externalComponent` | Direct                                                       |
+| manifest `targets[].name` or `project_id` | `externalSystem`    | Use project identifier as system name                        |
+| `objects[].domain_hints`                  | `oodsTraits`        | Map via domain→trait lookup (see table below)                |
+| `objects[].category`                      | —                   | Used to filter: only `component` and `entity` categories map |
+| `objects[].recurrence_count`              | `metadata.notes`    | Include as evidence quality signal                           |
+| cluster `props`                           | `propMappings`      | Infer from `component_clusters.json` props                   |
+| cluster `confidence`                      | `confidence`        | `>= 0.7` → `"manual"`, `< 0.7` → `"auto"`                    |
 
 ### Domain Hint → OODS Trait Lookup
 
-| Domain Hints | OODS Traits |
-|-------------|-------------|
-| `pricing`, `subscription`, `billing` | `Priceable`, `Stateful` |
-| `user`, `profile`, `account` | `Identifiable`, `Labelled` |
-| `form`, `input`, `field` | `Editable`, `Validatable` |
-| `navigation`, `menu`, `sidebar` | `Navigable` |
-| `status`, `badge`, `indicator` | `Stateful`, `Labelled` |
-| `chart`, `metric`, `dashboard` | `Measurable`, `Labelled` |
-| `list`, `table`, `grid` | `Listable`, `Sortable` |
-| `media`, `image`, `avatar` | `Presentable` |
-| `date`, `time`, `calendar` | `Temporal` |
+| Domain Hints                         | OODS Traits                |
+| ------------------------------------ | -------------------------- |
+| `pricing`, `subscription`, `billing` | `Priceable`, `Stateful`    |
+| `user`, `profile`, `account`         | `Identifiable`, `Labelled` |
+| `form`, `input`, `field`             | `Editable`, `Validatable`  |
+| `navigation`, `menu`, `sidebar`      | `Navigable`                |
+| `status`, `badge`, `indicator`       | `Stateful`, `Labelled`     |
+| `chart`, `metric`, `dashboard`       | `Measurable`, `Labelled`   |
+| `list`, `table`, `grid`              | `Listable`, `Sortable`     |
+| `media`, `image`, `avatar`           | `Presentable`              |
+| `date`, `time`, `calendar`           | `Temporal`                 |
 
 > **Resolved:** Stage1 will expand domain_hints with ORCA-produced vocabulary + provide a domain_hint→OODS_domain translation table in the bridge.
 
@@ -116,7 +135,11 @@ Stage1 component manifests describe the component inventory with props, behavior
   },
   "data": {
     "props": [
-      { "name": "variant", "type": "string", "options": ["primary", "secondary", "outline"] },
+      {
+        "name": "variant",
+        "type": "string",
+        "options": ["primary", "secondary", "outline"]
+      },
       { "name": "size", "type": "string", "options": ["sm", "md", "lg"] },
       { "name": "disabled", "type": "boolean", "default": "false" }
     ]
@@ -154,13 +177,13 @@ Stage1 component manifests describe the component inventory with props, behavior
 
 ### Mapping Rules
 
-| Stage1 Field | OODS Field | Transform |
-|-------------|------------|-----------|
-| ORCA `objects[].domain_hints` | `intent` | Concatenate domain hints into natural-language intent string |
-| ORCA `objects[].name` (highest recurrence) | `object` | Match against OODS object registry (`Subscription`, `User`, etc.) |
-| IA outline page `template_signature` | `layout` | `form:N>0` → `"form"`, `table:N>0` → `"list"`, else `"auto"` |
-| Cluster `semanticRole` + `patternName` | `preferences.componentOverrides` | Map Stage1 clusters to OODS component names |
-| Draft `metadata.tags` | `context` | `["settings"]` → `"form"`, `["dashboard"]` → `"detail"` |
+| Stage1 Field                               | OODS Field                       | Transform                                                         |
+| ------------------------------------------ | -------------------------------- | ----------------------------------------------------------------- |
+| ORCA `objects[].domain_hints`              | `intent`                         | Concatenate domain hints into natural-language intent string      |
+| ORCA `objects[].name` (highest recurrence) | `object`                         | Match against OODS object registry (`Subscription`, `User`, etc.) |
+| IA outline page `template_signature`       | `layout`                         | `form:N>0` → `"form"`, `table:N>0` → `"list"`, else `"auto"`      |
+| Cluster `semanticRole` + `patternName`     | `preferences.componentOverrides` | Map Stage1 clusters to OODS component names                       |
+| Draft `metadata.tags`                      | `context`                        | `["settings"]` → `"form"`, `["dashboard"]` → `"detail"`           |
 
 ### Intent Generation Strategy
 
@@ -200,8 +223,18 @@ Stage1 serializes action candidates per discovered component:
       "componentId": "orca-obj-001",
       "componentName": "SubscriptionCard",
       "actions": [
-        { "name": "cancel", "trigger": "click", "selector": ".btn-cancel", "confidence": 0.87 },
-        { "name": "upgrade", "trigger": "click", "selector": ".btn-upgrade", "confidence": 0.91 }
+        {
+          "name": "cancel",
+          "trigger": "click",
+          "selector": ".btn-cancel",
+          "confidence": 0.87
+        },
+        {
+          "name": "upgrade",
+          "trigger": "click",
+          "selector": ".btn-upgrade",
+          "confidence": 0.91
+        }
       ]
     }
   ]
@@ -238,6 +271,7 @@ When `design.compose` is called with an object that has traits defining `state_m
 ### Mapping Strategy
 
 Stage1 `action_candidates` should be cross-referenced with OODS `traitStateMachines` to validate:
+
 1. Action names in Stage1 evidence align with `transition.trigger` values in OODS state machines
 2. Stage1-inferred `actions[]` augment OODS `traitActions[]` with real-world usage evidence
 3. Discrepancies (Stage1 finds an action OODS doesn't declare) → flag for trait authoring review
@@ -259,8 +293,13 @@ Inspection of the first real Stage1 BridgeSummary (linear.app run `aa22b12d-bd6a
 **Feed 1 — `summary.action_mappings[]`** (the verb→trait vocabulary)
 
 On the wire:
+
 ```json
-{ "orcaVerb": "submit", "oodsTrait": "interactive", "suggestedAction": "Submit" }
+{
+  "orcaVerb": "submit",
+  "oodsTrait": "interactive",
+  "suggestedAction": "Submit"
+}
 ```
 
 - Small array (typically 2–10 entries on real runs). Defines which OODS trait each ORCA verb belongs to.
@@ -271,6 +310,7 @@ On the wire:
 **Feed 2 — top-level `actions[]`** (per-component action instances)
 
 On the wire:
+
 ```json
 {
   "actionId": "action-submit-cluster-cluster-48",
@@ -334,6 +374,7 @@ The expanded `{verb, object, oodsTrait, component, slot, confidence}` shape is s
 ```
 
 Notes:
+
 - **Do NOT** nest actions under a trait object — each verb is its own top-level entry. Grouping happens on the consumer side by matching `oodsTrait` against slot/component `oodsTrait` values.
 - `component` and `slot` are optional hints that narrow matching; when absent, the consumer falls back to trait-only matching across all nodes carrying that `oodsTrait`.
 - A given trait appearing with multiple verbs produces multiple entries (e.g. `Archivable` appears for both `archive` and `restore`).
@@ -356,6 +397,43 @@ Example: for a `SubscriptionCard` slot carrying `oodsTrait: "Archivable"`, the m
 
 ---
 
+## 2d. Planned v1.4.0 Stubs: Review Decisions + Cross-Surface Identity
+
+> **Status:** OODS-side schemas landed in Sprint 91 as additive acceptance stubs only. These shapes are **reserved for Stage1 contract v1.4.0** and do not change current handler behavior.
+
+OODS now reserves four future-facing surfaces so Stage1 can ship Sprint 44 / Sprint 45 payloads without a receiver-side schema scramble:
+
+1. `reconciliation_report.disambiguation_decisions[]`
+   - Optional review-decision ingress on the reconciliation report.
+   - Intended for run-scoped or target-scoped human/agent choices such as preferred name, preferred role, mapping rejection, or promotion to a canonical term.
+   - Current `map.apply` accepts the field but ignores it. Routing still depends only on `candidate_objects[]`, `minConfidence`, and existing write-side verdict logic.
+
+2. `preferred_term` entity
+   - Draft registry entity for promoted disambiguation/canonical-term decisions.
+   - Supports the Sprint 44 Option C position: Stage1 keeps in-flight review state locally, then promotes stable outcomes into OODS.
+   - Present only as a schema/type stub today; no registry handler persists or emits it yet.
+
+3. `capability` entity
+   - Draft first-class entity for Stage1 capability rollup output.
+   - Aligns with the Sprint 45 position that capabilities should not be denormalized onto individual component instances.
+   - Present only as a schema/type stub today; no compose/render/codegen surface consumes it yet.
+
+4. `projection_variants[]` on mappings
+   - Draft cross-surface identity relation for maps.
+   - Intended to represent desktop/mobile/modal/sidebar projections of the same canonical mapping, optionally linked to a first-class capability.
+   - Present only as an optional schema field today. Existing write paths do not emit or mutate it.
+
+### Compatibility note
+
+- These additions are **opt-in and additive**.
+- Existing `schema_version: "1.1.0"` reconciliation reports continue to validate unchanged.
+- Current OODS behavior is unchanged:
+  - `map.apply` routing does not look at `disambiguation_decisions[]`.
+  - `registry.snapshot` does not gain new active handler output from these stubs.
+  - No current tool writes `preferred_term`, `capability`, or `projection_variants[]`.
+
+---
+
 ## 3. Token Pipeline: Stage1 → `tokens.build` + `brand.apply`
 
 ### Source: `token-guess.json`
@@ -366,10 +444,30 @@ Stage1 extracts inferred design tokens with confidence scores:
 {
   "kind": "token_guess",
   "tokens": {
-    "colors.primary": { "value": "#2563eb", "confidence": 0.92, "occurrences": 47, "source": "css_variable" },
-    "colors.text.primary": { "value": "#1f2937", "confidence": 0.88, "occurrences": 312, "source": "computed_style" },
-    "typography.fontSize.md": { "value": "16px", "confidence": 0.95, "occurrences": 89, "source": "computed_style" },
-    "spacing.md": { "value": "16px", "confidence": 0.78, "occurrences": 23, "source": "inferred" }
+    "colors.primary": {
+      "value": "#2563eb",
+      "confidence": 0.92,
+      "occurrences": 47,
+      "source": "css_variable"
+    },
+    "colors.text.primary": {
+      "value": "#1f2937",
+      "confidence": 0.88,
+      "occurrences": 312,
+      "source": "computed_style"
+    },
+    "typography.fontSize.md": {
+      "value": "16px",
+      "confidence": 0.95,
+      "occurrences": 89,
+      "source": "computed_style"
+    },
+    "spacing.md": {
+      "value": "16px",
+      "confidence": 0.78,
+      "occurrences": 23,
+      "source": "inferred"
+    }
   }
 }
 ```
@@ -395,33 +493,33 @@ Stage1 extracts inferred design tokens with confidence scores:
 
 Stage1 uses dot-notation paths. OODS uses DTCG-aligned paths. Translation table:
 
-| Stage1 Path Pattern | OODS DTCG Path | Notes |
-|--------------------|----------------|-------|
-| `colors.primary` | `color.brand.primary` | |
-| `colors.secondary` | `color.brand.secondary` | |
-| `colors.background` | `color.surface.default` | |
-| `colors.text.primary` | `color.text.default` | |
-| `colors.text.secondary` | `color.text.muted` | |
-| `colors.status.error` | `color.feedback.error` | |
-| `colors.status.success` | `color.feedback.success` | |
-| `typography.fontFamily.sans` | `font.family.sans` | |
-| `typography.fontFamily.mono` | `font.family.mono` | |
-| `typography.fontSize.*` | `size.font.*` | Preserve size key (xs/sm/md/lg/xl) |
-| `typography.fontWeight.*` | `font.weight.*` | Preserve weight key |
-| `typography.lineHeight.*` | `font.lineHeight.*` | |
-| `spacing.*` | `size.spacing.*` | Preserve size key |
-| `radius.*` | `size.radius.*` | |
-| `shadow.*` | `elevation.shadow.*` | |
+| Stage1 Path Pattern          | OODS DTCG Path           | Notes                              |
+| ---------------------------- | ------------------------ | ---------------------------------- |
+| `colors.primary`             | `color.brand.primary`    |                                    |
+| `colors.secondary`           | `color.brand.secondary`  |                                    |
+| `colors.background`          | `color.surface.default`  |                                    |
+| `colors.text.primary`        | `color.text.default`     |                                    |
+| `colors.text.secondary`      | `color.text.muted`       |                                    |
+| `colors.status.error`        | `color.feedback.error`   |                                    |
+| `colors.status.success`      | `color.feedback.success` |                                    |
+| `typography.fontFamily.sans` | `font.family.sans`       |                                    |
+| `typography.fontFamily.mono` | `font.family.mono`       |                                    |
+| `typography.fontSize.*`      | `size.font.*`            | Preserve size key (xs/sm/md/lg/xl) |
+| `typography.fontWeight.*`    | `font.weight.*`          | Preserve weight key                |
+| `typography.lineHeight.*`    | `font.lineHeight.*`      |                                    |
+| `spacing.*`                  | `size.spacing.*`         | Preserve size key                  |
+| `radius.*`                   | `size.radius.*`          |                                    |
+| `shadow.*`                   | `elevation.shadow.*`     |                                    |
 
 ### Confidence Gating
 
 Only tokens above a confidence threshold should flow into OODS:
 
-| Confidence | Action |
-|-----------|--------|
-| >= 0.8 | Auto-apply via `brand.apply` with `apply: true` |
+| Confidence | Action                                            |
+| ---------- | ------------------------------------------------- |
+| >= 0.8     | Auto-apply via `brand.apply` with `apply: true`   |
 | 0.5 - 0.79 | Include in dry-run preview, flag for human review |
-| < 0.5 | Exclude from OODS pipeline, log as low-confidence |
+| < 0.5      | Exclude from OODS pipeline, log as low-confidence |
 
 > **Resolved:** Stage1 filters tokens below 0.5 confidence before bridge output. OODS receives only actionable tokens. Threshold is configurable on Stage1's side.
 
@@ -436,28 +534,61 @@ Only tokens above a confidence threshold should flow into OODS:
 **Step 1: Stage1 produces artifacts**
 
 `orca_candidates.json`:
+
 ```json
 {
   "objects": [
-    { "id": "orca-001", "name": "ProductCard", "category": "component",
-      "domain_hints": ["product", "pricing"], "recurrence_count": 12 },
-    { "id": "orca-002", "name": "CartSummary", "category": "component",
-      "domain_hints": ["cart", "pricing"], "recurrence_count": 3 }
+    {
+      "id": "orca-001",
+      "name": "ProductCard",
+      "category": "component",
+      "domain_hints": ["product", "pricing"],
+      "recurrence_count": 12
+    },
+    {
+      "id": "orca-002",
+      "name": "CartSummary",
+      "category": "component",
+      "domain_hints": ["cart", "pricing"],
+      "recurrence_count": 3
+    }
   ],
   "traits": [
-    { "id": "trait-001", "trait_type": "color", "value": "#059669",
-      "source": "css_variable", "confidence": 0.91, "affected_objects": ["orca-001"] }
+    {
+      "id": "trait-001",
+      "trait_type": "color",
+      "value": "#059669",
+      "source": "css_variable",
+      "confidence": 0.91,
+      "affected_objects": ["orca-001"]
+    }
   ]
 }
 ```
 
 `token-guess.json`:
+
 ```json
 {
   "tokens": {
-    "colors.primary": { "value": "#059669", "confidence": 0.91, "occurrences": 34, "source": "css_variable" },
-    "typography.fontFamily.sans": { "value": "Inter, sans-serif", "confidence": 0.97, "occurrences": 200, "source": "computed_style" },
-    "spacing.md": { "value": "1rem", "confidence": 0.85, "occurrences": 45, "source": "computed_style" }
+    "colors.primary": {
+      "value": "#059669",
+      "confidence": 0.91,
+      "occurrences": 34,
+      "source": "css_variable"
+    },
+    "typography.fontFamily.sans": {
+      "value": "Inter, sans-serif",
+      "confidence": 0.97,
+      "occurrences": 200,
+      "source": "computed_style"
+    },
+    "spacing.md": {
+      "value": "1rem",
+      "confidence": 0.85,
+      "occurrences": 45,
+      "source": "computed_style"
+    }
   }
 }
 ```
@@ -521,18 +652,30 @@ Only tokens above a confidence threshold should flow into OODS:
 **Step 1: Stage1 artifacts**
 
 `orca_candidates.json`:
+
 ```json
 {
   "objects": [
-    { "id": "orca-010", "name": "MetricWidget", "category": "component",
-      "domain_hints": ["metric", "dashboard", "analytics"], "recurrence_count": 8 },
-    { "id": "orca-011", "name": "UserRow", "category": "component",
-      "domain_hints": ["user", "table", "list"], "recurrence_count": 25 }
+    {
+      "id": "orca-010",
+      "name": "MetricWidget",
+      "category": "component",
+      "domain_hints": ["metric", "dashboard", "analytics"],
+      "recurrence_count": 8
+    },
+    {
+      "id": "orca-011",
+      "name": "UserRow",
+      "category": "component",
+      "domain_hints": ["user", "table", "list"],
+      "recurrence_count": 25
+    }
   ]
 }
 ```
 
 `component_clusters.json`:
+
 ```json
 {
   "clusters": [
@@ -560,14 +703,34 @@ Only tokens above a confidence threshold should flow into OODS:
   "externalComponent": "MetricWidget",
   "oodsTraits": ["Measurable", "Labelled"],
   "propMappings": [
-    { "externalProp": "title", "oodsProp": "label", "coercion": { "type": "identity" } },
-    { "externalProp": "value", "oodsProp": "metric", "coercion": { "type": "identity" } },
-    { "externalProp": "trend", "oodsProp": "trendDirection", "coercion": {
-      "type": "enum", "mapping": { "up": "increasing", "down": "decreasing", "flat": "stable" }
-    }}
+    {
+      "externalProp": "title",
+      "oodsProp": "label",
+      "coercion": { "type": "identity" }
+    },
+    {
+      "externalProp": "value",
+      "oodsProp": "metric",
+      "coercion": { "type": "identity" }
+    },
+    {
+      "externalProp": "trend",
+      "oodsProp": "trendDirection",
+      "coercion": {
+        "type": "enum",
+        "mapping": {
+          "up": "increasing",
+          "down": "decreasing",
+          "flat": "stable"
+        }
+      }
+    }
   ],
   "confidence": "auto",
-  "metadata": { "author": "stage1-orca", "notes": "8 instances, cluster confidence 0.87" },
+  "metadata": {
+    "author": "stage1-orca",
+    "notes": "8 instances, cluster confidence 0.87"
+  },
   "apply": true
 }
 ```
