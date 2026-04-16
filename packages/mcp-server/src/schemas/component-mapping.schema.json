@@ -45,7 +45,13 @@
   "$defs": {
     "ComponentMapping": {
       "type": "object",
-      "required": ["id", "externalSystem", "externalComponent", "oodsTraits", "confidence"],
+      "required": [
+        "id",
+        "externalSystem",
+        "externalComponent",
+        "oodsTraits",
+        "confidence"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -80,7 +86,12 @@
           "enum": ["auto", "manual"],
           "description": "'auto' for machine-generated mappings, 'manual' for human-curated."
         },
-        "metadata": { "$ref": "#/$defs/MappingMetadata" }
+        "metadata": { "$ref": "#/$defs/MappingMetadata" },
+        "projection_variants": {
+          "type": "array",
+          "description": "Draft v1.4.0-gated cross-surface identity relation. Optional stub only; current handlers neither emit nor mutate it.",
+          "items": { "$ref": "#/$defs/ProjectionVariant" }
+        }
       }
     },
     "PropMapping": {
@@ -99,10 +110,7 @@
           "description": "Corresponding OODS property name."
         },
         "coercion": {
-          "oneOf": [
-            { "type": "null" },
-            { "$ref": "#/$defs/CoercionDef" }
-          ],
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/CoercionDef" }],
           "default": null,
           "description": "Type coercion hint. null for direct pass-through."
         }
@@ -116,8 +124,15 @@
           "required": ["type", "mapping"],
           "additionalProperties": false,
           "properties": {
-            "type": { "const": "enum", "description": "Enum value mapping: source value lookup to target value." },
-            "mapping": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Source value to target value mapping." }
+            "type": {
+              "const": "enum",
+              "description": "Enum value mapping: source value lookup to target value."
+            },
+            "mapping": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Source value to target value mapping."
+            }
           }
         },
         {
@@ -125,9 +140,18 @@
           "required": ["type", "trueValue", "falseValue"],
           "additionalProperties": false,
           "properties": {
-            "type": { "const": "boolean_to_string", "description": "Convert boolean to string representation." },
-            "trueValue": { "type": "string", "description": "String value when source is true." },
-            "falseValue": { "type": "string", "description": "String value when source is false." }
+            "type": {
+              "const": "boolean_to_string",
+              "description": "Convert boolean to string representation."
+            },
+            "trueValue": {
+              "type": "string",
+              "description": "String value when source is true."
+            },
+            "falseValue": {
+              "type": "string",
+              "description": "String value when source is false."
+            }
           }
         },
         {
@@ -135,8 +159,14 @@
           "required": ["type", "pattern"],
           "additionalProperties": false,
           "properties": {
-            "type": { "const": "template", "description": "String interpolation using {{value}} placeholder." },
-            "pattern": { "type": "string", "description": "Template pattern with {{value}} placeholder." }
+            "type": {
+              "const": "template",
+              "description": "String interpolation using {{value}} placeholder."
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Template pattern with {{value}} placeholder."
+            }
           }
         },
         {
@@ -144,7 +174,10 @@
           "required": ["type"],
           "additionalProperties": false,
           "properties": {
-            "type": { "const": "identity", "description": "Pass-through, no transformation." }
+            "type": {
+              "const": "identity",
+              "description": "Pass-through, no transformation."
+            }
           }
         }
       ]
@@ -170,6 +203,54 @@
         "notes": {
           "type": "string",
           "description": "Free-form notes about this mapping."
+        }
+      }
+    },
+    "ProjectionVariant": {
+      "type": "object",
+      "required": ["id", "surface"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable identifier for the cross-surface projection."
+        },
+        "surface": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Surface label such as desktop, mobile, modal, or sidebar."
+        },
+        "external_component": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Surface-specific component label when it differs from the canonical map name."
+        },
+        "capability_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional first-class capability entity linked to this projection."
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Representative selector or cluster signature."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence of the cross-surface identity merge."
+        },
+        "evidence_chain": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true },
+          "description": "Evidence supporting the identity-resolution link."
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Open metadata bag reserved for future v1.4.0+ relation details."
         }
       }
     }

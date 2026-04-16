@@ -1,0 +1,145 @@
+{
+  "mission": "s91-m01",
+  "generatedAt": "2026-04-16T20:10:20Z",
+  "status": "verified",
+  "basis": "actual_on_disk_reports",
+  "sourceReports": [
+    {
+      "name": "linear",
+      "path": "../Stage1/out/stage1/linear-reconciliation-s43-validation/82201fef-efed-4bcf-8b39-192a09555745/artifacts/reconciliation_report.json",
+      "schemaVersion": "1.1.0",
+      "target": {
+        "id": "82201fef-efed-4bcf-8b39-192a09555745",
+        "url": "https://linear.app/"
+      },
+      "generatedAt": "2026-04-16T19:22:09.639Z",
+      "candidateObjectCount": 93,
+      "candidateActionCount": 9,
+      "objectVerdicts": {
+        "create": 93,
+        "patch": 0,
+        "skip": 0,
+        "conflict": 0
+      },
+      "routing": {
+        "minConfidence0": {
+          "applied": 93,
+          "queued": 0,
+          "skipped": 0,
+          "conflicted": 0,
+          "errors": 0
+        },
+        "minConfidence075": {
+          "applied": 80,
+          "queued": 13,
+          "skipped": 0,
+          "conflicted": 0,
+          "errors": 0,
+          "conflictArtifactPath": ".oods/conflicts/2026-04-16T19-22-09.639Z-82201fef-efed-4bcf-8b39-192a09555745.json"
+        }
+      },
+      "annotations": {
+        "lowConfidenceConflictEntries": 4,
+        "note": "These are action-level low_confidence entries under report.conflicts, not map.apply object-routing outputs."
+      }
+    },
+    {
+      "name": "stripe",
+      "path": "../Stage1/out/stage1/stripe-reconciliation-s43-validation/da66f1d2-0d23-43c1-ba29-5c0ec7be631e/artifacts/reconciliation_report.json",
+      "schemaVersion": "1.1.0",
+      "target": {
+        "id": "da66f1d2-0d23-43c1-ba29-5c0ec7be631e",
+        "url": "https://stripe.com/"
+      },
+      "generatedAt": "2026-04-16T19:26:45.747Z",
+      "candidateObjectCount": 195,
+      "candidateActionCount": 33,
+      "objectVerdicts": {
+        "create": 195,
+        "patch": 0,
+        "skip": 0,
+        "conflict": 0
+      },
+      "routing": {
+        "minConfidence0": {
+          "applied": 195,
+          "queued": 0,
+          "skipped": 0,
+          "conflicted": 0,
+          "errors": 0
+        },
+        "minConfidence075": {
+          "applied": 170,
+          "queued": 25,
+          "skipped": 0,
+          "conflicted": 0,
+          "errors": 0,
+          "conflictArtifactPath": ".oods/conflicts/2026-04-16T19-26-45.747Z-da66f1d2-0d23-43c1-ba29-5c0ec7be631e.json"
+        }
+      },
+      "annotations": {
+        "lowConfidenceConflictEntries": 11,
+        "note": "These are action-level low_confidence entries under report.conflicts, not map.apply object-routing outputs."
+      }
+    }
+  ],
+  "aggregate": {
+    "candidateObjects": 288,
+    "candidateActions": 42,
+    "minConfidence0": {
+      "applied": 288,
+      "queued": 0,
+      "skipped": 0,
+      "conflicted": 0,
+      "errors": 0
+    },
+    "minConfidence075": {
+      "applied": 250,
+      "queued": 38,
+      "skipped": 0,
+      "conflicted": 0,
+      "errors": 0
+    },
+    "lowConfidenceConflictAnnotations": 15
+  },
+  "fieldParity": {
+    "syntheticFixturePath": "packages/mcp-server/test/fixtures/reconciliation-report-v1.1.0.json",
+    "syntheticFixtureSchemaVersion": "1.1.0",
+    "syntheticFixtureExercises": [
+      "manifest.inputs.oods_registry_fetch",
+      "candidate_objects[].diff",
+      "candidate_objects[].alternate_interpretations[]",
+      "candidate_actions[].alternate_verbs[]",
+      "candidate_actions[].preconditions[]"
+    ],
+    "liveReportDistinction": [
+      "Both on-disk reports remain schema_version 1.1.0 and include reconciliation_summary plus verdict_reasoning on every candidate object.",
+      "Neither live report includes manifest.inputs.oods_registry_fetch, candidate_objects[].diff, alternate_interpretations, alternate_verbs, or preconditions.",
+      "The live reports are the pre-v1.3.1 baseline Stage1 asked OODS to re-gate: create verdicts do not yet carry external_component."
+    ]
+  },
+  "verification": {
+    "commands": [
+      {
+        "command": "pnpm exec vitest run packages/mcp-server/test/e2e/map-apply.test.ts packages/mcp-server/test/e2e/stage1-reconciliation.test.ts",
+        "passed": true,
+        "verifiedAt": "2026-04-16T20:10:20Z",
+        "testFiles": 2,
+        "tests": 3
+      },
+      {
+        "command": "pnpm exec vitest run packages/mcp-server/test/e2e/stage1-reconciliation.test.ts",
+        "passed": true,
+        "verifiedAt": "2026-04-16T20:10:20Z",
+        "testFiles": 1,
+        "tests": 2,
+        "reason": "Post-patch rerun after codifying the pre-v1.3.1 external_component absence on both live reports."
+      }
+    ]
+  },
+  "notes": [
+    "This re-gate is intentionally grounded in the actual reports on disk, not a synthetic expectation.",
+    "The queued count at the default threshold is 38 because map.apply routes object candidates by candidate_objects[].confidence < 0.75.",
+    "The 15 low_confidence conflict entries remain important telemetry, but they are annotations in report.conflicts rather than map.apply routing inputs."
+  ]
+}

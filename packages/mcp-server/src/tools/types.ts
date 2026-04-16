@@ -1,12 +1,19 @@
+import type {
+  Stage1CapabilityEntity as GeneratedStage1CapabilityEntity,
+  Stage1DisambiguationDecision as GeneratedStage1DisambiguationDecision,
+  Stage1PreferredTermEntity as GeneratedStage1PreferredTermEntity,
+  Stage1ProjectionVariant as GeneratedStage1ProjectionVariant,
+} from "../schemas/generated.js";
+
 export type BaseInput = { apply?: boolean };
 
 export type TokensBuildInput = BaseInput & {
-  brand?: 'A';
-  theme?: 'light' | 'dark' | 'hc';
+  brand?: "A";
+  theme?: "light" | "dark" | "hc";
 };
 
 export type PlanDiffChange = {
-  type: 'context' | 'add' | 'remove';
+  type: "context" | "add" | "remove";
   value: string;
 };
 
@@ -22,12 +29,12 @@ export type PlanDiffSummary = {
 
 export type PlanDiff = {
   path: string;
-  status: 'added' | 'modified' | 'deleted';
+  status: "added" | "modified" | "deleted";
   summary?: PlanDiffSummary;
   hunks: PlanDiffHunk[];
   structured?:
     | {
-        type: 'json';
+        type: "json";
         before?: unknown;
         after?: unknown;
       }
@@ -49,7 +56,7 @@ export type ToolPreview = {
   specimens?: string[];
 };
 
-export type PreviewVerbosity = 'full' | 'compact';
+export type PreviewVerbosity = "full" | "compact";
 
 export type GenericOutput = {
   artifacts: string[];
@@ -60,23 +67,23 @@ export type GenericOutput = {
   artifactsDetail?: ArtifactDetail[];
 };
 
-export type BrandApplyStrategy = 'alias' | 'patch';
+export type BrandApplyStrategy = "alias" | "patch";
 
 export type BrandApplyInput = BaseInput & {
-  brand?: 'A';
+  brand?: "A";
   delta: Record<string, unknown> | Record<string, unknown>[];
   strategy?: BrandApplyStrategy;
   /** Scope modifications to specific theme files. Defaults to all themes. */
-  themes?: Array<'base' | 'dark' | 'hc'>;
+  themes?: Array<"base" | "dark" | "hc">;
   preview?: {
     verbosity?: PreviewVerbosity;
   };
 };
 
-export type BillingProvider = 'stripe' | 'chargebee';
+export type BillingProvider = "stripe" | "chargebee";
 
 export type BillingReviewKitInput = BaseInput & {
-  object: 'Subscription' | 'Invoice' | 'Plan' | 'Usage';
+  object: "Subscription" | "Invoice" | "Plan" | "Usage";
   fixtures?: BillingProvider[];
 };
 
@@ -115,7 +122,7 @@ export type ReleaseTagResult = GenericOutput & {
   warnings?: string[];
 };
 
-export type StructuredDataset = 'components' | 'tokens' | 'manifest';
+export type StructuredDataset = "components" | "tokens" | "manifest";
 
 export type StructuredDataFetchInput = {
   dataset: StructuredDataset;
@@ -145,7 +152,7 @@ export type StructuredDataFetchOutput = {
   resolvedVersion?: string | null;
 };
 
-export type CatalogListDetail = 'summary' | 'full';
+export type CatalogListDetail = "summary" | "full";
 
 export type CatalogListInput = {
   category?: string;
@@ -171,7 +178,7 @@ export type CatalogListInput = {
 };
 
 export type ComponentCodeReference = {
-  kind: 'storybook' | 'code-connect';
+  kind: "storybook" | "code-connect";
   /**
    * Repo-relative path (POSIX) to a source file containing a usage example.
    */
@@ -186,7 +193,7 @@ export type ComponentCodeReference = {
   snippet: string;
 };
 
-export type ComponentStatus = 'stable' | 'beta' | 'planned';
+export type ComponentStatus = "stable" | "beta" | "planned";
 
 export type ComponentCatalogSummary = {
   name: string;
@@ -234,12 +241,12 @@ export type CatalogListOutput = {
   };
 };
 
-export type CodegenFramework = 'react' | 'vue' | 'html';
+export type CodegenFramework = "react" | "vue" | "html";
 
-export type CodegenStyling = 'inline' | 'tokens' | 'tailwind';
+export type CodegenStyling = "inline" | "tokens" | "tailwind";
 
 export type CodeGenerateInput = {
-  schema?: import('../schemas/generated.js').UiSchema;
+  schema?: import("../schemas/generated.js").UiSchema;
   schemaRef?: string;
   framework: CodegenFramework;
   options?: {
@@ -256,7 +263,7 @@ export type CodegenIssue = {
 };
 
 export type CodeGenerateOutput = {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   framework: CodegenFramework;
   code: string;
   fileExtension: string;
@@ -280,14 +287,16 @@ export type MapCreateInput = {
   propMappings?: Array<{
     externalProp: string;
     oodsProp: string;
-    coercion?: (
-      | { type: 'enum'; mapping: Record<string, string> }
-      | { type: 'boolean_to_string'; trueValue: string; falseValue: string }
-      | { type: 'template'; pattern: string }
-      | { type: 'identity' }
-    ) | null;
+    coercion?:
+      | (
+          | { type: "enum"; mapping: Record<string, string> }
+          | { type: "boolean_to_string"; trueValue: string; falseValue: string }
+          | { type: "template"; pattern: string }
+          | { type: "identity" }
+        )
+      | null;
   }>;
-  confidence?: 'auto' | 'manual';
+  confidence?: "auto" | "manual";
   metadata?: {
     author?: string;
     notes?: string;
@@ -306,7 +315,7 @@ export type MapCreateError = {
 };
 
 export type MapCreateOutput = {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   mapping: Record<string, unknown>;
   etag: string;
   applied?: boolean;
@@ -314,7 +323,7 @@ export type MapCreateOutput = {
   errors?: MapCreateError;
 };
 
-export type MapApplyAction = 'create' | 'patch' | 'skip' | 'conflict';
+export type MapApplyAction = "create" | "patch" | "skip" | "conflict";
 
 export type Stage1AlternateInterpretation =
   | string
@@ -333,11 +342,17 @@ export type Stage1AlternateVerb =
     };
 
 export type Stage1ActionPrecondition = {
-  type: 'auth' | 'role' | 'state' | 'data';
+  type: "auth" | "role" | "state" | "data";
   description?: string;
   confidence?: number;
   evidence_chain?: Record<string, unknown>[];
 };
+
+export type Stage1DisambiguationDecision =
+  GeneratedStage1DisambiguationDecision;
+export type Stage1PreferredTermEntity = GeneratedStage1PreferredTermEntity;
+export type Stage1CapabilityEntity = GeneratedStage1CapabilityEntity;
+export type Stage1ProjectionVariant = GeneratedStage1ProjectionVariant;
 
 export type Stage1CandidateDiff = {
   added_traits: string[];
@@ -382,7 +397,7 @@ export type Stage1CandidateAction = {
 
 export type Stage1Conflict = {
   type: string;
-  severity: 'info' | 'warning' | 'error';
+  severity: "info" | "warning" | "error";
   description: string;
   action_id?: string;
   object_id?: string;
@@ -390,7 +405,7 @@ export type Stage1Conflict = {
 };
 
 export type Stage1RegistryFetchTelemetry = {
-  source: 'pre-supplied' | 'transport' | 'empty-fallback';
+  source: "pre-supplied" | "transport" | "empty-fallback";
   entries_count: number;
   warnings?: string[];
 };
@@ -408,7 +423,7 @@ export type Stage1ReconciliationSummary = {
 };
 
 export type Stage1ReconciliationReport = {
-  kind: 'reconciliation_report';
+  kind: "reconciliation_report";
   schema_version: string;
   generated_at: string;
   target: {
@@ -421,6 +436,7 @@ export type Stage1ReconciliationReport = {
   conflicts?: Stage1Conflict[];
   coverage_gaps?: Record<string, unknown>[];
   validation_failures?: Record<string, unknown>[];
+  disambiguation_decisions?: Stage1DisambiguationDecision[];
   manifest?: Stage1ReconciliationManifest;
   reconciliation_summary?: Stage1ReconciliationSummary;
 };
@@ -435,7 +451,7 @@ export type MapApplyInput = {
 export type MapApplyRoute = {
   objectId: string;
   name: string;
-  action: 'create' | 'patch' | 'skip';
+  action: "create" | "patch" | "skip";
   confidence: number;
   recommendedOodsTraits: string[];
   existingMapId?: string;
@@ -451,7 +467,7 @@ export type MapApplyQueued = {
   action: MapApplyAction;
   confidence: number;
   threshold: number;
-  queueReason: 'below_confidence';
+  queueReason: "below_confidence";
   recommendedOodsTraits: string[];
   existingMapId?: string;
   reason: string;
@@ -461,7 +477,7 @@ export type MapApplyQueued = {
 export type MapApplyConflict = {
   objectId: string;
   name: string;
-  action: 'conflict';
+  action: "conflict";
   confidence: number;
   existingMapId?: string;
   reason: string;
@@ -573,7 +589,7 @@ export type MapResolveInput = {
 };
 
 export type MapResolveOutput = {
-  status: 'ok' | 'not_found';
+  status: "ok" | "not_found";
   mapping?: Record<string, unknown>;
   propTranslations?: MapPropTranslation[];
   message?: string;
@@ -583,23 +599,29 @@ export type MapUpdateInput = {
   id: string;
   updates: {
     oodsTraits?: string[];
-    confidence?: 'auto' | 'manual';
+    confidence?: "auto" | "manual";
     propMappings?: Array<{
       externalProp: string;
       oodsProp: string;
-      coercion?: (
-        | { type: 'enum'; mapping: Record<string, string> }
-        | { type: 'boolean_to_string'; trueValue: string; falseValue: string }
-        | { type: 'template'; pattern: string }
-        | { type: 'identity' }
-      ) | null;
+      coercion?:
+        | (
+            | { type: "enum"; mapping: Record<string, string> }
+            | {
+                type: "boolean_to_string";
+                trueValue: string;
+                falseValue: string;
+              }
+            | { type: "template"; pattern: string }
+            | { type: "identity" }
+          )
+        | null;
     }>;
     notes?: string;
   };
 };
 
 export type MapUpdateOutput = {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   mapping?: Record<string, unknown>;
   etag?: string;
   changes?: string[];
@@ -611,7 +633,7 @@ export type MapDeleteInput = {
 };
 
 export type MapDeleteOutput = {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   deleted?: {
     id: string;
     externalSystem: string;

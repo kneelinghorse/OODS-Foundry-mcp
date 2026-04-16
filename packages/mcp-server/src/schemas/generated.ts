@@ -744,6 +744,10 @@ export namespace ComponentMappingSchemaSchema {
      */
     confidence: 'auto' | 'manual';
     metadata?: MappingMetadata;
+    /**
+     * Draft v1.4.0-gated cross-surface identity relation. Optional stub only; current handlers neither emit nor mutate it.
+     */
+    projection_variants?: ProjectionVariant[];
   }
   export interface PropMapping {
     /**
@@ -776,6 +780,44 @@ export namespace ComponentMappingSchemaSchema {
      * Free-form notes about this mapping.
      */
     notes?: string;
+  }
+  export interface ProjectionVariant {
+    /**
+     * Stable identifier for the cross-surface projection.
+     */
+    id: string;
+    /**
+     * Surface label such as desktop, mobile, modal, or sidebar.
+     */
+    surface: string;
+    /**
+     * Surface-specific component label when it differs from the canonical map name.
+     */
+    external_component?: string;
+    /**
+     * Optional first-class capability entity linked to this projection.
+     */
+    capability_id?: string;
+    /**
+     * Representative selector or cluster signature.
+     */
+    selector?: string;
+    /**
+     * Confidence of the cross-surface identity merge.
+     */
+    confidence?: number;
+    /**
+     * Evidence supporting the identity-resolution link.
+     */
+    evidence_chain?: {
+      [k: string]: any;
+    }[];
+    /**
+     * Open metadata bag reserved for future v1.4.0+ relation details.
+     */
+    metadata?: {
+      [k: string]: any;
+    };
   }
 }
 export type ComponentMappingSchema = ComponentMappingSchemaSchema.ComponentMappingSchema;
@@ -1490,6 +1532,10 @@ export namespace MapApplyInputSchema {
     validation_failures?: {
       [k: string]: any;
     }[];
+    /**
+     * Draft v1.4.0-gated review-decision ingress. Optional and ignored by current v1.3.x write-side behavior.
+     */
+    disambiguation_decisions?: DisambiguationDecision[];
     manifest?: Manifest;
     reconciliation_summary?: ReconciliationSummary;
   }
@@ -1531,6 +1577,31 @@ export namespace MapApplyInputSchema {
     action_id?: string;
     object_id?: string;
     existing_map_id?: string;
+  }
+  /**
+   * Draft v1.4.0-gated review-decision payload. OODS accepts the shape but current map.apply handlers ignore it.
+   */
+  export interface DisambiguationDecision {
+    decision_id: string;
+    decision_type: 'preferred_name' | 'preferred_role' | 'mapping_rejection' | 'canonical_term';
+    scope: 'run' | 'target' | 'registry';
+    status: 'proposed' | 'accepted' | 'rejected' | 'promoted';
+    target_kind: 'candidate_object' | 'candidate_action' | 'preferred_term';
+    target_id: string;
+    selected_value: string;
+    rationale: string;
+    alternatives?: DisambiguationAlternative[];
+    preferred_term_id?: string;
+    decided_by?: 'human' | 'agent' | 'system';
+    decided_at: string;
+    metadata?: {
+      [k: string]: any;
+    };
+  }
+  export interface DisambiguationAlternative {
+    value: string;
+    score?: number;
+    reasoning?: string;
   }
   export interface Manifest {
     inputs?: {
@@ -3419,6 +3490,221 @@ export namespace SchemaSaveOutputSchema {
   }
 }
 export type SchemaSaveOutput = SchemaSaveOutputSchema.SchemaSaveOutput;
+
+// Source: stage1-capability-entity.json
+export namespace Stage1CapabilityEntitySchema {
+  /**
+   * Draft v1.4.0-gated first-class capability entity for Stage1 capability rollup output. Additive stub only; no current OODS handler consumes it.
+   */
+  export interface Stage1CapabilityEntity {
+    entity_type: 'capability';
+    /**
+     * Stable identifier for the rolled-up capability.
+     */
+    id: string;
+    /**
+     * Kebab-case capability slug.
+     */
+    slug: string;
+    /**
+     * Display label for the capability.
+     */
+    name: string;
+    /**
+     * Verb that anchors the capability across surfaces.
+     */
+    canonical_verb: string;
+    /**
+     * Alternate verbs or labels that resolve to the same capability.
+     */
+    aliases?: string[];
+    /**
+     * Canonical OODS traits associated with the capability.
+     */
+    oods_traits?: string[];
+    /**
+     * Map-side projection_variants that present this capability.
+     */
+    projection_variant_ids?: string[];
+    /**
+     * Optional preconditions aggregated across action exposures.
+     */
+    preconditions?: {
+      type: 'auth' | 'role' | 'state' | 'data';
+      description?: string;
+      confidence?: number;
+      evidence_chain?: {
+        [k: string]: any;
+      }[];
+    }[];
+    /**
+     * Open metadata bag reserved for future capability/API linkage.
+     */
+    metadata?: {
+      [k: string]: any;
+    };
+  }
+}
+export type Stage1CapabilityEntity = Stage1CapabilityEntitySchema.Stage1CapabilityEntity;
+
+// Source: stage1-disambiguation-decision.json
+export namespace Stage1DisambiguationDecisionSchema {
+  /**
+   * Draft v1.4.0-gated review-decision shape for reconciliation_report.disambiguation_decisions[]. Additive stub only; current OODS handlers do not consume it.
+   */
+  export interface Stage1DisambiguationDecision {
+    /**
+     * Stable identifier for the decision event.
+     */
+    decision_id: string;
+    /**
+     * Kind of disambiguation outcome produced during review.
+     */
+    decision_type: 'preferred_name' | 'preferred_role' | 'mapping_rejection' | 'canonical_term';
+    /**
+     * Decision lifetime. Registry scope means the decision is eligible for OODS promotion.
+     */
+    scope: 'run' | 'target' | 'registry';
+    /**
+     * Lifecycle state of the decision.
+     */
+    status: 'proposed' | 'accepted' | 'rejected' | 'promoted';
+    /**
+     * Which Stage1 surface the decision applies to.
+     */
+    target_kind: 'candidate_object' | 'candidate_action' | 'preferred_term';
+    /**
+     * Identifier of the reviewed object/action/term.
+     */
+    target_id: string;
+    /**
+     * Canonical value selected by the reviewer.
+     */
+    selected_value: string;
+    /**
+     * Human-readable explanation for the selection.
+     */
+    rationale: string;
+    /**
+     * Competing interpretations considered during review.
+     */
+    alternatives?: {
+      value: string;
+      score?: number;
+      reasoning?: string;
+    }[];
+    /**
+     * Optional promoted preferred_term/disambiguation entity id once the decision graduates from run-scoped state.
+     */
+    preferred_term_id?: string;
+    /**
+     * Actor that finalized the decision.
+     */
+    decided_by?: 'human' | 'agent' | 'system';
+    /**
+     * When the decision was made.
+     */
+    decided_at: string;
+    /**
+     * Open metadata bag reserved for future v1.4.0+ contract details.
+     */
+    metadata?: {
+      [k: string]: any;
+    };
+  }
+}
+export type Stage1DisambiguationDecision = Stage1DisambiguationDecisionSchema.Stage1DisambiguationDecision;
+
+// Source: stage1-preferred-term-entity.json
+export namespace Stage1PreferredTermEntitySchema {
+  /**
+   * Draft v1.4.0-gated OODS registry entity for promoted disambiguation/canonical-term decisions. Additive stub only.
+   */
+  export interface Stage1PreferredTermEntity {
+    entity_type: 'preferred_term';
+    /**
+     * Stable registry identifier for the promoted term entity.
+     */
+    id: string;
+    /**
+     * Kebab-case canonical slug.
+     */
+    slug: string;
+    /**
+     * Human-readable canonical label.
+     */
+    label: string;
+    /**
+     * Alternate labels that collapse into the canonical term.
+     */
+    aliases: string[];
+    /**
+     * Target-scoped during incubation, registry-scoped once promoted.
+     */
+    scope: 'target' | 'registry';
+    /**
+     * Optional domain or namespace for the term.
+     */
+    domain?: string;
+    /**
+     * Decision ids that promoted this term into the registry.
+     */
+    source_decision_ids?: string[];
+    /**
+     * Open metadata bag reserved for future registry-side term semantics.
+     */
+    metadata?: {
+      [k: string]: any;
+    };
+  }
+}
+export type Stage1PreferredTermEntity = Stage1PreferredTermEntitySchema.Stage1PreferredTermEntity;
+
+// Source: stage1-projection-variant.json
+export namespace Stage1ProjectionVariantSchema {
+  /**
+   * Draft v1.4.0-gated cross-surface identity relation for component mappings. Represents one surface-specific projection of a canonical map/capability.
+   */
+  export interface Stage1ProjectionVariant {
+    /**
+     * Stable identifier for the projection variant.
+     */
+    id: string;
+    /**
+     * Surface label such as desktop, mobile, modal, or sidebar.
+     */
+    surface: string;
+    /**
+     * Observed surface-specific component label when it differs from the canonical map name.
+     */
+    external_component?: string;
+    /**
+     * Optional first-class capability entity linked to this surface projection.
+     */
+    capability_id?: string;
+    /**
+     * Representative selector or cluster signature for the surface projection.
+     */
+    selector?: string;
+    /**
+     * Confidence score for the identity-resolution link.
+     */
+    confidence?: number;
+    /**
+     * Evidence supporting the cross-surface identity merge.
+     */
+    evidence_chain?: {
+      [k: string]: any;
+    }[];
+    /**
+     * Open metadata bag reserved for future cross-surface identity details.
+     */
+    metadata?: {
+      [k: string]: any;
+    };
+  }
+}
+export type Stage1ProjectionVariant = Stage1ProjectionVariantSchema.Stage1ProjectionVariant;
 
 // Source: structuredData.fetch.input.json
 export namespace StructuredDataFetchInputSchema {

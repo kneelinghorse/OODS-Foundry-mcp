@@ -1,121 +1,444 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useDebounce } from './hooks';
-import { runPipeline, runTool, healthCheck, type PipelineResult, type BridgeResponse } from './bridge-client';
-import { IntentInput } from './components/IntentInput';
-import { Selectors } from './components/Selectors';
-import { PreviewPanel } from './components/PreviewPanel';
-import { CodePanel } from './components/CodePanel';
-import { StatusBar } from './components/StatusBar';
-import { StarterPrompts } from './components/StarterPrompts';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  healthCheck,
+  runMapApply,
+  runPipeline,
+  runTool,
+  type BridgeResponse,
+  type MapApplyResult,
+  type PipelineResult,
+} from "./bridge-client";
+import { useDebounce } from "./hooks";
+import { IntentInput } from "./components/IntentInput";
+import { Selectors } from "./components/Selectors";
+import { PreviewPanel } from "./components/PreviewPanel";
+import { CodePanel } from "./components/CodePanel";
+import { StatusBar } from "./components/StatusBar";
+import { StarterPrompts } from "./components/StarterPrompts";
+import {
+  Stage1DemoPanel,
+  type Stage1FixtureMeta,
+} from "./components/Stage1DemoPanel";
 
-type Framework = 'react' | 'vue' | 'html';
-type Styling = 'inline' | 'tokens' | 'tailwind';
-type Brand = 'default' | 'A' | 'B';
+type Framework = "react" | "vue" | "html";
+type Styling = "inline" | "tokens" | "tailwind";
+type Brand = "default" | "A" | "B";
+type ViewMode = "compose" | "stage1";
+
+const STAGE1_FIXTURES: Record<Stage1FixtureMeta["id"], Stage1FixtureMeta> = {
+  linear: {
+    id: "linear",
+    label: "Linear",
+    reportPath:
+      "../Stage1/out/stage1/linear-reconciliation-s43-validation/82201fef-efed-4bcf-8b39-192a09555745/artifacts/reconciliation_report.json",
+    targetUrl: "https://linear.app/",
+    targetId: "82201fef-efed-4bcf-8b39-192a09555745",
+    candidateObjects: 93,
+    candidateActions: 9,
+    verdictCounts: {
+      create: 93,
+      patch: 0,
+      skip: 0,
+      conflict: 0,
+    },
+    lowConfidenceConflictAnnotations: 4,
+  },
+  stripe: {
+    id: "stripe",
+    label: "Stripe",
+    reportPath:
+      "../Stage1/out/stage1/stripe-reconciliation-s43-validation/da66f1d2-0d23-43c1-ba29-5c0ec7be631e/artifacts/reconciliation_report.json",
+    targetUrl: "https://stripe.com/",
+    targetId: "da66f1d2-0d23-43c1-ba29-5c0ec7be631e",
+    candidateObjects: 195,
+    candidateActions: 33,
+    verdictCounts: {
+      create: 195,
+      patch: 0,
+      skip: 0,
+      conflict: 0,
+    },
+    lowConfidenceConflictAnnotations: 11,
+  },
+};
+
+const SYNTHETIC_PATCH_FIXTURE_PATH =
+  "packages/mcp-server/test/fixtures/reconciliation-report-v1.1.0.json";
+
+function getInitialView(): ViewMode {
+  return window.location.hash === "#stage1" ? "stage1" : "compose";
+}
+
+function setViewHash(next: ViewMode): void {
+  if (next === "stage1") {
+    window.location.hash = "stage1";
+    return;
+  }
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}`,
+  );
+}
+
+function buildStage1CodeSnippet(
+  fixture: Stage1FixtureMeta,
+  framework: Framework,
+  styling: Styling,
+): string {
+  const header = `// Stage1 reconciliation consumer (${fixture.label})\n// Dry-run via the playground bridge, then hand off to code.generate (${framework}, ${styling}).\n`;
+
+  if (framework === "vue") {
+    return `${header}
+<script setup lang="ts">
+import { onMounted, ref } from 'vue';
+
+type MapApplyResult = {
+  applied: Array<{ name: string }>;
+  queued: Array<{ name: string; confidence: number }>;
+  conflicted: Array<{ name: string }>;
+};
+
+const routing = ref<MapApplyResult | null>(null);
+
+onMounted(async () => {
+  const response = await fetch('/api/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tool: 'map_apply',
+      input: {
+        reportPath: '${fixture.reportPath}',
+        minConfidence: 0.75,
+      },
+    }),
+  });
+
+  const payload = await response.json();
+  routing.value = payload.result;
+
+  // Example downstream hand-off:
+  // await client.callTool('code_generate', {
+  //   schemaRef,
+  //   framework: '${framework}',
+  //   options: { styling: '${styling}', typescript: true },
+  // });
+});
+</script>
+
+<template>
+  <section v-if="routing">
+    <h2>${fixture.label} reconciliation</h2>
+    <p>{{ routing.applied.length }} applied / {{ routing.queued.length }} queued</p>
+  </section>
+</template>
+`;
+  }
+
+  if (framework === "html") {
+    return `${header}
+<script type="module">
+  async function boot() {
+    const response = await fetch('/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'map_apply',
+        input: {
+          reportPath: '${fixture.reportPath}',
+          minConfidence: 0.75,
+        },
+      }),
+    });
+
+    const payload = await response.json();
+    const summary = document.querySelector('[data-stage1-summary]');
+    if (!summary) return;
+    summary.textContent = \`\${payload.result.applied.length} applied / \${payload.result.queued.length} queued\`;
+  }
+
+  boot();
+
+  // Example downstream hand-off:
+  // code_generate({ schemaRef, framework: '${framework}', options: { styling: '${styling}' } })
+</script>
+
+<section class="stage1-reconciliation">
+  <h2>${fixture.label} reconciliation</h2>
+  <p data-stage1-summary>Loading…</p>
+</section>
+`;
+  }
+
+  return `${header}
+import { useEffect, useState } from 'react';
+
+type MapApplyResult = {
+  applied: Array<{ name: string }>;
+  queued: Array<{ name: string; confidence: number }>;
+  conflicted: Array<{ name: string }>;
+};
+
+export function Stage1ReconciliationConsumer() {
+  const [routing, setRouting] = useState<MapApplyResult | null>(null);
+
+  useEffect(() => {
+    fetch('/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tool: 'map_apply',
+        input: {
+          reportPath: '${fixture.reportPath}',
+          minConfidence: 0.75,
+        },
+      }),
+    })
+      .then((response) => response.json())
+      .then((payload) => setRouting(payload.result));
+  }, []);
+
+  // Example downstream hand-off:
+  // await client.callTool('code_generate', {
+  //   schemaRef,
+  //   framework: '${framework}',
+  //   options: { styling: '${styling}', typescript: true },
+  // });
+
+  if (!routing) return <div>Loading reconciliation preview…</div>;
+
+  return (
+    <section>
+      <h2>${fixture.label} reconciliation</h2>
+      <p>{routing.applied.length} applied / {routing.queued.length} queued</p>
+    </section>
+  );
+}
+`;
+}
+
+function resolveToolResult<T>(response: BridgeResponse<T>): T {
+  if ("error" in response && response.error) {
+    throw new Error(response.error.message);
+  }
+  if ("ok" in response && response.ok && response.result) {
+    return response.result;
+  }
+  throw new Error("Bridge returned an unexpected response shape.");
+}
 
 export default function App() {
-  const [intent, setIntent] = useState('');
-  const [framework, setFramework] = useState<Framework>('react');
-  const [styling, setStyling] = useState<Styling>('tokens');
-  const [brand, setBrand] = useState<Brand>('default');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [view, setView] = useState<ViewMode>(getInitialView);
+  const [intent, setIntent] = useState("");
+  const [framework, setFramework] = useState<Framework>("react");
+  const [styling, setStyling] = useState<Styling>("tokens");
+  const [brand, setBrand] = useState<Brand>("default");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [stage1FixtureId, setStage1FixtureId] =
+    useState<Stage1FixtureMeta["id"]>("linear");
 
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<PipelineResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [composeLoading, setComposeLoading] = useState(false);
+  const [composeResult, setComposeResult] = useState<PipelineResult | null>(
+    null,
+  );
+  const [composeError, setComposeError] = useState<string | null>(null);
+
+  const [stage1Loading, setStage1Loading] = useState(false);
+  const [stage1Result, setStage1Result] = useState<MapApplyResult | null>(null);
+  const [syntheticPatchResult, setSyntheticPatchResult] =
+    useState<MapApplyResult | null>(null);
+  const [stage1Error, setStage1Error] = useState<string | null>(null);
+
   const [bridgeOk, setBridgeOk] = useState<boolean | null>(null);
 
   const debouncedIntent = useDebounce(intent, 400);
+  const activeFixture = STAGE1_FIXTURES[stage1FixtureId];
 
   useEffect(() => {
-    healthCheck().then((h) => setBridgeOk(h.ok));
+    healthCheck().then((health) => setBridgeOk(health.ok));
   }, []);
 
-  const run = useCallback(async () => {
-    if (!debouncedIntent.trim()) return;
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    const onHashChange = () => setView(getInitialView());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
-    const resp: BridgeResponse<PipelineResult> = await runPipeline({
+  const handleViewChange = useCallback((next: ViewMode) => {
+    setViewHash(next);
+    setView(next);
+  }, []);
+
+  const runComposePipeline = useCallback(async () => {
+    if (view !== "compose" || !debouncedIntent.trim()) return;
+    setComposeLoading(true);
+    setComposeError(null);
+
+    const response: BridgeResponse<PipelineResult> = await runPipeline({
       intent: debouncedIntent,
       framework,
       styling,
-      options: { compact: false, showConfidence: true, confidenceThreshold: 0.5 },
+      options: {
+        compact: false,
+        showConfidence: true,
+        confidenceThreshold: 0.5,
+      },
     });
 
-    setLoading(false);
+    setComposeLoading(false);
 
-    if ('error' in resp && resp.error) {
-      setError(resp.error.message);
-      setResult(null);
-    } else if ('ok' in resp && resp.ok && resp.result) {
-      if (resp.result.error) {
-        setError(`[${resp.result.error.step}] ${resp.result.error.message}`);
-      }
-      setResult(resp.result);
+    if ("error" in response && response.error) {
+      setComposeError(response.error.message);
+      setComposeResult(null);
+      return;
     }
-  }, [debouncedIntent, framework, styling]);
+
+    if ("ok" in response && response.ok && response.result) {
+      if (response.result.error) {
+        setComposeError(
+          `[${response.result.error.step}] ${response.result.error.message}`,
+        );
+      }
+      setComposeResult(response.result);
+    }
+  }, [debouncedIntent, framework, styling, view]);
 
   useEffect(() => {
-    if (debouncedIntent.trim()) {
-      run();
+    if (view === "compose" && debouncedIntent.trim()) {
+      runComposePipeline();
     }
-  }, [debouncedIntent, run]);
+  }, [debouncedIntent, runComposePipeline, view]);
 
-  const handleStarterSelect = useCallback((starterIntent: string) => {
-    setIntent(starterIntent);
-  }, []);
+  const loadStage1Demo = useCallback(async () => {
+    if (view !== "stage1") return;
+    setStage1Loading(true);
+    setStage1Error(null);
+
+    try {
+      const [realFixture, syntheticFixture] = await Promise.all([
+        runMapApply(activeFixture.reportPath, 0.75),
+        runMapApply(SYNTHETIC_PATCH_FIXTURE_PATH, 0.75),
+      ]);
+
+      setStage1Result(resolveToolResult(realFixture));
+      setSyntheticPatchResult(resolveToolResult(syntheticFixture));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to load Stage1 playground data.";
+      setStage1Error(message);
+      setStage1Result(null);
+    } finally {
+      setStage1Loading(false);
+    }
+  }, [activeFixture.reportPath, view]);
+
+  useEffect(() => {
+    if (view === "stage1") {
+      loadStage1Demo();
+    }
+  }, [loadStage1Demo, view]);
+
+  const handleStarterSelect = useCallback(
+    (starterIntent: string) => {
+      setIntent(starterIntent);
+      handleViewChange("compose");
+    },
+    [handleViewChange],
+  );
 
   const handleSaveSchema = useCallback(async () => {
-    if (!result?.schemaRef) return;
+    if (!composeResult?.schemaRef) return;
     const name = `playground-${Date.now()}`;
-    const resp = await runTool('schema_save', {
+    const response = await runTool("schema_save", {
       name,
-      schemaRef: result.schemaRef,
+      schemaRef: composeResult.schemaRef,
     });
-    if ('ok' in resp && resp.ok) {
-      setError(null);
-    } else if ('error' in resp && resp.error) {
-      setError(resp.error.message);
+    if ("ok" in response && response.ok) {
+      setComposeError(null);
+    } else if ("error" in response && response.error) {
+      setComposeError(response.error.message);
     }
-  }, [result?.schemaRef]);
+  }, [composeResult?.schemaRef]);
 
   const handleDownloadHtml = useCallback(() => {
-    const html = result?.render?.html;
+    const html = composeResult?.render?.html;
     if (!html) return;
-    const blob = new Blob([html], { type: 'text/html' });
+    const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'oods-preview.html';
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "oods-preview.html";
+    link.click();
     URL.revokeObjectURL(url);
-  }, [result?.render?.html]);
+  }, [composeResult?.render?.html]);
+
+  const stage1CodeSnippet = useMemo(
+    () => buildStage1CodeSnippet(activeFixture, framework, styling),
+    [activeFixture, framework, styling],
+  );
+
+  const activeLoading = view === "compose" ? composeLoading : stage1Loading;
+  const activeError = view === "compose" ? composeError : stage1Error;
+  const activeSummary =
+    view === "compose"
+      ? (composeResult?.summary ?? null)
+      : stage1Result
+        ? `${activeFixture.label}: ${stage1Result.applied.length} applied, ${stage1Result.queued.length} queued at minConfidence 0.75`
+        : "Load a live reconciliation fixture through map_apply dry-run.";
 
   return (
-    <div className="flex flex-col h-screen bg-[#0f1117] text-gray-200">
-      {/* Header */}
-      <header className="flex items-center justify-between px-5 py-3 border-b border-gray-800 shrink-0">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold tracking-tight text-white">OODS Playground</h1>
-          <span className="text-xs text-gray-500 font-mono">v0.1</span>
+    <div className="flex h-screen flex-col bg-[#0f1117] text-gray-200">
+      <header className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-800 px-5 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-lg font-semibold tracking-tight text-white">
+            OODS Playground
+          </h1>
+          <div className="flex overflow-hidden rounded-full border border-gray-700 bg-gray-950">
+            <button
+              onClick={() => handleViewChange("compose")}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                view === "compose"
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-400 hover:bg-gray-900 hover:text-gray-100"
+              }`}
+            >
+              Compose
+            </button>
+            <button
+              onClick={() => handleViewChange("stage1")}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                view === "stage1"
+                  ? "bg-cyan-500 text-slate-950"
+                  : "text-gray-400 hover:bg-gray-900 hover:text-gray-100"
+              }`}
+            >
+              Stage1
+            </button>
+          </div>
+          <span className="font-mono text-xs text-gray-500">
+            {view === "stage1" ? "#stage1" : "v0.1"}
+          </span>
         </div>
-        <div className="flex items-center gap-3">
-          {result?.render?.html && (
+
+        <div className="flex flex-wrap items-center gap-3">
+          {view === "compose" && composeResult?.render?.html ? (
             <button
               onClick={handleDownloadHtml}
-              className="text-xs px-2.5 py-1 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+              className="rounded border border-gray-700 px-2.5 py-1 text-xs text-gray-400 transition-colors hover:border-gray-500 hover:text-white"
             >
               Download HTML
             </button>
-          )}
-          {result?.schemaRef && (
+          ) : null}
+          {view === "compose" && composeResult?.schemaRef ? (
             <button
               onClick={handleSaveSchema}
-              className="text-xs px-2.5 py-1 rounded border border-indigo-600 text-indigo-300 hover:bg-indigo-600/20 transition-colors"
+              className="rounded border border-indigo-600 px-2.5 py-1 text-xs text-indigo-300 transition-colors hover:bg-indigo-600/20"
             >
               Save Schema
             </button>
-          )}
+          ) : null}
           <Selectors
             framework={framework}
             styling={styling}
@@ -125,38 +448,60 @@ export default function App() {
             onStylingChange={setStyling}
             onBrandChange={setBrand}
             onThemeChange={setTheme}
+            showBrandTheme={view === "compose"}
           />
         </div>
       </header>
 
-      {/* Intent input + starters */}
-      <div className="px-5 py-3 border-b border-gray-800 shrink-0 space-y-2">
-        <IntentInput value={intent} onChange={setIntent} loading={loading} />
-        <StarterPrompts onSelect={handleStarterSelect} />
-      </div>
+      {view === "compose" ? (
+        <>
+          <div className="shrink-0 space-y-2 border-b border-gray-800 px-5 py-3">
+            <IntentInput
+              value={intent}
+              onChange={setIntent}
+              loading={composeLoading}
+            />
+            <StarterPrompts onSelect={handleStarterSelect} />
+          </div>
 
-      {/* Main content: preview + code side by side */}
-      <div className="flex flex-1 min-h-0">
-        <PreviewPanel
-          html={result?.render?.html ?? null}
-          theme={theme}
-          loading={loading}
-        />
-        <CodePanel
-          code={result?.code?.output ?? null}
-          framework={result?.code?.framework ?? framework}
-          loading={loading}
-        />
-      </div>
+          <div className="flex min-h-0 flex-1">
+            <PreviewPanel
+              html={composeResult?.render?.html ?? null}
+              theme={theme}
+              loading={composeLoading}
+            />
+            <CodePanel
+              code={composeResult?.code?.output ?? null}
+              framework={composeResult?.code?.framework ?? framework}
+              loading={composeLoading}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="flex min-h-0 flex-1">
+          <Stage1DemoPanel
+            fixture={activeFixture}
+            fixtures={Object.values(STAGE1_FIXTURES)}
+            onFixtureChange={setStage1FixtureId}
+            result={stage1Result}
+            syntheticPatchResult={syntheticPatchResult}
+            loading={stage1Loading}
+          />
+          <CodePanel
+            code={stage1CodeSnippet}
+            framework={framework}
+            loading={false}
+          />
+        </div>
+      )}
 
-      {/* Status bar */}
       <StatusBar
         bridgeOk={bridgeOk}
-        loading={loading}
-        error={error}
-        metrics={result?.metrics ?? null}
-        pipeline={result?.pipeline ?? null}
-        summary={result?.summary ?? null}
+        loading={activeLoading}
+        error={activeError}
+        metrics={view === "compose" ? (composeResult?.metrics ?? null) : null}
+        pipeline={view === "compose" ? (composeResult?.pipeline ?? null) : null}
+        summary={activeSummary}
       />
     </div>
   );

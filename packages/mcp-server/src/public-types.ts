@@ -11,7 +11,7 @@ export type {
   ComposeIssue,
   SlotSelectionEntry,
   ObjectUsedInfo,
-} from './tools/design.compose.js';
+} from "./tools/design.compose.js";
 
 // -- viz.compose --
 export type {
@@ -21,13 +21,10 @@ export type {
   VizIssue,
   ChartType,
   DataBindings,
-} from './tools/viz.compose.js';
+} from "./tools/viz.compose.js";
 
 // -- pipeline --
-export type {
-  PipelineInput,
-  PipelineOutput,
-} from './tools/pipeline.js';
+export type { PipelineInput, PipelineOutput } from "./tools/pipeline.js";
 
 // -- code.generate --
 export type {
@@ -36,7 +33,7 @@ export type {
   CodegenFramework,
   CodegenStyling,
   CodegenIssue,
-} from './tools/types.js';
+} from "./tools/types.js";
 
 // -- catalog --
 export type {
@@ -45,42 +42,33 @@ export type {
   ComponentCatalogSummary,
   ComponentCatalogEntry,
   ComponentStatus,
-} from './tools/types.js';
+} from "./tools/types.js";
 
 // -- object.list --
 export type {
   ObjectListInput,
   ObjectListOutput,
   ObjectListEntry,
-} from './tools/object.list.js';
+} from "./tools/object.list.js";
 
 // -- object.show --
 export type {
   ObjectShowInput,
   ObjectShowOutput,
   ObjectShowTraitEntry,
-} from './tools/object.show.js';
+} from "./tools/object.show.js";
 
 // -- schema management --
-export type {
-  SchemaListInput,
-  SchemaListOutput,
-} from './tools/schema/list.js';
+export type { SchemaListInput, SchemaListOutput } from "./tools/schema/list.js";
 
-export type {
-  SchemaLoadInput,
-  SchemaLoadOutput,
-} from './tools/schema/load.js';
+export type { SchemaLoadInput, SchemaLoadOutput } from "./tools/schema/load.js";
 
-export type {
-  SchemaSaveInput,
-  SchemaSaveOutput,
-} from './tools/schema/save.js';
+export type { SchemaSaveInput, SchemaSaveOutput } from "./tools/schema/save.js";
 
 export type {
   SchemaDeleteInput,
   SchemaDeleteOutput,
-} from './tools/schema/delete.js';
+} from "./tools/schema/delete.js";
 
 // -- mapping tools --
 export type {
@@ -107,6 +95,10 @@ export type {
   Stage1CandidateDiff,
   Stage1CandidateObject,
   Stage1Conflict,
+  Stage1DisambiguationDecision,
+  Stage1PreferredTermEntity,
+  Stage1CapabilityEntity,
+  Stage1ProjectionVariant,
   Stage1ReconciliationManifest,
   Stage1ReconciliationReport,
   Stage1ReconciliationSummary,
@@ -114,14 +106,14 @@ export type {
   RegistrySnapshotOutput,
   RegistrySnapshotTraitInfo,
   RegistrySnapshotObjectInfo,
-} from './tools/types.js';
+} from "./tools/types.js";
 
 // -- structured data --
 export type {
   StructuredDataFetchInput,
   StructuredDataFetchOutput,
   StructuredDataset,
-} from './tools/types.js';
+} from "./tools/types.js";
 
 // -- tokens + brand --
 export type {
@@ -129,7 +121,7 @@ export type {
   BrandApplyInput,
   BrandApplyStrategy,
   GenericOutput,
-} from './tools/types.js';
+} from "./tools/types.js";
 
 // -- versioning --
 export type {
@@ -137,5 +129,5 @@ export type {
   VersionFeatures,
   VersionEntry,
   ChangelogEntry,
-} from './versioning/versions.js';
-export { CURRENT_VERSION } from './versioning/versions.js';
+} from "./versioning/versions.js";
+export { CURRENT_VERSION } from "./versioning/versions.js";
