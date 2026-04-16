@@ -1,16 +1,16 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-04-15 | Sprint 89 complete
+> Updated: 2026-04-16 | Sprint 90 in progress
 
 ## Current State
 
 - **Platform Score:** 100/100 (Sprint 83 confirmed — all V1 categories at full marks)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 127 files, 2099 tests, 0 failures (mcp-server)
+- **Test Suite:** 401 files, 3641 tests, 0 failures (repo-wide serialized Vitest gate)
 - **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
-- **Stage1 Integration:** Contract v1.2.4 — action_mappings[] + action_instances[] dual-feed live (S88), entity resolver (Path B) pinned to §3 narrow slug rule + §4 canonical_name taxonomy live (S89), ORCA role coverage for S40 Strategy 1d additions (page, svg-primitive, media) + post-S40 vocabulary live (S89)
+- **Stage1 Integration:** Contract v1.3.0 write-side consumer live — `map.apply`, `registry.snapshot`, and paginated `map.list` shipped in Sprint 90; real emitted report gate now runs against Stage1 `reconciliation_report.json` from the sibling repo while cross-project CMOS messaging remains externally blocked
 
 ## Validated Release Gates
 
@@ -162,6 +162,17 @@
 | `s89-m05` | Mirrored Stage1 contract v1.2.4 §3 + §4: slug fallback narrowed to strip-prefix + case-insensitive match (no singularization / PascalCase / punctuation stripping — §3 ¶126 drift guard). `TargetEntityDescriptor.hint` added + threaded through to resolver's canonical_name path. 6 new tests pin §3 narrow rule + §4 taxonomy (threshold, sub-threshold pass-through, empty-state envelope). `slugifyEntityId` kept as deprecated shim delegating to `stripEntityPrefix` | Done | Unblocked 2026-04-15 via Stage1 info_push b41bb15d |
 | `s89-m06` | Post-S40 artifact integration: linear.app 5e3a5dbf + stripe.com 09145d03 swapped in as E2E fixtures. Consumer extended to accept `targetEntity` as both string (pre-S40) and `{ id, confidence, signals }` descriptor (post-S40). Added explicit handlers for six post-S40 roles beyond the Strategy 1d three. Role-inference hit rate confirmed on `reconciliation_report.candidate_objects[].inferred_role` — linear 86.5%, stripe 88.2% | Done | `test/e2e/action-mappings.e2e.spec.ts` (12 cases, linear + stripe describe blocks); `ActionInstance.targetEntity: string \| TargetEntityDescriptor`; `TargetEntityDescriptor` interface exported; 6 new role-mapper tests |
 | `s89-m07` | Retest gate + roadmap + sprint closeout: 127 files / 2093 tests / 0 failures; TS build clean | Done | `pnpm --filter @oods/mcp-server run build` + `npx vitest run` |
+
+## Sprint 90 Validated Changes — Reconciliation Write-Side Loop
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s90-m01` | `map.apply` contract freeze: Stage1 `candidate_objects[].action`, `diff.added_traits/removed_traits/changed_fields`, exclusive `report` vs `reportPath`, dry-run default, `minConfidence` default 0.75, and routed output buckets pinned in server/public/sdk types and JSON schemas | Done | `packages/mcp-server/src/tools/types.ts`, `packages/mcp-server/src/schemas/map.apply.*`, `packages/mcp-server/test/contracts/map-apply.spec.ts` |
+| `s90-m02` | `map.apply` handler: verdict routing for `create|patch|skip|conflict`, below-threshold queueing, idempotent re-apply, conflict artifact emission under `.oods/conflicts/`, and validation/error codes for bad inputs | Done | `packages/mcp-server/src/tools/map.apply.ts`, `packages/mcp-server/test/e2e/map-apply.test.ts` |
+| `s90-m03` | `registry.snapshot` bulk-read tool: returns current maps plus keyed traits/objects, `generatedAt`, and stable `etag` for reconciliation consumers | Done | `packages/mcp-server/src/tools/registry.snapshot.ts`, `packages/mcp-server/src/schemas/registry.snapshot.*`, `packages/mcp-server/test/contracts/registry-snapshot.spec.ts` |
+| `s90-m04` | Cursor pagination for `map.list` with legacy full-list back-compat when `cursor`/`limit` are omitted | Done | `packages/mcp-server/src/tools/map.list.ts`, `packages/mcp-server/test/contracts/mapping.spec.ts` |
+| `s90-m05` | Full 8-surface registration audit: registry, fallback registry, policy, generated schemas, adapter descriptions/classification, bridge config, server index, error catalog, API docs, and repo-wide serialized Vitest gate | Done | `packages/mcp-server/test/contracts/s90-registration-audit.spec.ts`; `pnpm exec vitest run --no-file-parallelism` → 401 files / 3641 tests |
+| `s90-m06` | Real emitted Stage1 integration gate: new E2E against sibling Stage1 `reconciliation_report.json` using `reportPath`, registry mutation verified through `registry.snapshot`, sample transcript artifact committed | In Progress | `packages/mcp-server/test/e2e/stage1-reconciliation.test.ts`, `cmos/reports/s90-m06-stage1-reconciliation-transcript-2026-04-16.json` |
 
 ## Carry-Forward Backlog
 

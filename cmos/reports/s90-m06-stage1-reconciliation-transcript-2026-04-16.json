@@ -1,0 +1,47 @@
+{
+  "mission": "s90-m06",
+  "generatedAt": "2026-04-16T18:01:20.000Z",
+  "status": "verified",
+  "source": {
+    "type": "real_emitted_stage1_report",
+    "path": "../Stage1/out/stage1/linear-app/6d75dde3-4313-46fa-b25c-e53c13229a08/artifacts/reconciliation_report.json",
+    "schemaVersion": "1.0.0",
+    "target": {
+      "id": "6d75dde3-4313-46fa-b25c-e53c13229a08",
+      "url": "https://linear.app/"
+    },
+    "candidateObjectCount": 124,
+    "actionCounts": {
+      "create": 124
+    }
+  },
+  "oodsExecution": {
+    "tool": "map.apply",
+    "minConfidence": 0.75,
+    "expectedDryRun": {
+      "applied": 72,
+      "queued": 52,
+      "skipped": 0,
+      "conflicted": 0,
+      "errors": 0,
+      "conflictArtifactPath": ".oods/conflicts/2026-04-15T04-10-27.271Z-6d75dde3-4313-46fa-b25c-e53c13229a08.json"
+    },
+    "expectedApply": {
+      "registrySnapshotMaps": 72,
+      "externalSystem": "linear",
+      "conflictArtifactPath": ".oods/conflicts/2026-04-15T04-10-27.271Z-6d75dde3-4313-46fa-b25c-e53c13229a08.json"
+    }
+  },
+  "verification": {
+    "command": "pnpm exec vitest run packages/mcp-server/test/e2e/map-apply.test.ts packages/mcp-server/test/e2e/stage1-reconciliation.test.ts",
+    "passed": true,
+    "verifiedAt": "2026-04-16T18:01:20.000Z",
+    "tests": 2,
+    "testFiles": 2
+  },
+  "notes": [
+    "This transcript tracks the real emitted Stage1 report approved by the user for Sprint 90 integration gating.",
+    "The report exercises backward-compatibility with schema_version 1.0.0: all emitted candidate object verdicts are create, while OODS-side minConfidence routing produces the review artifact via below-threshold queueing.",
+    "Cross-project CMOS messaging remains unavailable from this environment at transcript creation time."
+  ]
+}
