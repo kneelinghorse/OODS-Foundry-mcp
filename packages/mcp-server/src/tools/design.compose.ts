@@ -34,6 +34,7 @@ import {
 import { handle as validateHandle } from './repl.validate.js';
 import type { ComponentCatalogSummary } from './types.js';
 import { createSchemaRef, describeSchemaRef } from './schema-ref.js';
+import { resolveEntity, isResolved as isEntityResolved } from './entity-resolver.js';
 import { loadObject } from '../objects/object-loader.js';
 import { composeObject, type ComposedObject } from '../objects/trait-composer.js';
 import type { FieldDefinition, SemanticMapping, StateMachineDefinition, TraitAction } from '../objects/types.js';
@@ -82,12 +83,55 @@ export interface ActionMapping {
  * (verb→trait vocabulary), the consumer can attach per-slot actions[] for
  * components whose trait lookup matches.
  */
+/**
+ * Stage1 BridgeSummary shape for `actions[].targetEntity`:
+ *   { id, hint?, confidence?, signals? }
+ *
+ * Per Stage1 contract v1.2.4 §4:
+ *   - `id`: always present, of the form `entity-<lowercase-name>` (§3).
+ *   - `hint`: best-effort OODS-object-name hint. Present both at full
+ *     emission AND on the sub-threshold envelope `{ id, hint, confidence:0,
+ *     signals:[] }` seen on pure-DOM captures (no --api flag upstream).
+ *   - `confidence`: sum-with-cap of the four §4 signals. Emission threshold
+ *     for treating `hint` as authoritative is 0.75; below that the resolver
+ *     falls through to alias/slug per contract §2c.
+ *   - `signals`: stable-ordered subset of {url_slug_match, text_label_match,
+ *     schema_org_type, recurrence_support}. May be empty.
+ *
+ * Pre-S40 runs used a bare string ("entity-customer"). The consumer accepts
+ * both so fixture swaps are a no-op for downstream callers.
+ */
+export interface TargetEntityDescriptor {
+  id: string;
+  /**
+   * Stage1-supplied best-effort OODS object name. Singular PascalCase,
+   * passed through from `entity.name` upstream. Authoritative ONLY when
+   * `confidence` ≥ 0.75 (contract v1.2.4 §4.3 emission threshold).
+   */
+  hint?: string;
+  confidence?: number;
+  signals?: string[];
+  [k: string]: unknown;
+}
+
 export interface ActionInstance {
   actionId?: string;
   name?: string;
   verb: string;
   sourceComponent?: string;
-  targetEntity?: string;
+  /**
+   * Raw Stage1 entity id or structured descriptor. Pre-S40: `"entity-customer"`
+   * (string). Post-S40 (5e3a5dbf+): `{ id, confidence, signals }` object with
+   * Stage1-side entity-resolution signals. Resolved via entity-resolver.
+   */
+  targetEntity?: string | TargetEntityDescriptor;
+  /**
+   * Optional Stage1-supplied canonical OODS object name hint (Path B agreement,
+   * 2026-04-15). Honored by the resolver when confidence ≥ 0.75.
+   */
+  canonicalName?: string;
+  /** Stage1-side confidence for the canonical_name hint (0..1). */
+  canonicalNameConfidence?: number;
   confidence?: number;
   confidenceLabel?: 'low' | 'medium' | 'high' | string;
   [k: string]: unknown;
@@ -2105,10 +2149,56 @@ export function annotateWithActionInstances(
   }
   if (verbToTraits.size === 0) return [];
 
-  // Project instances into synthetic ActionMappings and reuse the main path.
+  // Track unresolved entity ids per sourceComponent for meta.unresolvedEntity
+  // annotation after the synthetic mapping pass (Path B retention).
+  const unresolvedBySourceComponent = new Map<string, string>();
+  const composedObjectName = composed?.object?.name;
+
+  // Project instances into synthetic ActionMappings. Stage1 `targetEntity`
+  // narrows scope: when the resolver returns a specific OODS object AND the
+  // composed object differs, the instance is skipped (it targets another
+  // entity). When the resolver cannot place the raw id, the instance still
+  // flows through so the node isn't silently dropped; the raw id is retained
+  // on matching nodes as meta.unresolvedEntity for author-side triage.
   const synthetic: ActionMapping[] = [];
   for (const inst of instances) {
     const traits = verbToTraits.get(inst.verb) ?? [];
+    if (traits.length === 0) continue;
+
+    if (inst.targetEntity) {
+      // Accept both pre-S40 string and post-S40 { id, hint, confidence,
+      // signals } descriptor shapes (contract v1.2.4 §4.1). The descriptor's
+      // `hint` is Stage1's canonical_name candidate; its `confidence` is the
+      // §4 sum-with-cap score. Resolver gates on the 0.75 threshold so a
+      // sub-threshold hint on a pure-DOM capture falls through to alias/slug
+      // cleanly.
+      const targetEntityId = typeof inst.targetEntity === 'string'
+        ? inst.targetEntity
+        : inst.targetEntity.id;
+      const descriptorHint = typeof inst.targetEntity === 'object'
+        ? inst.targetEntity.hint
+        : undefined;
+      const descriptorConfidence = typeof inst.targetEntity === 'object'
+        ? inst.targetEntity.confidence
+        : undefined;
+      const resolution = resolveEntity(targetEntityId, {
+        canonicalName: inst.canonicalName ?? descriptorHint,
+        canonicalNameConfidence: inst.canonicalNameConfidence ?? descriptorConfidence,
+      });
+      if (isEntityResolved(resolution)) {
+        if (composedObjectName && resolution.objectName !== composedObjectName) {
+          // Entity belongs to a different OODS object — drop silently from the
+          // composed schema; it will still surface on a future compose call
+          // targeting that object.
+          continue;
+        }
+      } else if (inst.sourceComponent) {
+        // Remember the raw id so we can stamp meta.unresolvedEntity on the
+        // matching node after the synthetic mappings are applied.
+        unresolvedBySourceComponent.set(inst.sourceComponent, resolution.rawId);
+      }
+    }
+
     for (const trait of traits) {
       synthetic.push({
         verb: inst.verb,
@@ -2118,5 +2208,22 @@ export function annotateWithActionInstances(
       });
     }
   }
-  return annotateWithActionMappings(schema, synthetic, composed);
+
+  const resolved = annotateWithActionMappings(schema, synthetic, composed);
+
+  if (unresolvedBySourceComponent.size > 0) {
+    const walk = (el: UiElement) => {
+      if (el.component && unresolvedBySourceComponent.has(el.component)) {
+        const rawId = unresolvedBySourceComponent.get(el.component);
+        if (rawId) {
+          el.meta = el.meta ?? {};
+          (el.meta as Record<string, unknown>).unresolvedEntity = rawId;
+        }
+      }
+      el.children?.forEach(walk);
+    };
+    schema.screens.forEach(walk);
+  }
+
+  return resolved;
 }

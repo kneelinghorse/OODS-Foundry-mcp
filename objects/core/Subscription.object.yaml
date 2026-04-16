@@ -43,6 +43,12 @@ traits:
         - monthly
         - yearly
       minorUnits: 100
+  - name: lifecycle/Archivable
+    alias: SubscriptionArchive
+    parameters:
+      gracePeriodDays: 30
+      retainHistory: true
+      restoreWindowDays: 30
 
 schema:
   subscription_id:

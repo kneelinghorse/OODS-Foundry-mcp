@@ -1,16 +1,16 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-04-15 | Sprint 88 complete
+> Updated: 2026-04-15 | Sprint 89 complete
 
 ## Current State
 
 - **Platform Score:** 100/100 (Sprint 83 confirmed — all V1 categories at full marks)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 123 files, 2019 tests, 0 failures (mcp-server)
+- **Test Suite:** 127 files, 2099 tests, 0 failures (mcp-server)
 - **Build:** pnpm build clean, dist rebuilt
 - **Critical Runtime Defects Open:** 0
-- **Stage1 Integration:** Contract v1.1.0 — action_candidates pathway documented, trait actions receiver side live
+- **Stage1 Integration:** Contract v1.2.4 — action_mappings[] + action_instances[] dual-feed live (S88), entity resolver (Path B) pinned to §3 narrow slug rule + §4 canonical_name taxonomy live (S89), ORCA role coverage for S40 Strategy 1d additions (page, svg-primitive, media) + post-S40 vocabulary live (S89)
 
 ## Validated Release Gates
 
@@ -150,6 +150,18 @@
 | `s88-m03` | Pipeline wiring: `PipelineInput.actionMappings` forwarded to compose; `output.compose.resolvedActions` exposed; `pipeline.input.json` + `pipeline.output.json` schemas describe new fields | Done | 2 new pipeline tests (forward + omit); 46 pipeline tests pass |
 | `s88-m04` | E2E integration test: synthetic Stage1 BridgeSummary (modeled on run 6d75dde3) → `pipeline.handle({object:"Subscription", actionMappings})` → assertions on `compose.resolvedActions` (Cancellable+Stateful populated, Archivable filtered); also validates path-qualified + unqualified trait names roll up together | Done | 3 E2E tests in `test/e2e/action-mappings.e2e.spec.ts` |
 | `s88-m05` | Retest gate: mcp-server build clean; full vitest run 2030+/2031 passes — the lone flake (`schema-ref.test.ts` TTL boundary) is a pre-existing timing race under heavy parallelism, passes in isolation and is unrelated to Sprint 88 | Done | `pnpm --filter @oods/mcp-server run build` + `npx vitest run` |
+
+## Sprint 89 Validated Changes — Post-S40 Preparation & Stage1 Consumer Hardening
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s89-m01` | ORCA role → OODS intent mapper: explicit handlers for all 14 observed roles (linear.app aa22b12d) plus Stage1 S40 Strategy 1d additions (`page`, `svg-primitive`, extended `media`); fallback with `fallback=true` + reason preserves raw role for unknown values — no silent drops | Done | `packages/mcp-server/src/compose/orca-role-mapper.ts` + 29 unit tests in `orca-role-mapper.test.ts`. Post-S40 vocabulary expansion (text, data-display, form-control, badge, link, action) added in s89-m06 |
+| `s89-m02` | Entity resolver (Path B) for `actions[].targetEntity → <Name>.object.yaml`: four-tier (canonical_name ≥ 0.75 → alias table → slugification → unresolved retention). `meta.unresolvedEntity` stamped on composed nodes when the raw id can't be mapped so authors fill gaps incrementally | Done | `packages/mcp-server/src/tools/entity-resolver.ts` + alias file `docs/integration/stage1-entity-aliases.json` + schema field added to `repl.ui.schema.json`; 18 unit tests + 2 E2E cases; wired through `annotateWithActionInstances` in `design.compose.ts` |
+| `s89-m03` | Lifecycle coverage: `lifecycle/Archivable` declared on `objects/core/Subscription.object.yaml`; action-mappings E2E flipped to assert Archivable resolves alongside Cancellable/Stateful with full archive/restore verb set | Done | `objects/core/Subscription.object.yaml`; lifecycle assertion in `test/e2e/action-mappings.e2e.spec.ts` |
+| `s89-m04` | TTL-boundary race in `schema-ref.test.ts` eliminated via clock injection through the existing `computeTtlWarning(record, now)` param — no production code change; 50 consecutive parallel runs produced 0 failures | Done | `packages/mcp-server/src/tools/schema-ref.test.ts` |
+| `s89-m05` | Mirrored Stage1 contract v1.2.4 §3 + §4: slug fallback narrowed to strip-prefix + case-insensitive match (no singularization / PascalCase / punctuation stripping — §3 ¶126 drift guard). `TargetEntityDescriptor.hint` added + threaded through to resolver's canonical_name path. 6 new tests pin §3 narrow rule + §4 taxonomy (threshold, sub-threshold pass-through, empty-state envelope). `slugifyEntityId` kept as deprecated shim delegating to `stripEntityPrefix` | Done | Unblocked 2026-04-15 via Stage1 info_push b41bb15d |
+| `s89-m06` | Post-S40 artifact integration: linear.app 5e3a5dbf + stripe.com 09145d03 swapped in as E2E fixtures. Consumer extended to accept `targetEntity` as both string (pre-S40) and `{ id, confidence, signals }` descriptor (post-S40). Added explicit handlers for six post-S40 roles beyond the Strategy 1d three. Role-inference hit rate confirmed on `reconciliation_report.candidate_objects[].inferred_role` — linear 86.5%, stripe 88.2% | Done | `test/e2e/action-mappings.e2e.spec.ts` (12 cases, linear + stripe describe blocks); `ActionInstance.targetEntity: string \| TargetEntityDescriptor`; `TargetEntityDescriptor` interface exported; 6 new role-mapper tests |
+| `s89-m07` | Retest gate + roadmap + sprint closeout: 127 files / 2093 tests / 0 failures; TS build clean | Done | `pnpm --filter @oods/mcp-server run build` + `npx vitest run` |
 
 ## Carry-Forward Backlog
 
