@@ -147,6 +147,14 @@
       "concurrency": 2
     },
     {
+      "tool": "map.apply",
+      "allow": ["designer", "maintainer"],
+      "writes": ["artifacts/structured-data/component-mappings.json", ".oods/conflicts/**"],
+      "timeoutMs": 60000,
+      "ratePerMinute": 30,
+      "concurrency": 1
+    },
+    {
       "tool": "map.create",
       "allow": ["designer", "maintainer"],
       "writes": ["artifacts/structured-data/component-mappings.json"],
@@ -164,6 +172,14 @@
     },
     {
       "tool": "map.resolve",
+      "allow": ["designer", "maintainer"],
+      "readOnly": true,
+      "timeoutMs": 30000,
+      "ratePerMinute": 60,
+      "concurrency": 4
+    },
+    {
+      "tool": "registry.snapshot",
       "allow": ["designer", "maintainer"],
       "readOnly": true,
       "timeoutMs": 30000,

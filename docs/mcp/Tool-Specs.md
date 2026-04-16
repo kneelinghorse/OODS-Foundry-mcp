@@ -632,6 +632,166 @@ Input fields:
 
 ---
 
+### `map.apply`
+
+- **Input schema**: `packages/mcp-server/src/schemas/map.apply.input.json`
+- **Output schema**: `packages/mcp-server/src/schemas/map.apply.output.json`
+- **Status**: Contract frozen in Sprint 90 (`s90-m01`). Implementation lands in `s90-m02`.
+- **Purpose**: Consume a Stage1 `reconciliation_report.json` and route each verdict into `create`, `patch`, `skip`, `conflict`, or `queued` (below-confidence review) buckets before any registry mutation.
+
+Example input (inline report):
+```json
+{
+  "minConfidence": 0.75,
+  "report": {
+    "kind": "reconciliation_report",
+    "schema_version": "1.1.0",
+    "generated_at": "2026-04-16T15:06:35.268Z",
+    "target": { "id": "stage1-linear-smoke", "url": "https://linear.app/" },
+    "candidate_objects": [
+      {
+        "object_id": "obj-issue-row",
+        "name": "Issue Row",
+        "role": "row",
+        "confidence": 0.88,
+        "recommended_oods_traits": ["Listable", "Sortable"],
+        "action": "patch",
+        "reasoning": "Existing row mapping is close but missing sorting capability.",
+        "verdict_reasoning": "Existing map lacks Sortable and needs notes updated for the current evidence set.",
+        "existing_map_id": "linear-issue-row",
+        "diff": {
+          "added_traits": ["Sortable"],
+          "removed_traits": [],
+          "changed_fields": [
+            { "field": "oodsTraits", "from": ["Listable"], "to": ["Listable", "Sortable"] }
+          ]
+        }
+      }
+    ],
+    "manifest": {
+      "inputs": {
+        "oods_registry_fetch": {
+          "source": "transport",
+          "entries_count": 42,
+          "warnings": []
+        }
+      }
+    },
+    "reconciliation_summary": {
+      "mode": "reconciliation",
+      "existing_map_count": 42,
+      "verdict_counts": { "create": 2, "patch": 1, "skip": 1, "conflict": 1 }
+    }
+  }
+}
+```
+
+Example input (`reportPath` variant):
+```json
+{
+  "apply": true,
+  "minConfidence": 0.75,
+  "reportPath": "packages/mcp-server/test/fixtures/reconciliation-report-v1.1.0.json"
+}
+```
+
+Example output:
+```json
+{
+  "applied": [
+    {
+      "objectId": "obj-command-menu",
+      "name": "Command Menu Trigger",
+      "action": "create",
+      "confidence": 0.94,
+      "recommendedOodsTraits": ["Stateful", "Labelled"],
+      "mappingId": "linear-command-menu-trigger",
+      "reason": "No matching external component in the OODS registry snapshot.",
+      "persisted": false
+    }
+  ],
+  "skipped": [
+    {
+      "objectId": "obj-billing-plan-card",
+      "name": "Billing Plan Card",
+      "action": "skip",
+      "confidence": 0.97,
+      "recommendedOodsTraits": ["Priceable", "Stateful"],
+      "existingMapId": "linear-billing-plan-card",
+      "mappingId": "linear-billing-plan-card",
+      "reason": "Existing mapping already matches name, system, and trait set.",
+      "persisted": false
+    }
+  ],
+  "queued": [
+    {
+      "objectId": "obj-experimental-badge",
+      "name": "Experimental Badge",
+      "action": "create",
+      "confidence": 0.61,
+      "threshold": 0.75,
+      "queueReason": "below_confidence",
+      "recommendedOodsTraits": ["Labelled", "Stateful"],
+      "reason": "Candidate remains actionable but should queue for review at the default minConfidence."
+    }
+  ],
+  "conflicted": [
+    {
+      "objectId": "obj-workspace-switcher",
+      "name": "Workspace Switcher",
+      "action": "conflict",
+      "confidence": 0.82,
+      "existingMapId": "linear-workspace-switcher",
+      "reason": "Existing mapping classifies this control as Stateful rather than Navigable."
+    }
+  ],
+  "errors": [],
+  "diff": {
+    "create": 1,
+    "patch": 1,
+    "skip": 1,
+    "conflict": 1,
+    "queued": 1,
+    "changedFields": ["oodsTraits", "metadata.notes"],
+    "addedTraits": ["Sortable"],
+    "removedTraits": []
+  },
+  "conflictArtifactPath": ".oods/conflicts/2026-04-16T15-06-35.268Z-stage1-linear-smoke.json",
+  "etag": "6d6224a2293e24fcefff2060dc60d8b3cf516af14f8d8f7344e3d5d726b7d0d6"
+}
+```
+
+Notes:
+- Accepts exactly one of `report` or `reportPath`.
+- `apply` defaults to `false`; dry-run is the default contract for this mutation tool.
+- `minConfidence` defaults to `0.75`. Candidates below the threshold route to `queued` instead of mutating the registry.
+- Stage1’s shipped v1.1.0 contract uses `candidate_objects[].action` (not `verdict`). Valid values: `create`, `patch`, `skip`, `conflict`.
+- Patch diffs are frozen to the real Stage1 field names: `diff.added_traits`, `diff.removed_traits`, `diff.changed_fields`.
+- `manifest.inputs.oods_registry_fetch.source` is preserved so agents can detect `empty-fallback` reconciliation runs before trusting the results.
+- `alternate_interpretations[]` and `alternate_verbs[]` accept both the new typed object form and the legacy `string[]` form for backward compatibility.
+
+Input fields:
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `apply` | boolean | No (default `false`) | Persist registry mutations when `true`; otherwise return a dry-run plan |
+| `minConfidence` | number | No (default `0.75`) | Queue sub-threshold candidates instead of applying them |
+| `report` | object | Yes, unless `reportPath` is provided | Inline Stage1 reconciliation report payload |
+| `reportPath` | string | Yes, unless `report` is provided | Filesystem path to a reconciliation report artifact |
+
+Output fields:
+| Field | Type | Description |
+|-------|------|-------------|
+| `applied` | array | `create` / `patch` candidates selected for application; each row carries `persisted` to distinguish dry-run vs. apply |
+| `skipped` | array | Candidates whose Stage1 action is `skip` |
+| `queued` | array | Candidates held for review because `confidence < minConfidence` |
+| `conflicted` | array | Candidates with `action: "conflict"` that must not auto-apply |
+| `errors` | array | Per-candidate application failures without throwing away the whole report |
+| `diff` | object | Aggregate counts plus flattened `changedFields`, `addedTraits`, and `removedTraits` for agent inspection |
+| `conflictArtifactPath` | string | Planned or written conflict-artifact path when conflicts or below-confidence items exist |
+| `etag` | string | Registry etag after routing; lets agents detect drift between dry-run and apply |
+
+---
+
 ### `map.list`
 
 - **Input schema**: `packages/mcp-server/src/schemas/map.list.input.json`
@@ -644,6 +804,11 @@ Example input:
 { "externalSystem": "material" }
 ```
 
+Paginated example:
+```json
+{ "externalSystem": "material", "limit": 100, "cursor": "material-button" }
+```
+
 Example output:
 ```json
 {
@@ -652,9 +817,87 @@ Example output:
   ],
   "totalCount": 3,
   "stats": { "mappingCount": 3, "systemCount": 1 },
-  "etag": "a1b2c3..."
+  "etag": "a1b2c3...",
+  "nextCursor": "material-card"
 }
 ```
+
+Notes:
+- Omitting both `cursor` and `limit` preserves the legacy full-list behavior.
+- Pagination is id-sorted and cursor-based. `nextCursor` is the last mapping id returned on the current page.
+- When pagination is requested (`cursor` or `limit` present), the default page size is `100` and the max page size is `500`.
+
+---
+
+### `registry.snapshot`
+
+- **Input schema**: `packages/mcp-server/src/schemas/registry.snapshot.input.json`
+- **Output schema**: `packages/mcp-server/src/schemas/registry.snapshot.output.json`
+- **Status**: Contract + implementation landed in Sprint 90 (`s90-m03`). Registration across every surface happens in `s90-m05`.
+- **Purpose**: Return the full OODS registry state in one call for reconciliation consumers that would otherwise need `map.list` plus N× `map.resolve`.
+
+Example input:
+```json
+{}
+```
+
+Example output:
+```json
+{
+  "maps": [
+    {
+      "id": "material-button",
+      "externalSystem": "material",
+      "externalComponent": "Button",
+      "oodsTraits": ["Stateful", "Labelled"],
+      "confidence": "manual"
+    }
+  ],
+  "traits": {
+    "Addressable": {
+      "name": "Addressable",
+      "version": "1.0.0",
+      "description": "Canonical multi-role address trait.",
+      "category": "core",
+      "tags": ["address"],
+      "contexts": ["detail", "form"],
+      "objects": ["Organization", "User"],
+      "source": "traits/core/Addressable.trait.yaml"
+    }
+  },
+  "objects": {
+    "User": {
+      "name": "User",
+      "version": "1.0.0",
+      "domain": "core.identity",
+      "description": "Canonical user object.",
+      "tags": ["identity"],
+      "traits": [
+        { "reference": "core/Identifiable", "alias": "UserIdentity", "parameters": {} }
+      ],
+      "fields": ["user_id", "email"],
+      "source": "objects/core/User.object.yaml"
+    }
+  },
+  "etag": "6d6224a2293e24fcefff2060dc60d8b3cf516af14f8d8f7344e3d5d726b7d0d6",
+  "generatedAt": "2026-04-16T00:00:00.000Z"
+}
+```
+
+Notes:
+- `maps` come from `artifacts/structured-data/component-mappings.json`.
+- `traits` and `objects` are keyed by name and sourced from the published structured-data components artifact (`artifacts/structured-data/oods-components-*.json` via the same resolution path used by `structuredData.fetch`).
+- `generatedAt` is the latest source timestamp across the mappings doc and components artifact, so it stays stable until one of the underlying sources changes.
+- `etag` is a stable SHA256 hash over the assembled snapshot payload (with `generatedAt` excluded from the hash calculation by the shared structured-data etag logic).
+
+Output fields:
+| Field | Type | Description |
+|-------|------|-------------|
+| `maps` | array | Full component mapping registry |
+| `traits` | object | Trait catalog keyed by trait name |
+| `objects` | object | Object catalog keyed by object name |
+| `etag` | string | Stable hash of the assembled snapshot payload |
+| `generatedAt` | string | Latest underlying source timestamp contributing to the snapshot |
 
 ---
 

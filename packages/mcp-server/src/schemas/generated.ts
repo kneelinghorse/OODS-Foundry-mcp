@@ -1401,6 +1401,260 @@ export namespace JsonSchemaDraft07Schema {
 }
 export type JsonSchemaDraft07 = JsonSchemaDraft07Schema.JsonSchemaDraft07;
 
+// Source: map.apply.input.json
+export namespace MapApplyInputSchema {
+  /**
+   * Apply Stage1 reconciliation verdicts to the component-mapping registry. Accepts exactly one of inline report or reportPath.
+   */
+  export type MapApplyInput = MapApplyInput1 & MapApplyInput2;
+  export type CandidateObject = CandidateObject1 & {
+    object_id: string;
+    name: string;
+    role: string;
+    inferred_role?: string;
+    inferred_role_score?: number;
+    confidence: number;
+    /**
+     * @minItems 1
+     */
+    recommended_oods_traits: [string, ...string[]];
+    recommended_domain?: string;
+    action: 'create' | 'patch' | 'skip' | 'conflict';
+    reasoning: string;
+    verdict_reasoning?: string;
+    existing_map_id?: string;
+    diff?: CandidateDiff;
+    alternate_interpretations?: AlternateInterpretation[];
+    evidence_chain?: EvidenceRef[];
+  };
+  export type CandidateObject1 = {
+    [k: string]: any;
+  } & {
+    [k: string]: any;
+  } & {
+    [k: string]: any;
+  };
+  export type AlternateInterpretation =
+    | string
+    | {
+        role: string;
+        score: number;
+        reasoning: string;
+      };
+  export type AlternateVerb =
+    | string
+    | {
+        verb_id: string;
+        score: number;
+        reasoning: string;
+      };
+  export type MapApplyInput2 = {
+    [k: string]: any;
+  };
+
+  export interface MapApplyInput1 {
+    /**
+     * When true, persist registry mutations. Defaults to dry-run.
+     */
+    apply?: boolean;
+    /**
+     * Candidates below this threshold are routed to queued instead of being applied.
+     */
+    minConfidence?: number;
+    /**
+     * Filesystem path to a reconciliation_report.json artifact.
+     */
+    reportPath?: string;
+    report?: ReconciliationReport;
+  }
+  export interface ReconciliationReport {
+    kind: 'reconciliation_report';
+    schema_version: string;
+    generated_at: string;
+    target: {
+      id: string;
+      url?: string;
+    };
+    /**
+     * @minItems 1
+     */
+    candidate_objects: [CandidateObject, ...CandidateObject1[]];
+    candidate_actions?: CandidateAction[];
+    candidate_traits?: {
+      [k: string]: any;
+    }[];
+    conflicts?: Conflict[];
+    coverage_gaps?: {
+      [k: string]: any;
+    }[];
+    validation_failures?: {
+      [k: string]: any;
+    }[];
+    manifest?: Manifest;
+    reconciliation_summary?: ReconciliationSummary;
+  }
+  export interface CandidateDiff {
+    added_traits: string[];
+    removed_traits: string[];
+    changed_fields: CandidateDiffField[];
+  }
+  export interface CandidateDiffField {
+    field: string;
+    from?: any;
+    to?: any;
+  }
+  export interface EvidenceRef {
+    [k: string]: any;
+  }
+  export interface CandidateAction {
+    action_id: string;
+    name: string;
+    verb: string;
+    source_object_id?: string;
+    confidence?: number;
+    suggested_oods_trait?: string;
+    suggested_action?: string;
+    reasoning?: string;
+    alternate_verbs?: AlternateVerb[];
+    preconditions?: ActionPrecondition[];
+  }
+  export interface ActionPrecondition {
+    type: 'auth' | 'role' | 'state' | 'data';
+    description?: string;
+    confidence?: number;
+    evidence_chain?: EvidenceRef[];
+  }
+  export interface Conflict {
+    type: string;
+    description: string;
+    severity: 'info' | 'warning' | 'error';
+    action_id?: string;
+    object_id?: string;
+    existing_map_id?: string;
+  }
+  export interface Manifest {
+    inputs?: {
+      oods_registry_fetch?: RegistryFetchTelemetry;
+    };
+  }
+  export interface RegistryFetchTelemetry {
+    source: 'pre-supplied' | 'transport' | 'empty-fallback';
+    entries_count: number;
+    warnings?: string[];
+  }
+  export interface ReconciliationSummary {
+    mode: string;
+    existing_map_count: number;
+    verdict_counts: {
+      create?: number;
+      patch?: number;
+      skip?: number;
+      conflict?: number;
+    };
+  }
+}
+export type MapApplyInput = MapApplyInputSchema.MapApplyInput;
+
+// Source: map.apply.output.json
+export namespace MapApplyOutputSchema {
+  /**
+   * Dry-run or apply report for Stage1 reconciliation verdict routing.
+   */
+  export interface MapApplyOutput {
+    applied: AppliedRoute[];
+    skipped: SkippedRoute[];
+    queued: QueuedRoute[];
+    conflicted: ConflictRoute[];
+    errors: ApplyError[];
+    diff: DiffSummary;
+    conflictArtifactPath?: string;
+    etag: string;
+  }
+  export interface AppliedRoute {
+    objectId: string;
+    name: string;
+    action: 'create' | 'patch';
+    confidence: number;
+    /**
+     * @minItems 1
+     */
+    recommendedOodsTraits: [string, ...string[]];
+    existingMapId?: string;
+    mappingId?: string;
+    reason: string;
+    persisted: boolean;
+    diff?: CandidateDiff;
+  }
+  export interface CandidateDiff {
+    added_traits: string[];
+    removed_traits: string[];
+    changed_fields: CandidateDiffField[];
+  }
+  export interface CandidateDiffField {
+    field: string;
+    from?: any;
+    to?: any;
+  }
+  export interface SkippedRoute {
+    objectId: string;
+    name: string;
+    action: 'skip';
+    confidence: number;
+    /**
+     * @minItems 1
+     */
+    recommendedOodsTraits: [string, ...string[]];
+    existingMapId?: string;
+    mappingId?: string;
+    reason: string;
+    persisted: boolean;
+    diff?: CandidateDiff;
+  }
+  export interface QueuedRoute {
+    objectId: string;
+    name: string;
+    action: 'create' | 'patch' | 'skip' | 'conflict';
+    confidence: number;
+    threshold: number;
+    queueReason: 'below_confidence';
+    /**
+     * @minItems 1
+     */
+    recommendedOodsTraits: [string, ...string[]];
+    existingMapId?: string;
+    reason: string;
+    diff?: CandidateDiff;
+  }
+  export interface ConflictRoute {
+    objectId: string;
+    name: string;
+    action: 'conflict';
+    confidence: number;
+    existingMapId?: string;
+    reason: string;
+  }
+  export interface ApplyError {
+    objectId?: string;
+    name?: string;
+    action?: 'create' | 'patch' | 'skip' | 'conflict';
+    message: string;
+    details?: {
+      [k: string]: any;
+    };
+  }
+  export interface DiffSummary {
+    create: number;
+    patch: number;
+    skip: number;
+    conflict: number;
+    queued: number;
+    changedFields: string[];
+    addedTraits: string[];
+    removedTraits: string[];
+  }
+}
+export type MapApplyOutput = MapApplyOutputSchema.MapApplyOutput;
+
 // Source: map.create.input.json
 export namespace MapCreateInputSchema {
   /**
@@ -1556,6 +1810,14 @@ export namespace MapListInputSchema {
      * Filter mappings to a specific external system (e.g., 'material').
      */
     externalSystem?: string;
+    /**
+     * Pagination cursor. Use the previous page's nextCursor to continue. When cursor or limit is provided, pagination defaults to 100 items per page.
+     */
+    cursor?: string;
+    /**
+     * Page size for pagination. Omitting both cursor and limit preserves the legacy full-list response.
+     */
+    limit?: number;
   }
 }
 export type MapListInput = MapListInputSchema.MapListInput;
@@ -1583,7 +1845,11 @@ export namespace MapListOutputSchema {
     /**
      * Current ETag of the mappings file.
      */
-    etag?: string;
+    etag: string;
+    /**
+     * Pagination cursor for the next page when additional mappings remain.
+     */
+    nextCursor?: string;
   }
 }
 export type MapListOutput = MapListOutputSchema.MapListOutput;
@@ -2092,6 +2358,91 @@ export namespace PipelineOutputSchema {
   }
 }
 export type PipelineOutput = PipelineOutputSchema.PipelineOutput;
+
+// Source: registry.snapshot.input.json
+export namespace RegistrySnapshotInputSchema {
+  /**
+   * Bulk-read the current OODS registry state (maps, traits, objects) in a single call.
+   */
+  export interface RegistrySnapshotInput {}
+}
+export type RegistrySnapshotInput = RegistrySnapshotInputSchema.RegistrySnapshotInput;
+
+// Source: registry.snapshot.output.json
+export namespace RegistrySnapshotOutputSchema {
+  /**
+   * Single-call bulk snapshot of the mapping registry plus trait/object catalogs.
+   */
+  export interface RegistrySnapshotOutput {
+    maps: {
+      [k: string]: any;
+    }[];
+    traits: {
+      [k: string]: TraitInfo;
+    };
+    objects: {
+      [k: string]: ObjectInfo;
+    };
+    etag: string;
+    generatedAt: string;
+  }
+  export interface TraitInfo {
+    name: string;
+    version: string;
+    description: string;
+    category: string;
+    tags?: string[];
+    contexts?: string[];
+    viewExtensions?: {
+      [k: string]: any;
+    }[];
+    parameters?: {
+      [k: string]: any;
+    }[];
+    schema?: {
+      [k: string]: any;
+    };
+    semantics?: {
+      [k: string]: any;
+    };
+    tokens?: {
+      [k: string]: any;
+    };
+    dependencies?: string[];
+    metadata?: {
+      [k: string]: any;
+    };
+    objects?: string[];
+    source?: string;
+  }
+  export interface ObjectInfo {
+    name: string;
+    version: string;
+    domain: string;
+    description: string;
+    tags?: string[];
+    traits?: TraitRef[];
+    fields?: string[];
+    semantics?: {
+      [k: string]: any;
+    };
+    tokens?: {
+      [k: string]: any;
+    };
+    metadata?: {
+      [k: string]: any;
+    };
+    source?: string;
+  }
+  export interface TraitRef {
+    reference: string;
+    alias?: string | null;
+    parameters?: {
+      [k: string]: any;
+    };
+  }
+}
+export type RegistrySnapshotOutput = RegistrySnapshotOutputSchema.RegistrySnapshotOutput;
 
 // Source: release.tag.input.json
 export namespace ReleaseTagInputSchema {

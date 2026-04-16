@@ -314,8 +314,239 @@ export type MapCreateOutput = {
   errors?: MapCreateError;
 };
 
+export type MapApplyAction = 'create' | 'patch' | 'skip' | 'conflict';
+
+export type Stage1AlternateInterpretation =
+  | string
+  | {
+      role: string;
+      score: number;
+      reasoning: string;
+    };
+
+export type Stage1AlternateVerb =
+  | string
+  | {
+      verb_id: string;
+      score: number;
+      reasoning: string;
+    };
+
+export type Stage1ActionPrecondition = {
+  type: 'auth' | 'role' | 'state' | 'data';
+  description?: string;
+  confidence?: number;
+  evidence_chain?: Record<string, unknown>[];
+};
+
+export type Stage1CandidateDiff = {
+  added_traits: string[];
+  removed_traits: string[];
+  changed_fields: Array<{
+    field: string;
+    from?: unknown;
+    to?: unknown;
+  }>;
+};
+
+export type Stage1CandidateObject = {
+  object_id: string;
+  name: string;
+  role: string;
+  inferred_role?: string;
+  inferred_role_score?: number;
+  confidence: number;
+  recommended_oods_traits: string[];
+  recommended_domain?: string;
+  action: MapApplyAction;
+  reasoning: string;
+  verdict_reasoning?: string;
+  existing_map_id?: string;
+  diff?: Stage1CandidateDiff;
+  alternate_interpretations?: Stage1AlternateInterpretation[];
+  evidence_chain?: Record<string, unknown>[];
+};
+
+export type Stage1CandidateAction = {
+  action_id: string;
+  name: string;
+  verb: string;
+  source_object_id?: string;
+  confidence?: number;
+  suggested_oods_trait?: string;
+  suggested_action?: string;
+  reasoning?: string;
+  alternate_verbs?: Stage1AlternateVerb[];
+  preconditions?: Stage1ActionPrecondition[];
+};
+
+export type Stage1Conflict = {
+  type: string;
+  severity: 'info' | 'warning' | 'error';
+  description: string;
+  action_id?: string;
+  object_id?: string;
+  existing_map_id?: string;
+};
+
+export type Stage1RegistryFetchTelemetry = {
+  source: 'pre-supplied' | 'transport' | 'empty-fallback';
+  entries_count: number;
+  warnings?: string[];
+};
+
+export type Stage1ReconciliationManifest = {
+  inputs?: {
+    oods_registry_fetch?: Stage1RegistryFetchTelemetry;
+  };
+};
+
+export type Stage1ReconciliationSummary = {
+  mode: string;
+  existing_map_count: number;
+  verdict_counts: Partial<Record<MapApplyAction, number>>;
+};
+
+export type Stage1ReconciliationReport = {
+  kind: 'reconciliation_report';
+  schema_version: string;
+  generated_at: string;
+  target: {
+    id: string;
+    url?: string;
+  };
+  candidate_objects: Stage1CandidateObject[];
+  candidate_actions?: Stage1CandidateAction[];
+  candidate_traits?: Record<string, unknown>[];
+  conflicts?: Stage1Conflict[];
+  coverage_gaps?: Record<string, unknown>[];
+  validation_failures?: Record<string, unknown>[];
+  manifest?: Stage1ReconciliationManifest;
+  reconciliation_summary?: Stage1ReconciliationSummary;
+};
+
+export type MapApplyInput = {
+  apply?: boolean;
+  minConfidence?: number;
+  report?: Stage1ReconciliationReport;
+  reportPath?: string;
+};
+
+export type MapApplyRoute = {
+  objectId: string;
+  name: string;
+  action: 'create' | 'patch' | 'skip';
+  confidence: number;
+  recommendedOodsTraits: string[];
+  existingMapId?: string;
+  mappingId?: string;
+  reason: string;
+  persisted: boolean;
+  diff?: Stage1CandidateDiff;
+};
+
+export type MapApplyQueued = {
+  objectId: string;
+  name: string;
+  action: MapApplyAction;
+  confidence: number;
+  threshold: number;
+  queueReason: 'below_confidence';
+  recommendedOodsTraits: string[];
+  existingMapId?: string;
+  reason: string;
+  diff?: Stage1CandidateDiff;
+};
+
+export type MapApplyConflict = {
+  objectId: string;
+  name: string;
+  action: 'conflict';
+  confidence: number;
+  existingMapId?: string;
+  reason: string;
+};
+
+export type MapApplyError = {
+  objectId?: string;
+  name?: string;
+  action?: MapApplyAction;
+  message: string;
+  details?: Record<string, unknown>;
+};
+
+export type MapApplyDiffSummary = {
+  create: number;
+  patch: number;
+  skip: number;
+  conflict: number;
+  queued: number;
+  changedFields: string[];
+  addedTraits: string[];
+  removedTraits: string[];
+};
+
+export type MapApplyOutput = {
+  applied: MapApplyRoute[];
+  skipped: MapApplyRoute[];
+  queued: MapApplyQueued[];
+  conflicted: MapApplyConflict[];
+  errors: MapApplyError[];
+  diff: MapApplyDiffSummary;
+  conflictArtifactPath?: string;
+  etag: string;
+};
+
+export type RegistrySnapshotInput = Record<string, never>;
+
+export type RegistrySnapshotTraitInfo = {
+  name: string;
+  version: string;
+  description: string;
+  category: string;
+  tags?: string[];
+  contexts?: string[];
+  viewExtensions?: Record<string, unknown>[];
+  parameters?: Record<string, unknown>[];
+  schema?: Record<string, unknown>;
+  semantics?: Record<string, unknown>;
+  tokens?: Record<string, unknown>;
+  dependencies?: string[];
+  metadata?: Record<string, unknown>;
+  objects?: string[];
+  source?: string;
+};
+
+export type RegistrySnapshotObjectInfo = {
+  name: string;
+  version: string;
+  domain: string;
+  description: string;
+  tags?: string[];
+  traits?: Array<{
+    reference: string;
+    alias?: string | null;
+    parameters?: Record<string, unknown>;
+  }>;
+  fields?: string[];
+  semantics?: Record<string, unknown>;
+  tokens?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  source?: string;
+};
+
+export type RegistrySnapshotOutput = {
+  maps: Record<string, unknown>[];
+  traits: Record<string, RegistrySnapshotTraitInfo>;
+  objects: Record<string, RegistrySnapshotObjectInfo>;
+  etag: string;
+  generatedAt: string;
+};
+
 export type MapListInput = {
   externalSystem?: string;
+  cursor?: string;
+  limit?: number;
 };
 
 export type MapListOutput = {
@@ -326,6 +557,7 @@ export type MapListOutput = {
     systemCount: number;
   };
   etag: string;
+  nextCursor?: string;
 };
 
 export type MapPropTranslation = {

@@ -67,7 +67,7 @@ test('Adapter code does not hardcode "Proxy to" as description', () => {
 
 test('Descriptions start with an action verb', () => {
   const actionVerbs = ['Build', 'Fetch', 'Validate', 'Render', 'Apply', 'List', 'Generate',
-    'Compose', 'Create', 'Resolve', 'Capture', 'Run', 'Verify', 'Switch', 'Audit', 'Execute', 'Show', 'Check', 'Delete', 'Load', 'Persist'];
+    'Compose', 'Create', 'Resolve', 'Capture', 'Run', 'Verify', 'Switch', 'Audit', 'Execute', 'Show', 'Check', 'Delete', 'Load', 'Persist', 'Update', 'Return'];
   for (const [tool, desc] of Object.entries(DESCRIPTIONS)) {
     const firstWord = desc.split(/\s/)[0];
     assert.ok(

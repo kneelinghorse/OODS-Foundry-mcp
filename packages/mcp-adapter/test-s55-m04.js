@@ -83,11 +83,12 @@ test('Annotations object included in list_tools response', () => {
 
 const READ_ONLY_TOOLS = ['catalog.list', 'structuredData.fetch', 'repl.validate',
   'code.generate', 'design.compose', 'health', 'map.list', 'map.resolve',
-  'schema.load', 'schema.list', 'object.list', 'object.show'];
+  'registry.snapshot', 'schema.load', 'schema.list', 'object.list', 'object.show',
+  'viz.compose'];
 const WRITE_TOOLS = ['tokens.build', 'brand.apply', 'diag.snapshot', 'repl.render',
   'release.verify', 'release.tag', 'reviewKit.create', 'a11y.scan',
   'purity.audit', 'vrt.run', 'billing.reviewKit', 'billing.switchFixtures',
-  'map.create', 'schema.save', 'schema.delete', 'pipeline'];
+  'map.apply', 'map.create', 'map.update', 'map.delete', 'schema.save', 'schema.delete', 'pipeline'];
 
 test('Read-only tools have readOnlyHint: true', () => {
   for (const tool of READ_ONLY_TOOLS) {

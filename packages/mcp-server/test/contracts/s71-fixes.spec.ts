@@ -104,7 +104,7 @@ describe('Sprint 71 fixes', () => {
     });
 
     it('documents apply defaults for tools that use apply param', () => {
-      const toolsWithApply = ['tokens.build', 'brand.apply', 'map.create', 'repl.render'];
+      const toolsWithApply = ['tokens.build', 'brand.apply', 'map.apply', 'map.create', 'repl.render'];
       for (const tool of toolsWithApply) {
         expect(descriptions[tool]).toBeDefined();
         expect(descriptions[tool].toLowerCase()).toMatch(/apply/);

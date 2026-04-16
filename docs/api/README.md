@@ -16,8 +16,9 @@ Auto-generated from JSON schemas and tool-descriptions.json.
 | [design.compose](./design-compose.md) | Compose a complete UiSchema from a natural-language intent description. Returns schemaRef for reuse in validate/render/code.generate. schemaRef includes createdAt/expiresAt timestamps (default TTL: 30 minutes). Use schema.save to persist beyond TTL. |
 | [pipeline](./pipeline.md) | Execute the full design pipeline (compose -> validate -> render -> codegen) in a single call. Defaults to compact render mode (token CSS omitted, ~40% smaller). Supports optional validation/render skipping, accessibility checks, and schema persistence via save parameter. Returns schemaRefCreatedAt/schemaRefExpiresAt (default TTL: 30 minutes). Use save to persist the schema. |
 | [health](./health.md) | Check MCP server readiness and subsystem status, including registry counts, token artifact availability, and schema store state. |
+| [map.apply](./map-apply.md) | Apply a Stage1 reconciliation_report to the mapping registry. Accepts inline report or reportPath, defaults to apply=false dry-run, routes sub-threshold candidates to queued via minConfidence, and returns applied/skipped/queued/conflicted buckets plus etag and optional conflictArtifactPath. |
 | [map.create](./map-create.md) | Create a component-to-trait mapping between an external design system and OODS. Parameters: externalSystem, externalComponent, oodsTraits, propMappings, confidence, metadata (object with optional author and notes fields). Use apply=true to persist (default: dry-run, returns preview only). |
-| [map.list](./map-list.md) | List all component-to-trait mappings. Optionally filter by external design system name. |
+| [map.list](./map-list.md) | List component-to-trait mappings. Optionally filter by external system name, or paginate with cursor and limit. Omitting both cursor and limit preserves the legacy full-list response. |
 | [map.resolve](./map-resolve.md) | Resolve an external component to its OODS trait mapping with property translations. |
 | [map.update](./map-update.md) | Update an existing component-to-trait mapping by ID. Supports changing traits, property mappings, confidence, and notes. |
 | [map.delete](./map-delete.md) | Delete a component-to-trait mapping by ID. |
@@ -27,6 +28,7 @@ Auto-generated from JSON schemas and tool-descriptions.json.
 | [schema.save](./schema-save.md) | Persist a composed UiSchema by name from schemaRef. Stores schema metadata (name, version, object/context, tags, timestamps) for reuse across sessions. Use this to persist schemas beyond the 30-minute schemaRef TTL. |
 | [object.list](./object-list.md) | List OODS objects from the registry with optional filtering by domain, maturity, or trait. |
 | [object.show](./object-show.md) | Show a full OODS object definition, including composed trait schema and view extensions. |
+| [registry.snapshot](./registry-snapshot.md) | Return the full registry state in one call: maps, traits, objects, etag, and generatedAt. Intended for reconciliation consumers that would otherwise need map.list plus N× map.resolve. |
 | [viz.compose](./viz-compose.md) | Compose a visualization schema from chart type, data bindings, and/or object viz traits. Returns schemaRef for pipeline reuse. schemaRef includes createdAt/expiresAt (default TTL: 30 minutes). Supports bar, line, area, and point chart types with axis, color, and size encodings. |
 
 ## On-demand Tools

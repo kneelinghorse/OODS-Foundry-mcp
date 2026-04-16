@@ -94,6 +94,7 @@ const registry: ReadonlyMap<string, ErrorDefinition> = new Map<string, ErrorDefi
 
   // ── Validation: Brand/Map ───────────────────────────────────────────────
   ['OODS-V200', { code: 'OODS-V200', category: 'validation', message: 'Map validation failed', retryable: true }],
+  ['OODS-V201', { code: 'OODS-V201', category: 'validation', message: 'map.apply input invalid', retryable: true }],
 
   // ── Not Found ───────────────────────────────────────────────────────────
   ['OODS-N001', { code: 'OODS-N001', category: 'not_found', message: 'Unknown tool', retryable: false }],
@@ -109,6 +110,7 @@ const registry: ReadonlyMap<string, ErrorDefinition> = new Map<string, ErrorDefi
   ['OODS-N011', { code: 'OODS-N011', category: 'not_found', message: 'Token data missing', retryable: false }],
   ['OODS-N012', { code: 'OODS-N012', category: 'not_found', message: 'A11y token data missing', retryable: false }],
   ['OODS-N013', { code: 'OODS-N013', category: 'not_found', message: 'Registry fallback used', retryable: false }],
+  ['OODS-N014', { code: 'OODS-N014', category: 'not_found', message: 'Registry snapshot payload missing', retryable: false }],
 
   // ── Conflict ────────────────────────────────────────────────────────────
   ['OODS-C001', { code: 'OODS-C001', category: 'conflict', message: 'Schema ref missing after compose', retryable: false }],

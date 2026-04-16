@@ -29,6 +29,7 @@ const FALLBACK_REGISTRY: ToolRegistry = {
     'design.compose',
     'pipeline',
     'health',
+    'map.apply',
     'map.create',
     'map.list',
     'map.resolve',
@@ -40,6 +41,7 @@ const FALLBACK_REGISTRY: ToolRegistry = {
     'schema.save',
     'object.list',
     'object.show',
+    'registry.snapshot',
     'viz.compose',
   ],
   onDemand: [

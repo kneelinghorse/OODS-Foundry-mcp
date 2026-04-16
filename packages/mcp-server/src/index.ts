@@ -124,6 +124,11 @@ const toolSpecs: Record<string, ToolSpec> = {
     inputSchema: './schemas/health.input.json',
     outputSchema: './schemas/health.output.json',
   },
+  'map.apply': {
+    modulePath: './tools/map.apply.js',
+    inputSchema: './schemas/map.apply.input.json',
+    outputSchema: './schemas/map.apply.output.json',
+  },
   'map.create': {
     modulePath: './tools/map.create.js',
     inputSchema: './schemas/map.create.input.json',
@@ -158,6 +163,11 @@ const toolSpecs: Record<string, ToolSpec> = {
     modulePath: './tools/object.show.js',
     inputSchema: './schemas/object.show.input.json',
     outputSchema: './schemas/object.show.output.json',
+  },
+  'registry.snapshot': {
+    modulePath: './tools/registry.snapshot.js',
+    inputSchema: './schemas/registry.snapshot.input.json',
+    outputSchema: './schemas/registry.snapshot.output.json',
   },
   'schema.save': {
     modulePath: './tools/schema/save.js',

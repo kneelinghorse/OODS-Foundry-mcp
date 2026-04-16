@@ -86,6 +86,14 @@ export type {
 export type {
   MapCreateInput,
   MapCreateOutput,
+  MapApplyAction,
+  MapApplyInput,
+  MapApplyOutput,
+  MapApplyRoute,
+  MapApplyQueued,
+  MapApplyConflict,
+  MapApplyError,
+  MapApplyDiffSummary,
   MapListInput,
   MapListOutput,
   MapResolveInput,
@@ -95,6 +103,17 @@ export type {
   MapDeleteInput,
   MapDeleteOutput,
   MapPropTranslation,
+  Stage1CandidateAction,
+  Stage1CandidateDiff,
+  Stage1CandidateObject,
+  Stage1Conflict,
+  Stage1ReconciliationManifest,
+  Stage1ReconciliationReport,
+  Stage1ReconciliationSummary,
+  RegistrySnapshotInput,
+  RegistrySnapshotOutput,
+  RegistrySnapshotTraitInfo,
+  RegistrySnapshotObjectInfo,
 } from './tools/types.js';
 
 // -- structured data --
