@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://designlab.local/schemas/registry.snapshot.input.json",
+  "title": "registry.snapshot input",
+  "description": "Bulk-read the current OODS registry state (maps, traits, objects) in a single call.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

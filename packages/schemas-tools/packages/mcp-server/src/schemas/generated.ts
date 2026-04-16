@@ -117,6 +117,12 @@ export namespace A11yScanInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -552,6 +558,12 @@ export namespace CodeGenerateInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -798,7 +810,7 @@ export namespace DesignComposeInputSchema {
     /**
      * Layout template to use. 'auto' infers the best template from intent keywords.
      */
-    layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
+    layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'card' | 'timeline' | 'auto';
     preferences?: {
       /**
        * Theme token (e.g., 'light', 'dark').
@@ -951,6 +963,16 @@ export namespace DesignComposeOutputSchema {
          */
         patternsApplied?: number;
         /**
+         * Detected multi-field pattern groups applied to slots (s83-m01).
+         */
+        patternGroups?: {
+          slotName?: string;
+          patternId?: string;
+          compositeComponent?: string;
+          matchedFields?: string[];
+          confidence?: number;
+        }[];
+        /**
          * Whether position-aware scoring was used.
          */
         positionAffinityUsed?: boolean;
@@ -1040,6 +1062,12 @@ export namespace DesignComposeOutputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -1839,7 +1867,7 @@ export namespace PipelineInputSchema {
     /**
      * Layout template to use.
      */
-    layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'auto';
+    layout?: 'dashboard' | 'form' | 'detail' | 'list' | 'card' | 'timeline' | 'auto';
     preferences?: {
       /**
        * Theme token (e.g., 'light', 'dark').
@@ -1868,6 +1896,19 @@ export namespace PipelineInputSchema {
         [k: string]: string;
       };
     };
+    /**
+     * Sprint 88: Stage1 BridgeSummary action_mappings, flat verb-keyed entries. See docs/integration/stage1-oods-contract.md §2c.
+     */
+    actionMappings?: {
+      verb: string;
+      oodsTrait?: string;
+      trait?: string;
+      object?: string;
+      component?: string;
+      slot?: string;
+      confidence?: number;
+      [k: string]: any;
+    }[];
     /**
      * Target framework for code generation.
      */
@@ -1947,11 +1988,35 @@ export namespace PipelineOutputSchema {
      * ISO timestamp when the schemaRef expires. Use schema.save to persist before expiry.
      */
     schemaRefExpiresAt?: string;
+    /**
+     * Proactive warning when schemaRef TTL is approaching expiration (< 5 minutes remaining).
+     */
+    schemaRefTtlWarning?: {
+      /**
+       * Human-readable warning message.
+       */
+      message: string;
+      /**
+       * Milliseconds remaining until schemaRef expires.
+       */
+      remainingMs: number;
+      /**
+       * Actionable recommendation for the agent.
+       */
+      recommendation: string;
+    };
     compose: {
       object?: string;
       context?: string;
       layout: string;
       componentCount: number;
+      /**
+       * Sprint 88: verbs grouped by trait after action_mappings reconciliation.
+       */
+      resolvedActions?: {
+        trait: string;
+        verbs: string[];
+      }[];
     };
     validation?: {
       status: 'ok' | 'invalid' | 'skipped';
@@ -1995,6 +2060,10 @@ export namespace PipelineOutputSchema {
       componentsUsed?: number;
       fieldsBound?: number;
       responseBytes?: number;
+      fieldsOmitted?: {
+        field: string;
+        reason: string;
+      }[];
     };
     pipeline: {
       steps: ('compose' | 'validate' | 'render' | 'codegen' | 'save')[];
@@ -2173,6 +2242,14 @@ export namespace ReplRenderInputSchema {
        * Reserved for v2 fragment-depth controls; currently ignored.
        */
       depth?: number;
+      /**
+       * When true, emit data-oods-confidence and data-confidence-level attributes on rendered components that carry composition confidence metadata. Low-confidence components (below confidenceThreshold) also receive an oods-low-confidence CSS class. Default false.
+       */
+      showConfidence?: boolean;
+      /**
+       * Confidence threshold for low-confidence affordance. Components with confidence below this value receive the oods-low-confidence CSS class. Only effective when showConfidence is true. Default 0.5.
+       */
+      confidenceThreshold?: number;
     };
     apply?: boolean;
   }
@@ -2232,6 +2309,12 @@ export namespace ReplRenderInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -2416,6 +2499,12 @@ export namespace ReplRenderOutputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -2517,6 +2606,12 @@ export namespace UiSchemaSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -2638,6 +2733,12 @@ export namespace ReplValidateInputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -2801,6 +2902,12 @@ export namespace ReplValidateOutputSchema {
     label?: string;
     intent?: string;
     notes?: string;
+    confidence?: number;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    /**
+     * Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally.
+     */
+    unresolvedEntity?: string;
   }
   export interface FieldSchemaEntry {
     /**
@@ -3119,9 +3226,9 @@ export namespace VizComposeInputSchema {
      */
     traits?: [string, ...string[]];
     /**
-     * Chart type to compose. Maps to mark traits: bar→mark-bar, line→mark-line, area→mark-area, point→mark-point.
+     * Chart type to compose. Maps to mark traits: bar→mark-bar, line→mark-line, area→mark-area, point→mark-point, scatter→mark-scatter, heatmap→mark-heatmap.
      */
-    chartType?: 'bar' | 'line' | 'area' | 'point';
+    chartType?: 'bar' | 'line' | 'area' | 'point' | 'scatter' | 'heatmap';
     dataBindings?: {
       /**
        * Field name for the x-axis encoding.
@@ -3139,6 +3246,14 @@ export namespace VizComposeInputSchema {
        * Field name for size encoding.
        */
       size?: string;
+      /**
+       * Field name for opacity encoding.
+       */
+      opacity?: string;
+      /**
+       * Field name for shape encoding.
+       */
+      shape?: string;
     };
     /**
      * Alias for dataBindings. Maps field names to encoding channels.
@@ -3160,6 +3275,14 @@ export namespace VizComposeInputSchema {
        * Field name for size encoding.
        */
       size?: string;
+      /**
+       * Field name for opacity encoding.
+       */
+      opacity?: string;
+      /**
+       * Field name for shape encoding.
+       */
+      shape?: string;
     };
     /**
      * Theme token (e.g., 'light', 'dark').
@@ -3186,7 +3309,7 @@ export namespace VizComposeOutputSchema {
      */
     status: 'ok' | 'error';
     /**
-     * Resolved chart type (bar, line, area, point, or empty on error).
+     * Resolved chart type (bar, line, area, point, scatter, heatmap, or empty on error).
      */
     chartType: string;
     /**

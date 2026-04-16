@@ -10,6 +10,7 @@
     "design.compose",
     "pipeline",
     "health",
+    "map.apply",
     "map.create",
     "map.list",
     "map.resolve",
@@ -21,6 +22,7 @@
     "schema.save",
     "object.list",
     "object.show",
+    "registry.snapshot",
     "viz.compose"
   ],
   "onDemand": [

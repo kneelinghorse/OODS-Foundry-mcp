@@ -70,7 +70,11 @@
         "intent": { "type": "string" },
         "notes": { "type": "string" },
         "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-        "confidenceLevel": { "type": "string", "enum": ["high", "medium", "low"] }
+        "confidenceLevel": { "type": "string", "enum": ["high", "medium", "low"] },
+        "unresolvedEntity": {
+          "type": "string",
+          "description": "Raw Stage1 `entity-<slug>` id retained on a composed node when the OODS entity resolver could not map it to an indexed object (Path B, Sprint 89). Consumers surface this so authors can fill the alias table incrementally."
+        }
       },
       "additionalProperties": false
     },
