@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { getAjv } from '../../src/lib/ajv.js';
 import createInputSchema from '../../src/schemas/map.create.input.json' assert { type: 'json' };
@@ -59,6 +60,40 @@ function resetMappingsFile(): void {
     mappings: [],
   };
   fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(empty, null, 2) + '\n');
+}
+
+function buildBenchMappings(count: number): Array<Record<string, unknown>> {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `bench-system-component-${String(index + 1).padStart(4, '0')}`,
+    externalSystem: 'bench-system',
+    externalComponent: `Component ${String(index + 1).padStart(4, '0')}`,
+    oodsTraits: ['Stateful'],
+    confidence: 'manual',
+    metadata: {
+      createdAt: '2026-04-16T00:00:00.000Z',
+    },
+  }));
+}
+
+function writeBenchMappings(count: number): void {
+  const mappings = buildBenchMappings(count);
+  fs.writeFileSync(
+    MAPPINGS_PATH,
+    JSON.stringify(
+      {
+        $schema: '../../packages/mcp-server/src/schemas/component-mapping.schema.json',
+        generatedAt: '2026-04-16T00:00:00.000Z',
+        version: '2026-04-16',
+        stats: {
+          mappingCount: mappings.length,
+          systemCount: 1,
+        },
+        mappings,
+      },
+      null,
+      2,
+    ) + '\n',
+  );
 }
 
 // ── Schema validation ──
@@ -123,6 +158,14 @@ describe('map.list schema validation', () => {
 
   it('accepts input with externalSystem filter', () => {
     expect(validateListInput({ externalSystem: 'material' })).toBe(true);
+  });
+
+  it('accepts pagination parameters', () => {
+    expect(validateListInput({ cursor: 'bench-system-component-0100', limit: 100 })).toBe(true);
+  });
+
+  it('rejects limit above the max page size', () => {
+    expect(validateListInput({ limit: 501 })).toBe(false);
   });
 });
 
@@ -240,6 +283,71 @@ describe('map.create trait validation', () => {
     // No warnings about unknown traits (both are real OODS traits)
     const traitWarnings = (result.warnings ?? []).filter((w: string) => w.includes('Unknown trait'));
     expect(traitWarnings.length).toBe(0);
+  });
+});
+
+describe('map.list pagination', () => {
+  beforeEach(() => {
+    writeBenchMappings(250);
+  });
+
+  it('preserves legacy full-list behavior when cursor and limit are omitted', async () => {
+    const result = await listHandle({});
+
+    expect(validateListOutput(result)).toBe(true);
+    expect(result.mappings).toHaveLength(250);
+    expect(result.totalCount).toBe(250);
+    expect(result.nextCursor).toBeUndefined();
+  });
+
+  it('returns paginated results with nextCursor when limit is provided', async () => {
+    const result = await listHandle({ limit: 100 });
+
+    expect(validateListOutput(result)).toBe(true);
+    expect(result.mappings).toHaveLength(100);
+    expect(result.totalCount).toBe(250);
+    expect(result.nextCursor).toBe('bench-system-component-0100');
+  });
+
+  it('keeps cursor paging stable across concurrent map.create mutations', async () => {
+    const firstPage = await listHandle({ limit: 100 });
+    const seen = new Set(firstPage.mappings.map((mapping) => String((mapping as any).id)));
+
+    await createHandle({
+      apply: true,
+      externalSystem: 'bench-system',
+      externalComponent: 'Component 0050a',
+      oodsTraits: ['Stateful'],
+    });
+    await createHandle({
+      apply: true,
+      externalSystem: 'bench-system',
+      externalComponent: 'Component 0999',
+      oodsTraits: ['Stateful'],
+    });
+
+    const secondPage = await listHandle({ cursor: firstPage.nextCursor, limit: 100 });
+    const secondIds = secondPage.mappings.map((mapping) => String((mapping as any).id));
+
+    expect(secondIds[0]).toBe('bench-system-component-0101');
+    expect(secondIds.some((id) => seen.has(id))).toBe(false);
+  });
+
+  it('benchmarks paginated reads under 200ms p99 at 1000 mappings', async () => {
+    writeBenchMappings(1000);
+
+    const durations: number[] = [];
+    for (let iteration = 0; iteration < 12; iteration += 1) {
+      const started = performance.now();
+      const result = await listHandle({ limit: 100 });
+      durations.push(performance.now() - started);
+      expect(result.mappings).toHaveLength(100);
+      expect(result.totalCount).toBe(1000);
+    }
+
+    const sorted = [...durations].sort((left, right) => left - right);
+    const p99 = sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.99) - 1)];
+    expect(p99).toBeLessThan(200);
   });
 });
 

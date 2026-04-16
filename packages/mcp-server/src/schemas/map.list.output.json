@@ -4,7 +4,7 @@
   "title": "map.list output",
   "description": "List of component-to-trait mappings.",
   "type": "object",
-  "required": ["mappings", "totalCount", "stats"],
+  "required": ["mappings", "totalCount", "stats", "etag"],
   "additionalProperties": false,
   "properties": {
     "mappings": {
@@ -30,6 +30,10 @@
       "type": "string",
       "pattern": "^[A-Fa-f0-9]{64}$",
       "description": "Current ETag of the mappings file."
+    },
+    "nextCursor": {
+      "type": "string",
+      "description": "Pagination cursor for the next page when additional mappings remain."
     }
   }
 }
