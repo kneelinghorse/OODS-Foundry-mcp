@@ -301,6 +301,7 @@ export type MapCreateInput = {
     author?: string;
     notes?: string;
   };
+  projection_variants?: Stage1ProjectionVariant[];
 };
 
 export type MapCreateErrorDetail = {

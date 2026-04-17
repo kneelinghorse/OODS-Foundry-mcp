@@ -894,3 +894,155 @@ describe('map_resolve coercion integration', () => {
     });
   });
 });
+
+// ── s92-m01: projection_variants[] write-path activation ──
+// Aligns with Stage1 contract v1.5.0 §7.3. Unblocks bridge payloads that
+// include per-mapping cross-surface identity variants.
+
+describe('map.create projection_variants[] schema validation (s92-m01)', () => {
+  it('accepts a minimal projection_variants entry (id + surface)', () => {
+    expect(
+      validateCreateInput({
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        projection_variants: [{ id: 'variant-1', surface: 'desktop' }],
+      }),
+    ).toBe(true);
+  });
+
+  it('accepts the full projection_variants shape from Stage1 v1.5.0 §7.3', () => {
+    expect(
+      validateCreateInput({
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        projection_variants: [
+          {
+            id: 'variant-1',
+            surface: 'desktop',
+            external_component: 'IssueRow',
+            capability_id: 'cap-1',
+            selector: '.issue-row',
+            confidence: 0.92,
+            evidence_chain: [{ pass: 'dom.components' }],
+            metadata: { notes: 'primary surface' },
+          },
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it('rejects projection_variants entry missing required surface', () => {
+    expect(
+      validateCreateInput({
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        projection_variants: [{ id: 'variant-1' }],
+      }),
+    ).toBe(false);
+  });
+
+  it('still rejects unknown top-level fields on map.create input (additionalProperties:false preserved)', () => {
+    expect(
+      validateCreateInput({
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        bogus_field: 'should reject',
+      }),
+    ).toBe(false);
+  });
+
+  it('rejects confidence outside [0, 1] on a projection variant', () => {
+    expect(
+      validateCreateInput({
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        projection_variants: [{ id: 'variant-1', surface: 'desktop', confidence: 1.5 }],
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('map.create projection_variants[] handler persistence (s92-m01)', () => {
+  beforeEach(() => {
+    resetMappingsFile();
+  });
+
+  it('persists projection_variants[] on apply:true and round-trips through list', async () => {
+    const variants = [
+      { id: 'variant-1', surface: 'desktop', selector: '.issue-row', confidence: 0.9 },
+      { id: 'variant-2', surface: 'mobile', external_component: 'IssueCard' },
+    ];
+
+    const createResult = await createHandle({
+      apply: true,
+      externalSystem: 'linear',
+      externalComponent: 'Issue Row',
+      oodsTraits: ['Listable'],
+      projection_variants: variants,
+    });
+
+    expect(validateCreateOutput(createResult)).toBe(true);
+    expect(createResult.status).toBe('ok');
+    expect((createResult.mapping as any).projection_variants).toEqual(variants);
+
+    // Round-trip: file on disk must carry the field losslessly.
+    const listResult = await listHandle({});
+    const persisted = listResult.mappings.find((m: any) => m.id === 'linear-issue-row') as any;
+    expect(persisted).toBeDefined();
+    expect(persisted.projection_variants).toEqual(variants);
+  });
+
+  it('does not persist projection_variants[] on apply:false (dry-run)', async () => {
+    const result = await createHandle({
+      apply: false,
+      externalSystem: 'linear',
+      externalComponent: 'Issue Row',
+      oodsTraits: ['Listable'],
+      projection_variants: [{ id: 'variant-1', surface: 'desktop' }],
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.applied).toBe(false);
+    // The dry-run response still includes the constructed mapping, including the variants.
+    expect((result.mapping as any).projection_variants).toEqual([
+      { id: 'variant-1', surface: 'desktop' },
+    ]);
+
+    // But the file on disk has no such mapping.
+    const listResult = await listHandle({});
+    expect(listResult.totalCount).toBe(0);
+  });
+
+  it('omits projection_variants from the persisted mapping when not provided', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'linear',
+      externalComponent: 'Issue Row',
+      oodsTraits: ['Listable'],
+    });
+
+    const listResult = await listHandle({});
+    const persisted = listResult.mappings.find((m: any) => m.id === 'linear-issue-row') as any;
+    expect(persisted).toBeDefined();
+    expect('projection_variants' in persisted).toBe(false);
+  });
+
+  it('omits projection_variants when input provides an empty array', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'linear',
+      externalComponent: 'Issue Row',
+      oodsTraits: ['Listable'],
+      projection_variants: [],
+    });
+
+    const listResult = await listHandle({});
+    const persisted = listResult.mappings.find((m: any) => m.id === 'linear-issue-row') as any;
+    expect('projection_variants' in persisted).toBe(false);
+  });
+});

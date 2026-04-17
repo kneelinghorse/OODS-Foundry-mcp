@@ -1,11 +1,12 @@
 # Stage1 → OODS Foundry Integration Contract
 
-**Version:** 1.2.2
-**Date:** 2026-04-16
-**Status:** Bilateral — Sprint 91 adds OODS-side v1.4.0 schema stubs for review-decision persistence and cross-surface identity without changing current v1.3.x write-side behavior
+**Version:** 1.2.3
+**Date:** 2026-04-17
+**Status:** Bilateral — Sprint 92 activates the `map.create` write path for `projection_variants[]`, unblocking Stage1 contract v1.5.0 (§7.3) bridge payloads
 
 **Change log:**
 
+- v1.2.3 (2026-04-17, Sprint 92 m01): Added §2e activating the `map.create` write path for `projection_variants[]`. Aligns with Stage1 contract v1.5.0 §7.3 (live on bridge mappings per run `dc1cfabb-f07a-47dc-8a23-ba160e5b45b9`). `map.create.input.json` now accepts the field; `map.create.ts` handler reads, persists (when `apply:true`), and round-trips it through `component-mappings.json`. Other unknown fields on `map.create` input continue to be rejected (input-level `additionalProperties: false` preserved). OODS-side contract versioning is independent from Stage1's; this remains v1.2.x.
 - v1.2.2 (2026-04-16, Sprint 91): Added §2d documenting OODS-side **v1.4.0-gated schema stubs** only: `reconciliation_report.disambiguation_decisions[]`, a promoted `preferred_term` registry entity, a first-class `capability` entity, and dormant `projection_variants[]` on mappings. These are additive acceptance shapes only. Current OODS handlers do not consume them, and `map.apply` routing / `registry.snapshot` behavior remain unchanged.
 - v1.2.1 (2026-04-15, Sprint 88.1): **Clarification of §2c** after inspecting the first real Stage1 BridgeSummary (linear.app run `aa22b12d-bd6a-4e71-90e0-399954a36a70`). `summary.action_mappings[]` on the wire uses `{orcaVerb, oodsTrait, suggestedAction}` (no per-entry `object`/`component`/`slot`/`confidence`) and is a small verb→trait **vocabulary**. Per-component evidence lives in a separate top-level `actions[]` array with `{actionId, verb, sourceComponent, targetEntity, confidence, confidenceLabel}`. Consumer now accepts both: `actionMappings` (verb→trait) + `actionInstances` (per-component). `orcaVerb` is an accepted alias for `verb`, `suggestedAction` is passed through as a display-label hint. Dual-feed behavior documented in §2c below.
 - v1.2.0 (2026-04-15): Added §2c `action_mappings[]` — the flat verb-keyed BridgeSummary array consumed by `design.compose`. Each entry is keyed by `verb` (not by trait). Clarifies the difference between raw `action_candidates` (§2b, per-component evidence) and reconciled `action_mappings` (§2c, verb-level mapping used by consumers).
@@ -431,6 +432,63 @@ OODS now reserves four future-facing surfaces so Stage1 can ship Sprint 44 / Spr
   - `map.apply` routing does not look at `disambiguation_decisions[]`.
   - `registry.snapshot` does not gain new active handler output from these stubs.
   - No current tool writes `preferred_term`, `capability`, or `projection_variants[]`.
+
+---
+
+## 2e. Activated v1.5.0: `map.create` accepts `projection_variants[]` (Sprint 92)
+
+> **Status:** Live. Sprint 92 activated the write path for `projection_variants[]` on `map.create`. Aligns with Stage1 contract v1.5.0 §7.3.
+
+### Shape (per-variant)
+
+```json
+{
+  "id": "variant-1",
+  "surface": "desktop",
+  "external_component": "IssueRow",
+  "capability_id": "cap-1",
+  "selector": ".issue-row",
+  "confidence": 0.92,
+  "evidence_chain": [{ "pass": "dom.components" }],
+  "metadata": {}
+}
+```
+
+- `id` (required): stable identifier for the projection variant.
+- `surface` (required): surface label such as `desktop`, `mobile`, `modal`, `sidebar`.
+- `external_component` (optional): surface-specific component label when it differs from the canonical mapping's `externalComponent`.
+- `capability_id` (optional): first-class capability entity link (see §2d).
+- `selector` (optional): representative selector or cluster signature.
+- `confidence` (optional, `[0, 1]`): cross-surface identity-merge confidence.
+- `evidence_chain` (optional): open array of evidence objects.
+- `metadata` (optional): open object reserved for future details.
+
+### Target: `map.create` input
+
+```json
+{
+  "externalSystem": "linear",
+  "externalComponent": "Issue Row",
+  "oodsTraits": ["Listable"],
+  "projection_variants": [
+    { "id": "variant-1", "surface": "desktop" },
+    { "id": "variant-2", "surface": "mobile", "external_component": "IssueCard" }
+  ],
+  "apply": true
+}
+```
+
+### Handler behavior
+
+- `map.create.input.json` accepts `projection_variants[]` (item schema mirrors `stage1-projection-variant.json`).
+- `map.create.ts` reads `input.projection_variants`; when non-empty, it flows into the persisted `ComponentMapping.projection_variants`.
+- `apply:false` (dry run) returns the mapping with `projection_variants` in the response but does not write to disk.
+- `apply:true` writes to `artifacts/structured-data/component-mappings.json` via the existing `saveMappings` path.
+- Input-level `additionalProperties: false` is preserved — only `projection_variants` is newly whitelisted; other unknown fields still reject.
+
+### Bilateral versioning note
+
+OODS-side contract doc versioning is independent from Stage1's. OODS contract stays in the 1.2.x line; Stage1 wire contract is v1.5.0. Future alignment may warrant a bump to OODS-side v1.3.0 when write-side coverage of v1.4.0 stubs (§2d) is activated.
 
 ---
 

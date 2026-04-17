@@ -1785,6 +1785,47 @@ export namespace MapCreateInputSchema {
       author?: string;
       notes?: string;
     };
+    /**
+     * Stage1 v1.5.0 cross-surface identity variants. Each element describes one surface-specific projection of this component mapping (desktop/mobile/modal/sidebar).
+     */
+    projection_variants?: {
+      /**
+       * Stable identifier for the projection variant.
+       */
+      id: string;
+      /**
+       * Surface label such as desktop, mobile, modal, or sidebar.
+       */
+      surface: string;
+      /**
+       * Surface-specific component label when it differs from the canonical map name.
+       */
+      external_component?: string;
+      /**
+       * Optional first-class capability entity linked to this projection.
+       */
+      capability_id?: string;
+      /**
+       * Representative selector or cluster signature.
+       */
+      selector?: string;
+      /**
+       * Confidence of the cross-surface identity merge.
+       */
+      confidence?: number;
+      /**
+       * Evidence supporting the identity-resolution link.
+       */
+      evidence_chain?: {
+        [k: string]: any;
+      }[];
+      /**
+       * Open metadata bag for future relation details.
+       */
+      metadata?: {
+        [k: string]: any;
+      };
+    }[];
   }
 }
 export type MapCreateInput = MapCreateInputSchema.MapCreateInput;

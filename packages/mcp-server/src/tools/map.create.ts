@@ -89,6 +89,9 @@ export async function handle(input: MapCreateInput): Promise<MapCreateOutput> {
     ...(propMappings && propMappings.length > 0 ? { propMappings } : {}),
     confidence: input.confidence ?? 'manual',
     metadata,
+    ...(input.projection_variants && input.projection_variants.length > 0
+      ? { projection_variants: input.projection_variants }
+      : {}),
   };
 
   if (!applied) {
