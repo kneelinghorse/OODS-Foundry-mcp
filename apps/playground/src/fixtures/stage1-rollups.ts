@@ -24,9 +24,36 @@ export type EvidenceRef = {
   observation_type?: string;
 };
 
+/** Stage1 v1.6.0 confidence decomposition surfaces (contract §2d). */
+export type ConfidenceMethodId = 'weighted_blend_v1' | 'threshold_gate_v1' | string;
+
+export type ConfidenceSignal = {
+  type: string;
+  raw_score: number;
+  weight: number;
+  weighted_contribution: number;
+  evidence_ref: EvidenceRef;
+  hint?: string;
+};
+
+export type ConfidenceDecomposition = {
+  total: number;
+  method: ConfidenceMethodId;
+  signals: ConfidenceSignal[];
+};
+
+export type ConfidenceSummary = {
+  total: number;
+  method: ConfidenceMethodId;
+  evidence_ref: EvidenceRef;
+  top_signal_types?: string[];
+};
+
 export type CapabilityPresentation = {
   surface: string;
   label?: string;
+  /** v1.2.0 adds ConfidenceDecomposition per presentation. */
+  confidence?: ConfidenceDecomposition;
   preconditions?: unknown[];
   role_hints?: string[];
   state_hints?: string[];
@@ -47,10 +74,15 @@ export type CapabilityEntry = {
 export type RollupProjectionVariant = {
   id: string;
   surface: string;
-  confidence?: number;
+  /** v1.0.0 scalar; v1.1.0 ConfidenceDecomposition. */
+  confidence?: number | ConfidenceDecomposition;
+  /** v1.1.0 summary backref; preserved on normalized variants. */
+  confidence_summary?: ConfidenceSummary;
   selector?: string;
   evidence_chain?: EvidenceRef[];
   metadata?: Record<string, unknown>;
+  external_component?: string;
+  capability_id?: string;
 };
 
 export type RollupObject = {
@@ -67,7 +99,11 @@ export type IdentityNode = {
   canonical_id: string;
   canonical_label?: string;
   identity_class: string;
-  candidate_mappings?: Array<{ target: string; confidence: number }>;
+  /** v1.1.0 scalar; v1.2.0 ConfidenceDecomposition (signals[].hint replaces legacy top-level hints[]). */
+  candidate_mappings?: Array<{
+    target: string;
+    confidence: number | ConfidenceDecomposition;
+  }>;
   review_status?: string;
 };
 
@@ -112,6 +148,7 @@ export type NormalizedProjectionVariant = {
   object_canonical_label?: string;
   evidence_chain: EvidenceRef[];
   metadata?: Record<string, unknown>;
+  confidence_summary?: ConfidenceSummary;
 };
 
 export type NormalizedPresentation = {
@@ -139,6 +176,18 @@ export const STRIPE_V15_ROLLUPS = stripeRollups as RollupBundle;
 
 function evidenceKey(ref: EvidenceRef): string {
   return [ref.artifact_ref ?? '', ref.json_pointer ?? '', ref.run_id ?? ''].join('#');
+}
+
+/** Mirrors unwrapConfidenceTotal in packages/mcp-server/src/stage1/capability-normalizer.ts. */
+function unwrapConfidenceTotal(
+  value: number | ConfidenceDecomposition | undefined,
+): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === 'number') return value;
+  if (value && typeof value === 'object' && typeof (value as ConfidenceDecomposition).total === 'number') {
+    return (value as ConfidenceDecomposition).total;
+  }
+  return undefined;
 }
 
 function sortStrings(xs: readonly string[]): string[] {
@@ -177,15 +226,17 @@ function deriveVariants(
     for (const entry of bucket) {
       if (seen.has(entry.variant.id)) continue;
       seen.add(entry.variant.id);
+      const confidenceScalar = unwrapConfidenceTotal(entry.variant.confidence);
       variants.push({
         id: entry.variant.id,
         surface: entry.variant.surface,
-        ...(entry.variant.confidence !== undefined ? { confidence: entry.variant.confidence } : {}),
+        ...(confidenceScalar !== undefined ? { confidence: confidenceScalar } : {}),
         ...(entry.variant.selector ? { selector: entry.variant.selector } : {}),
         object_canonical_id: entry.object.canonical_id,
         ...(entry.object.canonical_label ? { object_canonical_label: entry.object.canonical_label } : {}),
         evidence_chain: entry.variant.evidence_chain ?? [],
         ...(entry.variant.metadata ? { metadata: entry.variant.metadata } : {}),
+        ...(entry.variant.confidence_summary ? { confidence_summary: entry.variant.confidence_summary } : {}),
       });
     }
   }

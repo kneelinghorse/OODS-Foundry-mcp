@@ -1,10 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import type {
   Stage1CapabilityRollup,
+  Stage1ConfidenceDecomposition,
+  Stage1ConfidenceSummary,
   Stage1IdentityGraph,
   Stage1ObjectRollup,
 } from '../tools/types.js';
 import { normalizeCapabilities } from './capability-normalizer.js';
+
+const makeDecomposition = (total: number, hint?: string): Stage1ConfidenceDecomposition => ({
+  total,
+  method: 'weighted_blend_v1',
+  signals: [
+    {
+      type: 'entity_link',
+      raw_score: total,
+      weight: 1,
+      weighted_contribution: total,
+      evidence_ref: {
+        artifact_ref: 'orca_candidates.json',
+        json_pointer: '/action_candidates/0',
+      },
+      ...(hint ? { hint } : {}),
+    },
+  ],
+});
 
 const RUN = 'run-fixture-0001';
 
@@ -299,6 +319,141 @@ describe('normalizeCapabilities', () => {
 
     expect(first).toBe(second);
     expect(JSON.stringify({ capabilityRollup, objectRollup })).toBe(snapshotInputs);
+  });
+
+  it('unwraps .total when variant.confidence is a v1.6.0 ConfidenceDecomposition', () => {
+    const ref = {
+      artifact_ref: 'orca_candidates.json',
+      json_pointer: '/action_candidates/42',
+      run_id: RUN,
+    };
+    const capabilityRollup: Stage1CapabilityRollup = {
+      ...baseCapabilityRollup(),
+      schema_version: '1.2.0',
+      capabilities: [
+        {
+          canonical_id: 'capability:decomposed',
+          presentations: [
+            {
+              surface: 'dom',
+              label: 'Decomposed',
+              confidence: makeDecomposition(0.88),
+              member_instances: [ref],
+            },
+          ],
+        },
+      ],
+    };
+    const objectRollup: Stage1ObjectRollup = {
+      ...baseObjectRollup(),
+      schema_version: '1.1.0',
+      objects: [
+        {
+          canonical_id: 'canonical:object:decomposed',
+          projection_variants: [
+            {
+              id: 'decomposed-desktop',
+              surface: 'desktop',
+              confidence: makeDecomposition(0.91),
+              evidence_chain: [ref],
+            },
+          ],
+        },
+      ],
+    };
+    const [normalized] = normalizeCapabilities({ capabilityRollup, objectRollup });
+    const variant = normalized.presentations[0].projection_variants[0];
+    expect(typeof variant.confidence).toBe('number');
+    expect(variant.confidence).toBe(0.91);
+  });
+
+  it('preserves confidence_summary on variants when Stage1 emits it (v1.1.0 object_rollup)', () => {
+    const ref = {
+      artifact_ref: 'orca_candidates.json',
+      json_pointer: '/action_candidates/5',
+      run_id: RUN,
+    };
+    const summary: Stage1ConfidenceSummary = {
+      total: 0.77,
+      method: 'weighted_blend_v1',
+      evidence_ref: {
+        artifact_ref: 'object_rollup.json',
+        json_pointer: '/objects/0/projection_variants/0/confidence',
+      },
+      top_signal_types: ['entity_link'],
+    };
+    const capabilityRollup: Stage1CapabilityRollup = {
+      ...baseCapabilityRollup(),
+      capabilities: [
+        {
+          canonical_id: 'capability:summary',
+          presentations: [{ surface: 'dom', member_instances: [ref] }],
+        },
+      ],
+    };
+    const objectRollup: Stage1ObjectRollup = {
+      ...baseObjectRollup(),
+      objects: [
+        {
+          canonical_id: 'canonical:object:summary',
+          projection_variants: [
+            {
+              id: 'summary-desktop',
+              surface: 'desktop',
+              confidence: 0.77,
+              confidence_summary: summary,
+              evidence_chain: [ref],
+            },
+          ],
+        },
+      ],
+    };
+    const [normalized] = normalizeCapabilities({ capabilityRollup, objectRollup });
+    const variant = normalized.presentations[0].projection_variants[0];
+    expect(variant.confidence_summary).toEqual(summary);
+    expect(variant.confidence).toBe(0.77);
+  });
+
+  it('keeps v1.2.0 candidate_mappings[].confidence.signals[].hint reachable on identity_node', () => {
+    const capabilityRollup = baseCapabilityRollup();
+    capabilityRollup.capabilities = [{ canonical_id: 'capability:with-hint', presentations: [] }];
+    const identityGraph = baseIdentityGraph();
+    identityGraph.schema_version = '1.2.0';
+    identityGraph.nodes = [
+      {
+        canonical_id: 'capability:with-hint',
+        canonical_label: 'With Hint',
+        identity_class: 'capability',
+        candidate_mappings: [
+          {
+            target: 'WithHint',
+            confidence: makeDecomposition(0.81, 'route_slug matched normalized entity id'),
+          },
+        ],
+      },
+    ];
+    const [normalized] = normalizeCapabilities({ capabilityRollup, identityGraph });
+    const mapping = normalized.identity_node?.candidate_mappings?.[0];
+    expect(mapping).toBeDefined();
+    const decomposition = mapping?.confidence as Stage1ConfidenceDecomposition;
+    expect(decomposition.total).toBe(0.81);
+    expect(decomposition.signals[0].hint).toMatch(/route_slug matched/);
+  });
+
+  it('accepts legacy v1.1.0 scalar candidate_mappings[].confidence without regression', () => {
+    const capabilityRollup = baseCapabilityRollup();
+    capabilityRollup.capabilities = [{ canonical_id: 'capability:scalar', presentations: [] }];
+    const identityGraph = baseIdentityGraph();
+    identityGraph.nodes = [
+      {
+        canonical_id: 'capability:scalar',
+        canonical_label: 'Scalar',
+        identity_class: 'capability',
+        candidate_mappings: [{ target: 'Scalar', confidence: 0.74 }],
+      },
+    ];
+    const [normalized] = normalizeCapabilities({ capabilityRollup, identityGraph });
+    expect(normalized.identity_node?.candidate_mappings?.[0].confidence).toBe(0.74);
   });
 
   it('deduplicates projection_variants that appear under multiple member_instance refs', () => {
