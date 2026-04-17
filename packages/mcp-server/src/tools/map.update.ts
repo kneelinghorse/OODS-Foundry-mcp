@@ -39,6 +39,15 @@ export async function handle(input: MapUpdateInput): Promise<MapUpdateOutput> {
     changes.push('propMappings');
   }
 
+  if (input.updates.projection_variants !== undefined) {
+    if (input.updates.projection_variants.length > 0) {
+      mapping.projection_variants = input.updates.projection_variants;
+    } else {
+      delete mapping.projection_variants;
+    }
+    changes.push('projection_variants');
+  }
+
   if (input.updates.notes !== undefined) {
     mapping.metadata = {
       ...mapping.metadata,

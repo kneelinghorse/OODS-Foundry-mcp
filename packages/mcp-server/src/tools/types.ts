@@ -301,6 +301,7 @@ export type MapCreateInput = {
     author?: string;
     notes?: string;
   };
+  projection_variants?: Stage1ProjectionVariant[];
 };
 
 export type MapCreateErrorDetail = {
@@ -377,9 +378,11 @@ export type Stage1CandidateObject = {
   reasoning: string;
   verdict_reasoning?: string;
   existing_map_id?: string;
+  external_component?: string;
   diff?: Stage1CandidateDiff;
   alternate_interpretations?: Stage1AlternateInterpretation[];
   evidence_chain?: Record<string, unknown>[];
+  projection_variants?: Stage1ProjectionVariant[];
 };
 
 export type Stage1CandidateAction = {
@@ -617,6 +620,7 @@ export type MapUpdateInput = {
         | null;
     }>;
     notes?: string;
+    projection_variants?: Stage1ProjectionVariant[];
   };
 };
 

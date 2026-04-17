@@ -17,6 +17,7 @@
 | `metadata` | object | No |  |  |
 | `metadata.author` | string | No |  |  |
 | `metadata.notes` | string | No |  |  |
+| `projection_variants` | object[] | No |  | Stage1 v1.5.0 cross-surface identity variants. Each element describes one surface-specific projection of this component mapping (desktop/mobile/modal/sidebar). |
 
 ## Output Shape
 

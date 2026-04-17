@@ -276,6 +276,9 @@ async function routeCreate(
       author: 'stage1-reconciliation',
       notes: reason,
     },
+    ...(candidate.projection_variants && candidate.projection_variants.length > 0
+      ? { projection_variants: candidate.projection_variants }
+      : {}),
   } satisfies MapCreateInput);
 
   if (result.status === 'error') {
@@ -387,8 +390,24 @@ function buildPatchPlan(candidate: Stage1CandidateObject, existing: ComponentMap
     updates.notes = noteChange.to;
   }
 
+  if (candidate.projection_variants !== undefined) {
+    if (!sameProjectionVariants(existing.projection_variants, candidate.projection_variants)) {
+      updates.projection_variants = candidate.projection_variants;
+    }
+  }
+
   const hasChanges = Object.keys(updates).length > 0;
   return { updates, hasChanges };
+}
+
+function sameProjectionVariants(
+  left: ComponentMapping['projection_variants'],
+  right: Stage1CandidateObject['projection_variants'],
+): boolean {
+  const a = left ?? [];
+  const b = right ?? [];
+  if (a.length !== b.length) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function findExistingMapping(externalSystem: string, candidate: Stage1CandidateObject): ComponentMapping | undefined {

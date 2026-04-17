@@ -28,7 +28,8 @@ type ViewMode = "compose" | "stage1";
 const STAGE1_FIXTURES: Record<Stage1FixtureMeta["id"], Stage1FixtureMeta> = {
   linear: {
     id: "linear",
-    label: "Linear",
+    label: "Linear (v1.1.0)",
+    schemaVersion: "v1.1.0",
     reportPath:
       "../Stage1/out/stage1/linear-reconciliation-s43-validation/82201fef-efed-4bcf-8b39-192a09555745/artifacts/reconciliation_report.json",
     targetUrl: "https://linear.app/",
@@ -45,7 +46,8 @@ const STAGE1_FIXTURES: Record<Stage1FixtureMeta["id"], Stage1FixtureMeta> = {
   },
   stripe: {
     id: "stripe",
-    label: "Stripe",
+    label: "Stripe (v1.1.0)",
+    schemaVersion: "v1.1.0",
     reportPath:
       "../Stage1/out/stage1/stripe-reconciliation-s43-validation/da66f1d2-0d23-43c1-ba29-5c0ec7be631e/artifacts/reconciliation_report.json",
     targetUrl: "https://stripe.com/",
@@ -59,6 +61,216 @@ const STAGE1_FIXTURES: Record<Stage1FixtureMeta["id"], Stage1FixtureMeta> = {
       conflict: 0,
     },
     lowConfidenceConflictAnnotations: 11,
+  },
+  "linear-v15": {
+    id: "linear-v15",
+    label: "Linear (v1.5.0)",
+    schemaVersion: "v1.5.0",
+    reportPath:
+      "../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/artifacts/reconciliation_report.json",
+    targetUrl: "https://linear.app/",
+    targetId: "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+    candidateObjects: 73,
+    candidateActions: 0,
+    verdictCounts: {
+      create: 73,
+      patch: 0,
+      skip: 0,
+      conflict: 0,
+    },
+    lowConfidenceConflictAnnotations: 5,
+    bridgeMappingStats: {
+      total: 73,
+      variantBearing: 73,
+      multiVariant: 2,
+    },
+    bridgeMappingSamples: [
+      {
+        externalSystem: "stage1-orca/general",
+        externalComponent: "Header Button Item Crtcc",
+        oodsTraits: ["actionable", "color", "interactive", "typography"],
+        confidence: 0.95,
+        projection_variants: [
+          {
+            id: "header-button-item-crtcc-desktop",
+            surface: "desktop",
+            selector: "cluster:cluster-41",
+            confidence: 0.95,
+            evidence_chain: [
+              {
+                artifact_ref: "component_clusters.json",
+                json_pointer: "/clusters/35",
+                source_surface: "dom",
+                observation_type: "component_cluster",
+              },
+            ],
+            metadata: {
+              source_surface: "dom",
+              candidate_type: "component_cluster",
+            },
+          },
+          {
+            id: "header-button-item-crtcc-mobile",
+            surface: "mobile",
+            selector: "cluster-41",
+            confidence: 0.95,
+            evidence_chain: [
+              {
+                artifact_ref: "orca_candidates.json",
+                json_pointer: "/objects/33",
+                source_surface: "dom",
+                observation_type: "orca_object",
+              },
+            ],
+            metadata: {
+              source_surface: "dom",
+              candidate_type: "orca_object",
+            },
+          },
+        ],
+      },
+      {
+        externalSystem: "stage1-orca/general",
+        externalComponent: "Hero New Feature Link Pht6b",
+        oodsTraits: [
+          "border",
+          "color",
+          "interactive",
+          "spacing",
+          "typography",
+          "visual",
+        ],
+        confidence: 0.85,
+        projection_variants: [
+          {
+            id: "hero-new-feature-link-pht6b-desktop",
+            surface: "desktop",
+            selector: "cluster:cluster-10",
+            confidence: 0.95,
+            evidence_chain: [
+              {
+                artifact_ref: "component_clusters.json",
+                json_pointer: "/clusters/7",
+                source_surface: "dom",
+                observation_type: "component_cluster",
+              },
+            ],
+            metadata: {
+              source_surface: "dom",
+              candidate_type: "component_cluster",
+            },
+          },
+          {
+            id: "hero-new-feature-link-pht6b-mobile",
+            surface: "mobile",
+            selector: "cluster-10",
+            confidence: 0.95,
+            evidence_chain: [
+              {
+                artifact_ref: "orca_candidates.json",
+                json_pointer: "/objects/7",
+                source_surface: "dom",
+                observation_type: "orca_object",
+              },
+            ],
+            metadata: {
+              source_surface: "dom",
+              candidate_type: "orca_object",
+            },
+          },
+        ],
+      },
+      {
+        externalSystem: "stage1-orca/general",
+        externalComponent: "Agent List Card Euuz1",
+        oodsTraits: ["border", "color", "composable", "spacing", "visual"],
+        confidence: 0.95,
+        projection_variants: [
+          {
+            id: "agent-list-card-euuz1-desktop",
+            surface: "desktop",
+            selector: "cluster-67",
+            confidence: 0.95,
+            evidence_chain: [
+              {
+                artifact_ref: "orca_candidates.json",
+                json_pointer: "/objects/26",
+                source_surface: "dom",
+                observation_type: "orca_object",
+              },
+              {
+                artifact_ref: "component_clusters.json",
+                json_pointer: "/clusters/27",
+                source_surface: "dom",
+                observation_type: "component_cluster",
+              },
+            ],
+            metadata: {
+              source_surface: "dom",
+              candidate_type: "component_cluster",
+            },
+          },
+        ],
+      },
+    ],
+  },
+  "stripe-v15": {
+    id: "stripe-v15",
+    label: "Stripe (v1.5.0)",
+    schemaVersion: "v1.5.0",
+    reportPath:
+      "../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/artifacts/reconciliation_report.json",
+    targetUrl: "https://stripe.com/",
+    targetId: "07776e70-ec86-449a-b570-3978161793ac",
+    candidateObjects: 129,
+    candidateActions: 0,
+    verdictCounts: {
+      create: 129,
+      patch: 0,
+      skip: 0,
+      conflict: 0,
+    },
+    lowConfidenceConflictAnnotations: 9,
+    bridgeMappingStats: {
+      total: 129,
+      variantBearing: 128,
+      multiVariant: 0,
+    },
+    bridgeMappingSamples: [
+      {
+        externalSystem: "stage1-orca/general",
+        externalComponent: "AnnualUpdatSvgPrimitive1",
+        oodsTraits: ["border", "color", "spacing", "typography", "visual"],
+        confidence: 0.8,
+        projection_variants: [
+          {
+            id: "annualupdatsvgprimitive-desktop",
+            surface: "desktop",
+            external_component: "G",
+            selector: "cluster-11",
+            confidence: 0.95,
+            evidence_chain: [
+              {
+                artifact_ref: "orca_candidates.json",
+                json_pointer: "/objects/13",
+                source_surface: "dom",
+                observation_type: "orca_object",
+              },
+              {
+                artifact_ref: "component_clusters.json",
+                json_pointer: "/clusters/14",
+                source_surface: "dom",
+                observation_type: "component_cluster",
+              },
+            ],
+            metadata: {
+              source_surface: "dom",
+              candidate_type: "component_cluster",
+            },
+          },
+        ],
+      },
+    ],
   },
 };
 

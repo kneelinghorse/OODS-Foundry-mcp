@@ -1,8 +1,31 @@
+import { useState } from "react";
 import type { MapApplyResult } from "../bridge-client";
 
+export type Stage1ProjectionVariantSample = {
+  id: string;
+  surface: string;
+  external_component?: string;
+  capability_id?: string;
+  selector?: string;
+  confidence?: number;
+  evidence_chain?: Array<Record<string, unknown>>;
+  metadata?: Record<string, unknown>;
+};
+
+export type Stage1BridgeMappingSample = {
+  externalSystem: string;
+  externalComponent: string;
+  oodsTraits: string[];
+  confidence?: number;
+  projection_variants: Stage1ProjectionVariantSample[];
+};
+
+export type Stage1FixtureSchemaVersion = "v1.1.0" | "v1.5.0";
+
 export type Stage1FixtureMeta = {
-  id: "linear" | "stripe";
+  id: "linear" | "stripe" | "linear-v15" | "stripe-v15";
   label: string;
+  schemaVersion: Stage1FixtureSchemaVersion;
   reportPath: string;
   targetUrl: string;
   targetId: string;
@@ -15,6 +38,17 @@ export type Stage1FixtureMeta = {
     conflict: number;
   };
   lowConfidenceConflictAnnotations: number;
+  /**
+   * Bridge-side mapping samples for v1.5.0 fixtures. Pulled verbatim from
+   * Stage1 bridge.json so the card surface demonstrates real projection_variants[]
+   * shapes. Empty for v1.1.0 fixtures.
+   */
+  bridgeMappingSamples?: Stage1BridgeMappingSample[];
+  bridgeMappingStats?: {
+    total: number;
+    variantBearing: number;
+    multiVariant: number;
+  };
 };
 
 type Props = {
@@ -71,6 +105,189 @@ function SectionTitle({ title, detail }: { title: string; detail?: string }) {
 
 function formatConfidence(confidence: number): string {
   return confidence.toFixed(2);
+}
+
+function VariantRow({
+  variant,
+  mappingExternalComponent,
+}: {
+  variant: Stage1ProjectionVariantSample;
+  mappingExternalComponent: string;
+}) {
+  const displayComponent = variant.external_component ?? mappingExternalComponent;
+  return (
+    <li className="rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200">
+            {variant.surface}
+          </span>
+          <span className="text-sm text-white">{displayComponent}</span>
+          {variant.external_component &&
+          variant.external_component !== mappingExternalComponent ? (
+            <span className="rounded border border-amber-300/25 bg-amber-300/10 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-amber-100/80">
+              variant label
+            </span>
+          ) : null}
+        </div>
+        {typeof variant.confidence === "number" ? (
+          <span className="rounded-full border border-white/10 bg-slate-900/60 px-2 py-0.5 font-mono text-[11px] text-white/80">
+            {formatConfidence(variant.confidence)}
+          </span>
+        ) : null}
+      </div>
+      {variant.selector ? (
+        <div className="mt-2 font-mono text-[11px] text-cyan-100/60">
+          <span className="text-gray-500">selector:</span> {variant.selector}
+        </div>
+      ) : null}
+      {variant.capability_id ? (
+        <div className="mt-1 font-mono text-[11px] text-indigo-200/80">
+          <span className="text-gray-500">capability_id:</span>{" "}
+          {variant.capability_id}
+        </div>
+      ) : null}
+      {variant.evidence_chain && variant.evidence_chain.length > 0 ? (
+        <div className="mt-1 text-[11px] text-gray-500">
+          {variant.evidence_chain.length} evidence{" "}
+          {variant.evidence_chain.length === 1 ? "entry" : "entries"}
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+function BridgeMappingCard({
+  mapping,
+}: {
+  mapping: Stage1BridgeMappingSample;
+}) {
+  const [expanded, setExpanded] = useState(mapping.projection_variants.length > 1);
+  const variantCount = mapping.projection_variants.length;
+  const isMulti = variantCount > 1;
+
+  return (
+    <article
+      className={`relative overflow-hidden rounded-xl border px-4 py-4 shadow-[0_14px_40px_-28px_rgba(56,189,248,0.35)] ${
+        isMulti
+          ? "border-cyan-400/35 bg-[linear-gradient(135deg,rgba(34,211,238,0.12),rgba(15,23,42,0.96))]"
+          : "border-white/10 bg-slate-950/60"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/65">
+            {mapping.externalSystem}
+          </div>
+          <h4 className="mt-1 text-base font-semibold text-white">
+            {mapping.externalComponent}
+          </h4>
+        </div>
+        <div className="flex items-center gap-2">
+          {isMulti ? (
+            <span className="rounded-full border border-cyan-300/45 bg-cyan-300/15 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100">
+              ⬢ {variantCount} variants
+            </span>
+          ) : (
+            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.16em] text-white/70">
+              {variantCount} variant
+            </span>
+          )}
+          {typeof mapping.confidence === "number" ? (
+            <span className="rounded-full border border-white/10 bg-slate-900/70 px-2.5 py-0.5 font-mono text-[11px] text-white/80">
+              {formatConfidence(mapping.confidence)}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {mapping.oodsTraits.map((trait) => (
+          <span
+            key={`${mapping.externalComponent}-${trait}`}
+            className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-cyan-50/75"
+          >
+            {trait}
+          </span>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setExpanded((current) => !current)}
+        className="mt-4 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-cyan-200/85 transition-colors hover:text-white"
+        aria-expanded={expanded}
+      >
+        <span>{expanded ? "▼" : "▶"}</span>
+        <span>Variants ({variantCount})</span>
+      </button>
+
+      {expanded ? (
+        <ul className="mt-3 space-y-2">
+          {mapping.projection_variants.map((variant) => (
+            <VariantRow
+              key={variant.id}
+              variant={variant}
+              mappingExternalComponent={mapping.externalComponent}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </article>
+  );
+}
+
+function BridgeVariantsSection({
+  fixture,
+}: {
+  fixture: Stage1FixtureMeta;
+}) {
+  if (fixture.schemaVersion !== "v1.5.0") return null;
+  if (!fixture.bridgeMappingSamples || fixture.bridgeMappingSamples.length === 0) {
+    return null;
+  }
+
+  const stats = fixture.bridgeMappingStats;
+
+  return (
+    <div className="rounded-2xl border border-cyan-500/20 bg-[linear-gradient(135deg,rgba(34,211,238,0.08),rgba(15,23,42,0.92))] p-5">
+      <SectionTitle
+        title="v1.5.0 Projection Variants"
+        detail="bridge.json → map.create"
+      />
+      <p className="mt-2 text-sm leading-6 text-cyan-50/75">
+        Stage1 v1.5.0 ships per-mapping{" "}
+        <code className="font-mono text-cyan-100/90">projection_variants[]</code>{" "}
+        on bridge payloads. Sprint-92 activated the{" "}
+        <code className="font-mono text-cyan-100/90">map.create</code> write path
+        so these variants round-trip through the OODS mapping registry. The cards
+        below are verbatim samples from Stage1's live emission.
+      </p>
+      {stats ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <MetricCard label="Total mappings" value={stats.total} />
+          <MetricCard
+            label="Carrying variants"
+            value={stats.variantBearing}
+            tone="good"
+          />
+          <MetricCard
+            label="Multi-variant"
+            value={stats.multiVariant}
+            tone={stats.multiVariant > 0 ? "warn" : "neutral"}
+          />
+        </div>
+      ) : null}
+      <div className="mt-4 grid gap-3">
+        {fixture.bridgeMappingSamples.map((mapping) => (
+          <BridgeMappingCard
+            key={`${mapping.externalSystem}-${mapping.externalComponent}`}
+            mapping={mapping}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function Stage1DemoPanel({
@@ -153,8 +370,13 @@ export function Stage1DemoPanel({
                 {fixture.candidateObjects} objects, {fixture.candidateActions}{" "}
                 actions
               </div>
-              <div className="mt-1 text-cyan-100/60">
-                Schema v1.1.0 live report
+              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-cyan-100/60">
+                <span>Schema {fixture.schemaVersion} live report</span>
+                {fixture.schemaVersion === "v1.5.0" ? (
+                  <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-cyan-100">
+                    projection_variants
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -371,6 +593,8 @@ export function Stage1DemoPanel({
                 </div>
               )}
             </div>
+
+            <BridgeVariantsSection fixture={fixture} />
 
             <div className="rounded-2xl border border-gray-800 bg-gray-950/70 p-5">
               <SectionTitle title="Why this view exists" />
