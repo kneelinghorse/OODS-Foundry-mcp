@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { handle as applyHandle } from "../../src/tools/map.apply.js";
+import { handle as createHandle } from "../../src/tools/map.create.js";
 import { handle as snapshotHandle } from "../../src/tools/registry.snapshot.js";
 import {
   loadMappings,
@@ -10,8 +11,10 @@ import {
   type MappingsDoc,
 } from "../../src/tools/map.shared.js";
 import type {
+  MapCreateInput,
   Stage1CandidateAction,
   Stage1CandidateObject,
+  Stage1ProjectionVariant,
   Stage1ReconciliationReport,
 } from "../../src/tools/types.js";
 
@@ -461,6 +464,9 @@ describe("real emitted Stage1 reconciliation report → map.apply → registry.s
       for (const fixture of REAL_REPORT_FIXTURES) {
         const report = loadReport(fixture.reportPath);
 
+        // v1.1.0 regression gate: these are the older s43-validation fixtures.
+        // v1.2.0+ reports (s92-m03 v1.5.0 fixtures) are exercised in a separate
+        // describe block below and carry additional candidate-object fields.
         expect(report.schema_version).toBe("1.1.0");
         expect(report.reconciliation_summary).toBeDefined();
         expect(report.manifest).toBeUndefined();
@@ -502,6 +508,221 @@ describe("real emitted Stage1 reconciliation report → map.apply → registry.s
         expect(countLowConfidenceConflictAnnotations(report)).toBeGreaterThan(
           0,
         );
+      }
+    },
+  );
+});
+
+// ── s92-m03: Real-data re-gate vs Stage1 v1.5.0 runs (dc1cfabb + 07776e70) ──
+// Supersedes the older 82201fef + da66f1d2 v1.3 captures used in s91-m01. The
+// new v1.5.0 runs produce reconciliation_report schema_version="1.2.0" (now with
+// external_component on candidates) AND bridge.json mappings that carry the
+// Stage1 v1.5.0 §7.3 projection_variants[]. Two pathways are gated here:
+//   1) recon_report → map.apply (confirms m02's external_component acceptance
+//      and bucket-count stability against real-shape data)
+//   2) bridge.json mappings → map.create (confirms m01's projection_variants
+//      write-path survives round-trip on 73 + 128 variant-bearing mappings)
+
+type V150Fixture = {
+  name: "linear" | "stripe";
+  reportPath: string;
+  bridgePath: string;
+  expectedUrl: string;
+  expectedCandidateObjects: number;
+  expectedBridgeMappings: number;
+  expectedVariantBearing: number;
+  expectedMultiVariant: number;
+  expectedQueuedAtDefaultThreshold: number;
+  expectedLowConfidenceConflictAnnotations: number;
+};
+
+const V150_FIXTURES: V150Fixture[] = [
+  {
+    name: "linear",
+    reportPath: path.resolve(
+      __dirname,
+      "../../../../../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/artifacts/reconciliation_report.json",
+    ),
+    bridgePath: path.resolve(
+      __dirname,
+      "../../../../../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/bridge.json",
+    ),
+    expectedUrl: "https://linear.app/",
+    expectedCandidateObjects: 73,
+    expectedBridgeMappings: 73,
+    expectedVariantBearing: 73,
+    expectedMultiVariant: 2,
+    expectedQueuedAtDefaultThreshold: 12,
+    expectedLowConfidenceConflictAnnotations: 5,
+  },
+  {
+    name: "stripe",
+    reportPath: path.resolve(
+      __dirname,
+      "../../../../../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/artifacts/reconciliation_report.json",
+    ),
+    bridgePath: path.resolve(
+      __dirname,
+      "../../../../../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/bridge.json",
+    ),
+    expectedUrl: "https://stripe.com/",
+    expectedCandidateObjects: 129,
+    expectedBridgeMappings: 129,
+    expectedVariantBearing: 128,
+    expectedMultiVariant: 0,
+    expectedQueuedAtDefaultThreshold: 17,
+    expectedLowConfidenceConflictAnnotations: 9,
+  },
+];
+
+type BridgeMapping = {
+  externalSystem: string;
+  externalComponent: string;
+  oodsTraits: string[];
+  confidence?: number;
+  propMappings?: Array<{ externalProp: string; oodsProp: string }>;
+  projection_variants?: Stage1ProjectionVariant[];
+};
+
+type BridgePayload = {
+  mappings: BridgeMapping[];
+};
+
+const allV150ReportsAvailable = V150_FIXTURES.every(
+  (fixture) =>
+    fs.existsSync(fixture.reportPath) && fs.existsSync(fixture.bridgePath),
+);
+
+describe("s92-m03 Stage1 v1.5.0 real-data re-gate (dc1cfabb + 07776e70)", () => {
+  beforeEach(() => {
+    seedEmptyMappings();
+    for (const fixture of V150_FIXTURES) {
+      if (!fs.existsSync(fixture.reportPath)) continue;
+      fs.rmSync(buildArtifactAbsolutePath(loadReport(fixture.reportPath)), {
+        force: true,
+      });
+    }
+  });
+
+  it.runIf(allV150ReportsAvailable)(
+    "recon_report path: accepts v1.2.0 external_component on candidate_objects and routes to create verdicts without regression",
+    async () => {
+      for (const fixture of V150_FIXTURES) {
+        const report = loadReport(fixture.reportPath);
+
+        expect(report.kind).toBe("reconciliation_report");
+        expect(report.schema_version).toBe("1.2.0");
+        expect(report.target.url).toBe(fixture.expectedUrl);
+        expect(report.candidate_objects).toHaveLength(
+          fixture.expectedCandidateObjects,
+        );
+        expect(
+          report.candidate_objects.every(
+            (candidate) => candidate.action === "create",
+          ),
+        ).toBe(true);
+        // v1.2.0 carries external_component on every candidate_object — this
+        // would have been rejected pre-s92-m02.
+        expect(
+          report.candidate_objects.every(
+            (candidate) => typeof candidate.external_component === "string",
+          ),
+        ).toBe(true);
+
+        seedEmptyMappings();
+
+        const applyZero = await applyHandle({
+          reportPath: fixture.reportPath,
+          apply: true,
+          minConfidence: 0,
+        });
+
+        expect(applyZero.errors).toEqual([]);
+        expect(applyZero.applied).toHaveLength(
+          fixture.expectedCandidateObjects,
+        );
+        expect(
+          applyZero.applied.every(
+            (entry) => entry.action === "create" && entry.persisted === true,
+          ),
+        ).toBe(true);
+
+        expect(
+          countQueuedCandidates(report, MIN_CONFIDENCE),
+        ).toBe(fixture.expectedQueuedAtDefaultThreshold);
+        expect(countLowConfidenceConflictAnnotations(report)).toBe(
+          fixture.expectedLowConfidenceConflictAnnotations,
+        );
+
+        seedEmptyMappings();
+      }
+    },
+  );
+
+  it.runIf(allV150ReportsAvailable)(
+    "bridge.json path: all variant-bearing mappings round-trip through map.create with projection_variants preserved byte-identical",
+    async () => {
+      for (const fixture of V150_FIXTURES) {
+        seedEmptyMappings();
+
+        const bridge = JSON.parse(
+          fs.readFileSync(fixture.bridgePath, "utf8"),
+        ) as BridgePayload;
+
+        expect(bridge.mappings).toHaveLength(fixture.expectedBridgeMappings);
+
+        const variantBearing = bridge.mappings.filter(
+          (mapping) =>
+            Array.isArray(mapping.projection_variants) &&
+            mapping.projection_variants.length > 0,
+        );
+        expect(variantBearing).toHaveLength(fixture.expectedVariantBearing);
+
+        const multiVariant = bridge.mappings.filter(
+          (mapping) =>
+            Array.isArray(mapping.projection_variants) &&
+            mapping.projection_variants.length > 1,
+        );
+        expect(multiVariant).toHaveLength(fixture.expectedMultiVariant);
+
+        // Exercise map.create for every variant-bearing mapping and confirm
+        // variants survive byte-identical through persistence.
+        let created = 0;
+        for (const mapping of variantBearing) {
+          const input: MapCreateInput = {
+            apply: true,
+            externalSystem: mapping.externalSystem,
+            externalComponent: mapping.externalComponent,
+            oodsTraits: mapping.oodsTraits,
+            confidence: "auto",
+            projection_variants: mapping.projection_variants,
+          };
+          const result = await createHandle(input);
+          expect(result.status).toBe("ok");
+          const persistedVariants = (result.mapping as { projection_variants?: unknown })
+            .projection_variants;
+          expect(persistedVariants).toEqual(mapping.projection_variants);
+          created += 1;
+        }
+
+        expect(created).toBe(fixture.expectedVariantBearing);
+
+        // Re-read from disk to confirm the on-disk shape is byte-identical for
+        // projection_variants (canonical JSON comparison of each mapping).
+        const doc = loadMappings();
+        for (const mapping of variantBearing) {
+          const persisted = doc.mappings.find(
+            (candidate) =>
+              candidate.externalSystem === mapping.externalSystem &&
+              candidate.externalComponent === mapping.externalComponent,
+          );
+          expect(persisted).toBeDefined();
+          expect(JSON.stringify(persisted?.projection_variants)).toBe(
+            JSON.stringify(mapping.projection_variants),
+          );
+        }
+
+        seedEmptyMappings();
       }
     },
   );

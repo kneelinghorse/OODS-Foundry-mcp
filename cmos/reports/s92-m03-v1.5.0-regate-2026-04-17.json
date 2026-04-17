@@ -1,0 +1,121 @@
+{
+  "mission": "s92-m03",
+  "title": "Real-data E2E re-gate vs Stage1 v1.5.0 runs (dc1cfabb + 07776e70)",
+  "generatedAt": "2026-04-17T01:42:46Z",
+  "status": "verified",
+  "basis": "actual_on_disk_reports_and_bridge",
+  "contractAlignment": {
+    "oods": "v1.2.3",
+    "stage1": "v1.5.0",
+    "oods_sprint_deliverables": ["s92-m01 (map.create write path)", "s92-m02 (map.apply verdict pass-through)"]
+  },
+  "sourceReports": [
+    {
+      "name": "linear",
+      "runId": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+      "targetUrl": "https://linear.app/",
+      "reportPath": "../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/artifacts/reconciliation_report.json",
+      "bridgePath": "../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/bridge.json",
+      "schemaVersion": "1.2.0",
+      "stage1GeneratedAt": "2026-04-17T00:25:19.501Z",
+      "candidateObjectCount": 73,
+      "objectVerdicts": {
+        "create": 73,
+        "patch": 0,
+        "skip": 0,
+        "conflict": 0
+      },
+      "bridge": {
+        "mappingCount": 73,
+        "variantBearing": 73,
+        "multiVariant": 2,
+        "multiVariantExamples": [
+          "Header Button Item Crtcc (2 surfaces)",
+          "Hero New Feature Link Pht6b (2 surfaces)"
+        ]
+      },
+      "routing": {
+        "minConfidence0": {
+          "applied": 73,
+          "persisted": 73,
+          "errors": 0
+        },
+        "queuedAtDefaultThreshold": 12,
+        "lowConfidenceConflictAnnotations": 5
+      }
+    },
+    {
+      "name": "stripe",
+      "runId": "07776e70-ec86-449a-b570-3978161793ac",
+      "targetUrl": "https://stripe.com/",
+      "reportPath": "../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/artifacts/reconciliation_report.json",
+      "bridgePath": "../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/bridge.json",
+      "schemaVersion": "1.2.0",
+      "candidateObjectCount": 129,
+      "objectVerdicts": {
+        "create": 129,
+        "patch": 0,
+        "skip": 0,
+        "conflict": 0
+      },
+      "bridge": {
+        "mappingCount": 129,
+        "variantBearing": 128,
+        "multiVariant": 0
+      },
+      "routing": {
+        "minConfidence0": {
+          "applied": 129,
+          "persisted": 129,
+          "errors": 0
+        },
+        "queuedAtDefaultThreshold": 17,
+        "lowConfidenceConflictAnnotations": 9
+      }
+    }
+  ],
+  "gateResults": {
+    "inputValidationRejectionsAcrossBothFixtures": 0,
+    "projectionVariantsRoundTripPercent": 100,
+    "bucketCountRegressionVsS91M01": "N/A (fixtures are different runs)",
+    "bridgeMappingVariantPersistenceRate": "201/201 variant-bearing mappings persisted byte-identical"
+  },
+  "testTranscript": {
+    "suite": "test/e2e/stage1-reconciliation.test.ts",
+    "vitestVersion": "3.2.4",
+    "invocation": "npx vitest run --config <ad-hoc e2e include>",
+    "results": {
+      "testFilesPassed": 1,
+      "testsPassed": 4,
+      "testsFailed": 0,
+      "durationMs": 4620
+    },
+    "testsExercised": [
+      "real emitted Stage1 reconciliation report → map.apply → registry.snapshot > re-gates the on-disk linear.app and stripe.com reports against actual routing behavior (v1.1.0 regression gate, 2813ms)",
+      "s92-m03 Stage1 v1.5.0 real-data re-gate (dc1cfabb + 07776e70) > recon_report path: accepts v1.2.0 external_component on candidate_objects and routes to create verdicts without regression (538ms)",
+      "s92-m03 Stage1 v1.5.0 real-data re-gate (dc1cfabb + 07776e70) > bridge.json path: all variant-bearing mappings round-trip through map.create with projection_variants preserved byte-identical (693ms)"
+    ]
+  },
+  "schemaEvidence": {
+    "preSprint92": {
+      "mapCreateInputRejection": "additionalProperties:false on map.create.input.json rejected projection_variants[]; Stage1's live dry-run probe from 2026-04-16 failed at AJV validation",
+      "mapApplyInputRejection": "CandidateObject closed whitelist rejected external_component (now present on every v1.2.0 candidate_object)"
+    },
+    "postSprint92": {
+      "mapCreateAcceptsProjectionVariants": true,
+      "mapApplyAcceptsExternalComponent": true,
+      "mapApplyAcceptsProjectionVariants": true,
+      "mapCreatePersistenceByteIdentical": true,
+      "regressionOnV110Fixtures": false
+    }
+  },
+  "successCriteria": {
+    "sc1_parameterized_e2e_green_both_fixtures": "MET — 2/2 fixtures passed, 0 AJV rejections, 201/201 variant-bearing mappings round-trip byte-identical",
+    "sc2_baseline_counts_within_plus_minus_1": "MET — linear 73/2-multi observed=73/2, stripe 129/128-variant observed=129/128 (note: the prior mission context claimed 1 four-presentation capability for stripe; live bridge.json shows 128 single-variant mappings with no capability_id set, so the 4-presentation claim resolved via capability_rollup rather than projection_variants — does not affect gate)",
+    "sc3_no_regression_on_v13x_fixtures": "MET — v1.1.0 regression gate (`re-gates the on-disk linear.app and stripe.com reports`) still green"
+  },
+  "openFollowUps": [
+    "Stage1 capability_rollup.json is not yet consumed by OODS — per sprint-92 focus statement this is intentional deferral (v1.5.0 §7 notes OODS consumes capabilities indirectly through bridge payloads)",
+    "identity_graph.json and object_rollup.json similarly deferred"
+  ]
+}
