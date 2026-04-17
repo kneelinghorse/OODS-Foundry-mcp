@@ -160,7 +160,12 @@ export type StructuredDataFetchOutput = {
   resolvedVersion?: string | null;
 };
 
-/* Stage1 v1.5.0 rollup shapes (observed schema_versions: identity_graph 1.1.0, capability_rollup 1.1.0, object_rollup 1.0.0). */
+/* Stage1 rollup shapes — accepted schema_versions (post v1.6.0):
+ *   identity_graph: 1.1.0 | 1.2.0
+ *   capability_rollup: 1.1.0 | 1.2.0
+ *   object_rollup: 1.0.0 | 1.1.0
+ * See ROLLUP_ALLOWED_SCHEMA_VERSIONS in structuredData.fetch.ts.
+ */
 
 export type Stage1EvidenceRef = {
   artifact_ref: string;
