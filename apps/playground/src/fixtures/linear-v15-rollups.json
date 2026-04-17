@@ -1,0 +1,724 @@
+{
+    "capabilityRollup": {
+        "kind": "capability_rollup",
+        "schema_version": "1.1.0",
+        "generated_at": "2026-04-17T00:25:19.851Z",
+        "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+        "target": {
+            "id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+            "url": "https://linear.app/"
+        },
+        "capabilities": [
+            {
+                "canonical_id": "capability:build-input-va-dqi",
+                "display_label": "Build Input Va Dqi",
+                "presentations": [
+                    {
+                        "surface": "dom",
+                        "label": "Build Input Va Dqi",
+                        "preconditions": [],
+                        "role_hints": [],
+                        "state_hints": [],
+                        "member_instances": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/action_candidates/2",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_action"
+                            }
+                        ]
+                    }
+                ],
+                "minimum_preconditions": [],
+                "lifecycle_hints": [],
+                "conflicts": [],
+                "resolution_strategy": "identity_node",
+                "derived_from_runs": [
+                    "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9"
+                ]
+            },
+            {
+                "canonical_id": "capability:flex-root-doqcw",
+                "display_label": "Flex Root Doqcw",
+                "presentations": [
+                    {
+                        "surface": "dom",
+                        "label": "Flex Root Doqcw",
+                        "preconditions": [],
+                        "role_hints": [],
+                        "state_hints": [],
+                        "member_instances": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/action_candidates/0",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_action"
+                            }
+                        ]
+                    }
+                ],
+                "minimum_preconditions": [],
+                "lifecycle_hints": [],
+                "conflicts": [],
+                "resolution_strategy": "identity_node",
+                "derived_from_runs": [
+                    "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9"
+                ]
+            },
+            {
+                "canonical_id": "capability:input",
+                "display_label": "Input",
+                "presentations": [
+                    {
+                        "surface": "dom",
+                        "label": "Input",
+                        "preconditions": [],
+                        "role_hints": [],
+                        "state_hints": [],
+                        "member_instances": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/action_candidates/4",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_action"
+                            }
+                        ]
+                    }
+                ],
+                "minimum_preconditions": [],
+                "lifecycle_hints": [],
+                "conflicts": [],
+                "resolution_strategy": "identity_node",
+                "derived_from_runs": [
+                    "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9"
+                ]
+            },
+            {
+                "canonical_id": "capability:issue-view-comment-box-v-dr9",
+                "display_label": "Issue View Comment Box V Dr9",
+                "presentations": [
+                    {
+                        "surface": "dom",
+                        "label": "Issue View Comment Box V Dr9",
+                        "preconditions": [],
+                        "role_hints": [],
+                        "state_hints": [],
+                        "member_instances": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/action_candidates/1",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_action"
+                            }
+                        ]
+                    }
+                ],
+                "minimum_preconditions": [],
+                "lifecycle_hints": [],
+                "conflicts": [],
+                "resolution_strategy": "identity_node",
+                "derived_from_runs": [
+                    "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9"
+                ]
+            },
+            {
+                "canonical_id": "capability:slack-issue-chat-input-y9wpf",
+                "display_label": "Slack Issue Chat Input Y9wpf",
+                "presentations": [
+                    {
+                        "surface": "dom",
+                        "label": "Slack Issue Chat Input Y9wpf",
+                        "preconditions": [],
+                        "role_hints": [],
+                        "state_hints": [],
+                        "member_instances": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/action_candidates/3",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_action"
+                            }
+                        ]
+                    }
+                ],
+                "minimum_preconditions": [],
+                "lifecycle_hints": [],
+                "conflicts": [],
+                "resolution_strategy": "identity_node",
+                "derived_from_runs": [
+                    "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9"
+                ]
+            },
+            {
+                "canonical_id": "capability:slack-issue-send-button-divider-jo-tlb",
+                "display_label": "Slack Issue Send Button Divider Jo Tlb",
+                "presentations": [
+                    {
+                        "surface": "dom",
+                        "label": "Slack Issue Send Button Divider Jo Tlb",
+                        "preconditions": [],
+                        "role_hints": [],
+                        "state_hints": [],
+                        "member_instances": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/action_candidates/5",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_action"
+                            }
+                        ]
+                    }
+                ],
+                "minimum_preconditions": [],
+                "lifecycle_hints": [],
+                "conflicts": [],
+                "resolution_strategy": "identity_node",
+                "derived_from_runs": [
+                    "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9"
+                ]
+            },
+            {
+                "canonical_id": "capability:video-player-playback-rate-j1bf",
+                "display_label": "Video Player Playback Rate J1bf",
+                "presentations": [
+                    {
+                        "surface": "dom",
+                        "label": "Video Player Playback Rate J1bf",
+                        "preconditions": [],
+                        "role_hints": [],
+                        "state_hints": [],
+                        "member_instances": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/action_candidates/6",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_action"
+                            }
+                        ]
+                    }
+                ],
+                "minimum_preconditions": [],
+                "lifecycle_hints": [],
+                "conflicts": [],
+                "resolution_strategy": "identity_node",
+                "derived_from_runs": [
+                    "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9"
+                ]
+            }
+        ]
+    },
+    "objectRollup": {
+        "kind": "object_rollup",
+        "schema_version": "1.0.0",
+        "generated_at": "2026-04-17T00:25:19.864Z",
+        "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+        "target": {
+            "id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+            "url": "https://linear.app/"
+        },
+        "objects": [
+            {
+                "canonical_id": "canonical:object:header-button-item-crtcc",
+                "canonical_label": "Header Button Item Crtcc",
+                "representative_object_id": "cluster-cluster-41",
+                "source_object_ids": [
+                    "cluster-cluster-41"
+                ],
+                "external_component": "Header Button Item Crtcc",
+                "oods_traits": [
+                    "actionable",
+                    "color",
+                    "interactive",
+                    "typography"
+                ],
+                "projection_variants": [
+                    {
+                        "id": "header-button-item-crtcc-desktop",
+                        "surface": "desktop",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "component_clusters.json",
+                                "json_pointer": "/clusters/35",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "component_cluster"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "component_cluster",
+                            "source_surface_id": "cluster:cluster-41",
+                            "routes": [
+                                "/",
+                                "/about",
+                                "/agents",
+                                "/asks",
+                                "/blog"
+                            ]
+                        },
+                        "selector": "cluster:cluster-41"
+                    },
+                    {
+                        "id": "header-button-item-crtcc-mobile",
+                        "surface": "mobile",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/objects/33",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_object"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "orca_object",
+                            "source_surface_id": "orca-object:cluster-cluster-41",
+                            "routes": []
+                        },
+                        "selector": "cluster-41"
+                    }
+                ],
+                "conflicts": [],
+                "reconciliation": {
+                    "action": "create"
+                }
+            },
+            {
+                "canonical_id": "canonical:object:hero-new-feature-link-pht6b",
+                "canonical_label": "Hero New Feature Link Pht6b",
+                "representative_object_id": "cluster-cluster-10",
+                "source_object_ids": [
+                    "cluster-cluster-10"
+                ],
+                "external_component": "Hero New Feature Link Pht6b",
+                "oods_traits": [
+                    "border",
+                    "color",
+                    "interactive",
+                    "spacing",
+                    "typography",
+                    "visual"
+                ],
+                "projection_variants": [
+                    {
+                        "id": "hero-new-feature-link-pht6b-desktop",
+                        "surface": "desktop",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "component_clusters.json",
+                                "json_pointer": "/clusters/7",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "component_cluster"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "component_cluster",
+                            "source_surface_id": "cluster:cluster-10",
+                            "routes": [
+                                "/",
+                                "/about",
+                                "/agents",
+                                "/asks",
+                                "/blog"
+                            ]
+                        },
+                        "selector": "cluster:cluster-10"
+                    },
+                    {
+                        "id": "hero-new-feature-link-pht6b-mobile",
+                        "surface": "mobile",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/objects/7",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_object"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "orca_object",
+                            "source_surface_id": "orca-object:cluster-cluster-10",
+                            "routes": []
+                        },
+                        "selector": "cluster-10"
+                    }
+                ],
+                "conflicts": [],
+                "reconciliation": {
+                    "action": "create"
+                }
+            },
+            {
+                "canonical_id": "canonical:object:agent-list-card-euuz1",
+                "canonical_label": "Agent List Card Euuz1",
+                "representative_object_id": "cluster-cluster-67",
+                "source_object_ids": [
+                    "cluster-cluster-67"
+                ],
+                "external_component": "Agent List Card Euuz1",
+                "oods_traits": [
+                    "border",
+                    "color",
+                    "composable",
+                    "spacing",
+                    "visual"
+                ],
+                "projection_variants": [
+                    {
+                        "id": "agent-list-card-euuz1-desktop",
+                        "surface": "desktop",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/objects/26",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_object"
+                            },
+                            {
+                                "artifact_ref": "component_clusters.json",
+                                "json_pointer": "/clusters/27",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "component_cluster"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "component_cluster",
+                            "source_surface_id": "cluster:cluster-67",
+                            "routes": [
+                                "/agents",
+                                "/asks",
+                                "/blog"
+                            ],
+                            "candidate_types": [
+                                "orca_object",
+                                "component_cluster"
+                            ],
+                            "source_surfaces": [
+                                "dom"
+                            ]
+                        },
+                        "selector": "cluster-67"
+                    }
+                ],
+                "conflicts": [],
+                "reconciliation": {
+                    "action": "create"
+                }
+            },
+            {
+                "canonical_id": "canonical:object:agent-list-coming-soon-xdxf9",
+                "canonical_label": "Agent List Coming Soon Xdxf9",
+                "representative_object_id": "cluster-cluster-69",
+                "source_object_ids": [
+                    "cluster-cluster-69"
+                ],
+                "external_component": "Agent List Coming Soon Xdxf9",
+                "oods_traits": [
+                    "data-bound",
+                    "layout",
+                    "spacing",
+                    "visual"
+                ],
+                "projection_variants": [
+                    {
+                        "id": "agent-list-coming-soon-xdxf9-desktop",
+                        "surface": "desktop",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/objects/68",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_object"
+                            },
+                            {
+                                "artifact_ref": "component_clusters.json",
+                                "json_pointer": "/clusters/70",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "component_cluster"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "component_cluster",
+                            "source_surface_id": "cluster:cluster-69",
+                            "routes": [
+                                "/agents"
+                            ],
+                            "candidate_types": [
+                                "orca_object",
+                                "component_cluster"
+                            ],
+                            "source_surfaces": [
+                                "dom"
+                            ]
+                        },
+                        "selector": "cluster-69"
+                    }
+                ],
+                "conflicts": [],
+                "reconciliation": {
+                    "action": "create"
+                }
+            },
+            {
+                "canonical_id": "canonical:object:benefits-carousel-card-fjt3f",
+                "canonical_label": "Benefits Carousel Card Fjt3f",
+                "representative_object_id": "cluster-cluster-31",
+                "source_object_ids": [
+                    "cluster-cluster-31"
+                ],
+                "external_component": "Benefits Carousel Card Fjt3f",
+                "oods_traits": [
+                    "border",
+                    "color",
+                    "composable",
+                    "spacing",
+                    "visual"
+                ],
+                "projection_variants": [
+                    {
+                        "id": "benefits-carousel-card-fjt3f-desktop",
+                        "surface": "desktop",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/objects/24",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_object"
+                            },
+                            {
+                                "artifact_ref": "component_clusters.json",
+                                "json_pointer": "/clusters/25",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "component_cluster"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "component_cluster",
+                            "source_surface_id": "cluster:cluster-31",
+                            "routes": [
+                                "/",
+                                "/about",
+                                "/agents",
+                                "/asks",
+                                "/blog"
+                            ],
+                            "candidate_types": [
+                                "orca_object",
+                                "component_cluster"
+                            ],
+                            "source_surfaces": [
+                                "dom"
+                            ]
+                        },
+                        "selector": "cluster-31"
+                    }
+                ],
+                "conflicts": [],
+                "reconciliation": {
+                    "action": "create"
+                }
+            },
+            {
+                "canonical_id": "canonical:object:build-list-container-e3qk6",
+                "canonical_label": "Build List Container E3qk6",
+                "representative_object_id": "cluster-cluster-49",
+                "source_object_ids": [
+                    "cluster-cluster-49"
+                ],
+                "external_component": "Build List Container E3qk6",
+                "oods_traits": [
+                    "data-bound",
+                    "layout",
+                    "spacing",
+                    "visual"
+                ],
+                "projection_variants": [
+                    {
+                        "id": "build-list-container-e3qk6-desktop",
+                        "surface": "desktop",
+                        "confidence": 0.95,
+                        "evidence_chain": [
+                            {
+                                "artifact_ref": "orca_candidates.json",
+                                "json_pointer": "/objects/42",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "orca_object"
+                            },
+                            {
+                                "artifact_ref": "component_clusters.json",
+                                "json_pointer": "/clusters/44",
+                                "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+                                "source_surface": "dom",
+                                "observation_type": "component_cluster"
+                            }
+                        ],
+                        "metadata": {
+                            "source_surface": "dom",
+                            "candidate_type": "component_cluster",
+                            "source_surface_id": "cluster:cluster-49",
+                            "routes": [
+                                "/",
+                                "/agents"
+                            ],
+                            "candidate_types": [
+                                "orca_object",
+                                "component_cluster"
+                            ],
+                            "source_surfaces": [
+                                "dom"
+                            ]
+                        },
+                        "selector": "cluster-49"
+                    }
+                ],
+                "conflicts": [],
+                "reconciliation": {
+                    "action": "create"
+                }
+            }
+        ],
+        "_note": "Trimmed from 73 to 6 representative objects"
+    },
+    "identityGraph": {
+        "kind": "identity_graph",
+        "schema_version": "1.1.0",
+        "generated_at": "2026-04-17T00:25:19.813Z",
+        "run_id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+        "target": {
+            "id": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+            "url": "https://linear.app/"
+        },
+        "nodes": [
+            {
+                "canonical_id": "canonical:object:plan-dashed-path-psc-xi",
+                "canonical_label": "Plan Dashed Path Psc Xi",
+                "identity_class": "object",
+                "candidate_mappings": [
+                    {
+                        "target": "Plan Dashed Path Psc Xi",
+                        "confidence": 0.95,
+                        "hints": [
+                            {
+                                "heuristic": "label_alias_match",
+                                "contribution": 0.7,
+                                "detail": "Exact label match on 'Plan Dashed Path Psc Xi'"
+                            }
+                        ]
+                    }
+                ],
+                "review_status": "certain"
+            },
+            {
+                "canonical_id": "canonical:object:symbol",
+                "canonical_label": "Symbol",
+                "identity_class": "object",
+                "candidate_mappings": [
+                    {
+                        "target": "Symbol",
+                        "confidence": 0.95,
+                        "hints": [
+                            {
+                                "heuristic": "label_alias_match",
+                                "contribution": 0.7,
+                                "detail": "Exact label match on 'Symbol'"
+                            }
+                        ]
+                    }
+                ],
+                "review_status": "certain"
+            },
+            {
+                "canonical_id": "canonical:object:show-mobile",
+                "canonical_label": "Show Mobile",
+                "identity_class": "object",
+                "candidate_mappings": [
+                    {
+                        "target": "Show Mobile",
+                        "confidence": 0.95,
+                        "hints": [
+                            {
+                                "heuristic": "label_alias_match",
+                                "contribution": 0.7,
+                                "detail": "Exact label match on 'Show Mobile'"
+                            }
+                        ]
+                    }
+                ],
+                "review_status": "certain"
+            },
+            {
+                "canonical_id": "canonical:object:show-laptop",
+                "canonical_label": "Show Laptop",
+                "identity_class": "object",
+                "candidate_mappings": [
+                    {
+                        "target": "Show Laptop",
+                        "confidence": 0.95,
+                        "hints": [
+                            {
+                                "heuristic": "label_alias_match",
+                                "contribution": 0.7,
+                                "detail": "Exact label match on 'Show Laptop'"
+                            }
+                        ]
+                    }
+                ],
+                "review_status": "certain"
+            },
+            {
+                "canonical_id": "canonical:object:icon-logotype-qx-i2t",
+                "canonical_label": "Icon Logotype Qx I2t",
+                "identity_class": "object",
+                "candidate_mappings": [
+                    {
+                        "target": "Icon Logotype Qx I2t",
+                        "confidence": 0.95,
+                        "hints": [
+                            {
+                                "heuristic": "label_alias_match",
+                                "contribution": 0.7,
+                                "detail": "Exact label match on 'Icon Logotype Qx I2t'"
+                            }
+                        ]
+                    }
+                ],
+                "review_status": "certain"
+            }
+        ],
+        "_note": "Trimmed from 80 to 5 representative nodes (member_candidates omitted)"
+    },
+    "sourceCounts": {
+        "capabilities": 7,
+        "objects": 73,
+        "nodes": 80
+    }
+}

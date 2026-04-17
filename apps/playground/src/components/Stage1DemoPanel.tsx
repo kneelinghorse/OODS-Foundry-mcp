@@ -22,10 +22,24 @@ export type Stage1BridgeMappingSample = {
 
 export type Stage1FixtureSchemaVersion = "v1.1.0" | "v1.5.0";
 
+export type Stage1FixtureKind = "reconciliation" | "rollups";
+
 export type Stage1FixtureMeta = {
-  id: "linear" | "stripe" | "linear-v15" | "stripe-v15";
+  id:
+    | "linear"
+    | "stripe"
+    | "linear-v15"
+    | "stripe-v15"
+    | "linear-v15-rollups"
+    | "stripe-v15-rollups";
   label: string;
   schemaVersion: Stage1FixtureSchemaVersion;
+  /**
+   * "reconciliation" fixtures drive map.apply dry-runs + bridge mapping cards
+   * (s91-m03 + s92-m04). "rollups" fixtures drive the capability view rendered
+   * from identity_graph/capability_rollup/object_rollup (s93-m04).
+   */
+  kind?: Stage1FixtureKind;
   reportPath: string;
   targetUrl: string;
   targetId: string;
