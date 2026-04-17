@@ -19,6 +19,12 @@ import {
   Stage1DemoPanel,
   type Stage1FixtureMeta,
 } from "./components/Stage1DemoPanel";
+import { CapabilityPanel } from "./components/CapabilityPanel";
+import {
+  LINEAR_V15_ROLLUPS,
+  STRIPE_V15_ROLLUPS,
+  type RollupBundle,
+} from "./fixtures/stage1-rollups";
 
 type Framework = "react" | "vue" | "html";
 type Styling = "inline" | "tokens" | "tailwind";
@@ -214,6 +220,34 @@ const STAGE1_FIXTURES: Record<Stage1FixtureMeta["id"], Stage1FixtureMeta> = {
       },
     ],
   },
+  "linear-v15-rollups": {
+    id: "linear-v15-rollups",
+    label: "Linear (v1.5.0 rollups)",
+    schemaVersion: "v1.5.0",
+    kind: "rollups",
+    reportPath:
+      "../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/artifacts",
+    targetUrl: "https://linear.app/",
+    targetId: "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+    candidateObjects: 0,
+    candidateActions: 0,
+    verdictCounts: { create: 0, patch: 0, skip: 0, conflict: 0 },
+    lowConfidenceConflictAnnotations: 0,
+  },
+  "stripe-v15-rollups": {
+    id: "stripe-v15-rollups",
+    label: "Stripe (v1.5.0 rollups)",
+    schemaVersion: "v1.5.0",
+    kind: "rollups",
+    reportPath:
+      "../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/artifacts",
+    targetUrl: "https://stripe.com/",
+    targetId: "07776e70-ec86-449a-b570-3978161793ac",
+    candidateObjects: 0,
+    candidateActions: 0,
+    verdictCounts: { create: 0, patch: 0, skip: 0, conflict: 0 },
+    lowConfidenceConflictAnnotations: 0,
+  },
   "stripe-v15": {
     id: "stripe-v15",
     label: "Stripe (v1.5.0)",
@@ -276,6 +310,23 @@ const STAGE1_FIXTURES: Record<Stage1FixtureMeta["id"], Stage1FixtureMeta> = {
 
 const SYNTHETIC_PATCH_FIXTURE_PATH =
   "packages/mcp-server/test/fixtures/reconciliation-report-v1.1.0.json";
+
+const ROLLUP_BUNDLES: Record<Stage1FixtureMeta["id"], RollupBundle | null> = {
+  linear: null,
+  stripe: null,
+  "linear-v15": null,
+  "stripe-v15": null,
+  "linear-v15-rollups": LINEAR_V15_ROLLUPS,
+  "stripe-v15-rollups": STRIPE_V15_ROLLUPS,
+};
+
+function rollupBundleFor(id: Stage1FixtureMeta["id"]): RollupBundle {
+  const bundle = ROLLUP_BUNDLES[id];
+  if (!bundle) {
+    throw new Error(`Rollup bundle not available for fixture "${id}"`);
+  }
+  return bundle;
+}
 
 function getInitialView(): ViewMode {
   return window.location.hash === "#stage1" ? "stage1" : "compose";
@@ -523,6 +574,16 @@ export default function App() {
 
   const loadStage1Demo = useCallback(async () => {
     if (view !== "stage1") return;
+    // Rollup fixtures render a pure client-side capability view; no map.apply
+    // dry-run is required and running one would fail (runPath is an artifacts
+    // dir, not a reconciliation_report path).
+    if (activeFixture.kind === "rollups") {
+      setStage1Result(null);
+      setSyntheticPatchResult(null);
+      setStage1Error(null);
+      setStage1Loading(false);
+      return;
+    }
     setStage1Loading(true);
     setStage1Error(null);
 
@@ -544,7 +605,7 @@ export default function App() {
     } finally {
       setStage1Loading(false);
     }
-  }, [activeFixture.reportPath, view]);
+  }, [activeFixture.kind, activeFixture.reportPath, view]);
 
   useEffect(() => {
     if (view === "stage1") {
@@ -689,6 +750,37 @@ export default function App() {
             />
           </div>
         </>
+      ) : activeFixture.kind === "rollups" ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-wrap items-center gap-2 border-b border-gray-800 bg-slate-950/40 px-5 py-2">
+            <span className="text-[11px] uppercase tracking-[0.18em] text-indigo-200/70">
+              Fixture
+            </span>
+            {Object.values(STAGE1_FIXTURES).map((candidate) => {
+              const active = candidate.id === activeFixture.id;
+              return (
+                <button
+                  key={candidate.id}
+                  onClick={() => setStage1FixtureId(candidate.id)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    active
+                      ? "border-indigo-400 bg-indigo-500 text-white"
+                      : "border-white/10 bg-slate-900/60 text-indigo-50/70 hover:border-indigo-300/40 hover:text-white"
+                  }`}
+                >
+                  {candidate.label}
+                </button>
+              );
+            })}
+          </div>
+          <CapabilityPanel
+            label={activeFixture.label}
+            targetUrl={activeFixture.targetUrl}
+            runId={activeFixture.targetId}
+            runPath={activeFixture.reportPath}
+            bundle={rollupBundleFor(activeFixture.id)}
+          />
+        </div>
       ) : (
         <div className="flex min-h-0 flex-1">
           <Stage1DemoPanel

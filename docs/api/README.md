@@ -7,7 +7,7 @@ Auto-generated from JSON schemas and tool-descriptions.json.
 | Tool | Description |
 |------|-------------|
 | [tokens.build](./tokens-build.md) | Build design tokens for a brand and theme. Returns compiled CSS variables and token artifacts. Use apply=true to write output files (default: dry-run, returns preview only). |
-| [structuredData.fetch](./structuredData-fetch.md) | Fetch structured data exports (components, tokens, or manifest). Supports ETag caching, version pinning, and version listing. |
+| [structuredData.fetch](./structuredData-fetch.md) | Fetch structured data exports (components, tokens, or manifest) or Stage1 v1.5.0 rollup artifacts (identity_graph, capability_rollup, object_rollup) via kind+runPath. Supports ETag caching, version pinning, and version listing in dataset mode; schema_version validation in rollup mode. |
 | [repl.validate](./repl-validate.md) | Validate a UiSchema tree or patch against the Design Lab schema. Accepts schemaRef from design.compose. Returns validation errors, warnings, and optionally a normalized tree. |
 | [repl.render](./repl-render.md) | Render a validated UiSchema into HTML/CSS preview output. Accepts schemaRef from design.compose. Supports document and fragment formats; HTML/fragments are returned only when apply=true (apply=false returns metadata-only preview). Use output.compact=true to omit token CSS (~40% size reduction) and receive a tokenCssRef instead. Note: schemaRef expires after 30 minutes — use schema.save to persist. |
 | [brand.apply](./brand-apply.md) | Apply brand token overlays using alias or RFC 6902 patch strategy. Requires a delta object. Use apply=true to write changes to disk (default: dry-run, returns preview only). |

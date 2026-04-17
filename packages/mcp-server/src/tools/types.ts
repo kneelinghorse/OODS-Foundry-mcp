@@ -124,8 +124,13 @@ export type ReleaseTagResult = GenericOutput & {
 
 export type StructuredDataset = "components" | "tokens" | "manifest";
 
+/** Stage1 v1.5.0 rollup artifact kinds consumable via structuredData.fetch. */
+export type Stage1RollupKind = "identity_graph" | "capability_rollup" | "object_rollup";
+
 export type StructuredDataFetchInput = {
-  dataset: StructuredDataset;
+  dataset?: StructuredDataset;
+  kind?: Stage1RollupKind;
+  runPath?: string;
   ifNoneMatch?: string;
   includePayload?: boolean;
   version?: string;
@@ -133,7 +138,10 @@ export type StructuredDataFetchInput = {
 };
 
 export type StructuredDataFetchOutput = {
-  dataset: StructuredDataset;
+  dataset?: StructuredDataset;
+  kind?: Stage1RollupKind;
+  schemaVersion?: string;
+  runId?: string;
   version?: string | null;
   generatedAt?: string | null;
   etag: string;
@@ -150,6 +158,108 @@ export type StructuredDataFetchOutput = {
   availableVersions?: string[];
   requestedVersion?: string | null;
   resolvedVersion?: string | null;
+};
+
+/* Stage1 v1.5.0 rollup shapes (observed schema_versions: identity_graph 1.1.0, capability_rollup 1.1.0, object_rollup 1.0.0). */
+
+export type Stage1EvidenceRef = {
+  artifact_ref: string;
+  json_pointer: string;
+  run_id?: string;
+  source_surface?: string;
+  observation_type?: string;
+};
+
+export type Stage1CandidateMapping = {
+  target: string;
+  confidence: number;
+  hints?: Array<{ heuristic: string; contribution: number; detail?: string }>;
+};
+
+export type Stage1MemberCandidate = {
+  surface_id: string;
+  source_surface?: string;
+  label?: string;
+  aliases?: string[];
+  attributes?: Record<string, unknown>;
+  evidence_refs?: Stage1EvidenceRef[];
+};
+
+export type Stage1IdentityGraphNode = {
+  canonical_id: string;
+  canonical_label?: string;
+  identity_class: string;
+  candidate_mappings?: Stage1CandidateMapping[];
+  review_status?: string;
+  member_candidates?: Stage1MemberCandidate[];
+};
+
+export type Stage1IdentityGraph = {
+  kind: "identity_graph";
+  schema_version: string;
+  generated_at: string;
+  run_id: string;
+  target: { id: string; url?: string };
+  nodes: Stage1IdentityGraphNode[];
+};
+
+export type Stage1CapabilityPresentation = {
+  surface: string;
+  label?: string;
+  preconditions?: unknown[];
+  role_hints?: string[];
+  state_hints?: string[];
+  member_instances?: Stage1EvidenceRef[];
+};
+
+export type Stage1Capability = {
+  canonical_id: string;
+  display_label?: string;
+  presentations: Stage1CapabilityPresentation[];
+  minimum_preconditions?: unknown[];
+  lifecycle_hints?: unknown[];
+  conflicts?: unknown[];
+  resolution_strategy?: string;
+  derived_from_runs?: string[];
+};
+
+export type Stage1CapabilityRollup = {
+  kind: "capability_rollup";
+  schema_version: string;
+  generated_at: string;
+  run_id: string;
+  target: { id: string; url?: string };
+  capabilities: Stage1Capability[];
+};
+
+export type Stage1RollupProjectionVariant = {
+  id: string;
+  surface: string;
+  confidence?: number;
+  evidence_chain?: Stage1EvidenceRef[];
+  metadata?: Record<string, unknown>;
+  selector?: string;
+};
+
+export type Stage1RollupObject = {
+  canonical_id: string;
+  canonical_label?: string;
+  representative_object_id?: string;
+  source_object_ids?: string[];
+  external_component?: string;
+  oods_traits?: string[];
+  projection_variants?: Stage1RollupProjectionVariant[];
+  conflicts?: unknown[];
+  reconciliation?: { action?: string; [key: string]: unknown };
+};
+
+export type Stage1ObjectRollup = {
+  kind: "object_rollup";
+  schema_version: string;
+  generated_at: string;
+  run_id: string;
+  target: { id: string; url?: string };
+  objects: Stage1RollupObject[];
 };
 
 export type CatalogListDetail = "summary" | "full";
