@@ -44,10 +44,19 @@ export type CoercionDef =
 /** @deprecated Use CoercionDef instead */
 export type CoercionHint = CoercionDef;
 
+/**
+ * Stage1 v1.6.0 emits propMappings[].coercion as a raw string label
+ * ("enum-map", "type-cast", "identity") rather than a structured CoercionDef.
+ * Persisted as-is for round-trip fidelity; the resolver treats unknown
+ * string labels as pass-through identity for value transformation while
+ * preserving the original label as coercionType.
+ */
+export type CoercionString = string;
+
 export type PropMapping = {
   externalProp: string;
   oodsProp: string;
-  coercion?: CoercionDef | null;
+  coercion?: CoercionDef | CoercionString | null;
 };
 
 export type MappingMetadata = {

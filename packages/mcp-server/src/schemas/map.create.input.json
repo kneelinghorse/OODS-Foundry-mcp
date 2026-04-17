@@ -38,8 +38,10 @@
           "externalProp": { "type": "string", "minLength": 1 },
           "oodsProp": { "type": "string", "minLength": 1 },
           "coercion": {
+            "description": "Prop coercion. Accepts a structured CoercionDef, a raw string label (Stage1 v1.6.0 emits enum-map | type-cast | identity as pass-through hints), or null for identity.",
             "oneOf": [
               { "type": "null" },
+              { "type": "string", "minLength": 1 },
               {
                 "type": "object",
                 "required": ["type", "mapping"],

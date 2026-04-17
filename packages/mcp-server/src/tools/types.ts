@@ -448,6 +448,7 @@ export type MapCreateInput = {
           | { type: "template"; pattern: string }
           | { type: "identity" }
         )
+      | string
       | null;
   }>;
   confidence?: "auto" | "manual";
@@ -771,6 +772,7 @@ export type MapUpdateInput = {
             | { type: "template"; pattern: string }
             | { type: "identity" }
           )
+        | string
         | null;
     }>;
     notes?: string;

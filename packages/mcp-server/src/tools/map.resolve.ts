@@ -26,8 +26,19 @@ export async function handle(input: MapResolveInput): Promise<MapResolveOutput> 
     };
   }
 
-  // Build flattened prop translations with coercion details
+  // Build flattened prop translations with coercion details. Stage1 v1.6.0 may
+  // emit coercion as a raw string label (enum-map | type-cast | identity) rather
+  // than a structured CoercionDef; surface the original label as coercionType
+  // and leave coercionDetail null since there's no resolvable structure.
   const propTranslations: MapPropTranslation[] = (mapping.propMappings ?? []).map((pm) => {
+    if (typeof pm.coercion === 'string') {
+      return {
+        externalProp: pm.externalProp,
+        oodsProp: pm.oodsProp,
+        coercionType: pm.coercion,
+        coercionDetail: null,
+      };
+    }
     const coercionDef = normalizeCoercion(pm.coercion);
     return {
       externalProp: pm.externalProp,
@@ -47,8 +58,15 @@ export async function handle(input: MapResolveInput): Promise<MapResolveOutput> 
 /**
  * Resolve a single prop value through its coercion.
  * Used when map_resolve is called with source values to transform.
+ * Stage1 v1.6.0 raw-string coercions (enum-map / type-cast / identity) are
+ * treated as pass-through identity at the value level — the structured detail
+ * needed to actually transform values is not present in the string label.
  */
-export function resolveValue(value: unknown, coercion: CoercionDef | null | undefined): unknown {
+export function resolveValue(
+  value: unknown,
+  coercion: CoercionDef | string | null | undefined,
+): unknown {
+  if (typeof coercion === 'string') return value;
   return coerce(value, normalizeCoercion(coercion));
 }
 
