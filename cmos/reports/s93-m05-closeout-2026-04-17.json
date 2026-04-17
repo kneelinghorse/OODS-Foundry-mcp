@@ -1,0 +1,115 @@
+{
+  "mission": "s93-m05",
+  "title": "Sprint-93 Closeout — Stage1 v1.5.0 Rollup Consumer Surfaces",
+  "generatedAt": "2026-04-17T05:40:00Z",
+  "status": "verified",
+  "closeoutRule": {
+    "formalInstance": 2,
+    "firstInstance": "sprint-92 (s92-m05)",
+    "result": "HELD — zero retro-splits on a repeat run; rule is now validated as standing convention",
+    "branch": "sprint-93",
+    "missionTaggedCommits": {
+      "s93-m01": {
+        "sha": "5b45091",
+        "summary": "extend structuredData_fetch with Stage1 v1.5.0 rollup kinds"
+      },
+      "s93-m02": {
+        "sha": "0859c80",
+        "summary": "capability normalizer — fold rollups into first-class view"
+      },
+      "s93-m03": {
+        "sha": "293c294",
+        "summary": "real-data E2E gate vs v1.5.0 rollups (dc1cfabb + 07776e70)"
+      },
+      "s93-m04": {
+        "sha": "7c2635f",
+        "summary": "playground capability view — render normalized rollup output"
+      }
+    }
+  },
+  "contractAlignment": {
+    "oods": "v1.2.3 (unchanged)",
+    "stage1": "v1.5.0 (unchanged)",
+    "s93Deliverables": [
+      "structuredData.fetch kind+runPath mode accepts identity_graph (1.1.0), capability_rollup (1.1.0), object_rollup (1.0.0)",
+      "schema_version allow-list enforcement (fast-fail on unknown versions)",
+      "normalizeCapabilities() pure transform: capability spine from capability_rollup, evidence-ref join from object_rollup, identity_node attach from identity_graph",
+      "real-data gate against dc1cfabb + 07776e70 in test/e2e/stage1-rollups.e2e.spec.ts (6 tests, auto-skips when Stage1 absent)",
+      "playground CapabilityPanel rendering normalized output on static real-sample fixtures"
+    ]
+  },
+  "missionSummaries": {
+    "s93-m01": {
+      "sha": "5b45091",
+      "deliverables": [
+        "structuredData.fetch kind+runPath input mode (oneOf gated against dataset mode)",
+        "kind/schemaVersion/runId output fields",
+        "Stage1RollupKind + Stage1IdentityGraph + Stage1CapabilityRollup + Stage1ObjectRollup type exports",
+        "12 co-located handler tests + 6 new contract-schema tests (all pass)",
+        "tool-descriptions.json + docs/api regen"
+      ],
+      "evidence": {
+        "smokeLinear": "80 nodes / 7 capabilities / 73 objects / 75 variants",
+        "smokeStripe": "144 nodes / 12 capabilities / 128 objects / 128 variants",
+        "testsPassed": 18
+      }
+    },
+    "s93-m02": {
+      "sha": "0859c80",
+      "deliverables": [
+        "packages/mcp-server/src/stage1/capability-normalizer.ts",
+        "NormalizedCapability / NormalizedPresentation / NormalizedProjectionVariant types",
+        "10 co-located unit tests (all pass)"
+      ],
+      "evidence": {
+        "determinismLinear": "7 capabilities / 7 presentations / 0 derived variants — byte-identical across repeat runs",
+        "determinismStripe": "12 capabilities / 15 presentations / 0 derived variants — byte-identical across repeat runs",
+        "joinSemantics": "evidence-ref tuple equality (artifact_ref + json_pointer + run_id); 0 real-data overlaps reflect current Stage1 emission, not a normalizer bug"
+      }
+    },
+    "s93-m03": {
+      "sha": "293c294",
+      "deliverables": [
+        "packages/mcp-server/test/e2e/stage1-rollups.e2e.spec.ts — 6 parameterized tests",
+        "cmos/reports/s93-m03-rollup-regate-2026-04-17.json gate report"
+      ],
+      "evidence": {
+        "fetchShapeValid": "MET on both fixtures",
+        "schemaVersionFastFail": "MET — forged 9.9.9 rejected with structured error",
+        "etagStability": "MET — identical etag + sizeBytes on repeat fetches",
+        "normalizerDeterminism": "MET — byte-identical stringify across both fixtures",
+        "capabilityIdThreading": "MET — 100% threading + 100% canonical_id coverage",
+        "testsPassed": 6
+      }
+    },
+    "s93-m04": {
+      "sha": "7c2635f",
+      "deliverables": [
+        "apps/playground/src/components/CapabilityPanel.tsx",
+        "apps/playground/src/fixtures/stage1-rollups.ts (playground-local normalizer mirror)",
+        "apps/playground/src/fixtures/{linear,stripe}-v15-rollups.json (trimmed real-data samples)",
+        "STAGE1_FIXTURES extended from 4 → 6 entries (new kind=\"rollups\" discriminator)"
+      ],
+      "evidence": {
+        "build": "pnpm --filter @oods/playground run build — clean (tsc + vite 1.69s)",
+        "devServerProbe": "rollups.ts / CapabilityPanel.tsx / linear-v15-rollups.json all serve HTTP 200",
+        "fixturePayloadSize": "13.6KB (linear) + 22KB (stripe)",
+        "manualBrowserValidation": "left to maintainer per mission text — dev server smoke confirms module graph resolves"
+      }
+    }
+  },
+  "gateResults": {
+    "retroSplits": 0,
+    "missionTaggedCommitCoverage": "4/4",
+    "closeoutRuleHeld": true,
+    "newMcpSurfaceSizeRationale": "m02 intentionally shipped without a capability.resolve MCP tool surface — per mission scope 'No new MCP tool surface'. Playground consumes via internal transform; if a tool surface is needed it lands in a future sprint after consumer DX proves value.",
+    "regressionProfile": "All 2166+ existing tests remain green in isolation; pre-existing cross-suite isolation flakes (registry-snapshot.spec + stage1-integration.spec, documented in s92 closeout) are unrelated and pass individually."
+  },
+  "carryForward": [
+    "Cross-suite test-isolation flakes persist (mapping.spec vs map-apply.spec shared mappings file); housekeeping candidate for sprint-94",
+    "Rollup-write scope (OODS producing rollups) remains out of scope per sprint-93 charter; only consumer-side surfaces are active",
+    "Stage1 sprint-46 ConfidenceDecomposition may bump rollup schema_versions; m01's allow-list is explicit so any bump fails fast — follow-up mission or scope extension expected",
+    "Current Stage1 v1.5.0 emission yields 0 direct evidence-ref overlaps between capability member_instances and object_rollup projection_variants (action_candidates/* vs objects/*/clusters/*); a future Stage1 emitter change or a richer join strategy could light this up",
+    "Playground capability-normalizer mirror duplicates mcp-server source; a future sprint could collapse this into a shared @oods/stage1 package if consumer surface grows"
+  ]
+}
