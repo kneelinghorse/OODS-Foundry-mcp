@@ -1,0 +1,73 @@
+{
+  "mission": "s93-m03",
+  "title": "Real-data E2E gate vs Stage1 v1.5.0 rollup artifacts (dc1cfabb + 07776e70)",
+  "generatedAt": "2026-04-17T05:32:50.224Z",
+  "status": "verified",
+  "basis": "live_on_disk_rollups_via_structuredData_fetch",
+  "contractAlignment": {
+    "oods": "v1.2.3",
+    "stage1": "v1.5.0",
+    "oods_sprint_deliverables": [
+      "s93-m01 (structuredData.fetch kind+runPath for identity_graph/capability_rollup/object_rollup)",
+      "s93-m02 (normalizeCapabilities pure transform)"
+    ]
+  },
+  "acceptedSchemaVersions": {
+    "identity_graph": [
+      "1.1.0"
+    ],
+    "capability_rollup": [
+      "1.1.0"
+    ],
+    "object_rollup": [
+      "1.0.0"
+    ]
+  },
+  "fixtures": [
+    {
+      "name": "linear",
+      "runId": "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+      "targetUrl": "https://linear.app/",
+      "runPath": "../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/artifacts",
+      "counts": {
+        "identityGraphNodes": 80,
+        "capabilityRollupCapabilities": 7,
+        "objectRollupObjects": 73,
+        "objectRollupProjectionVariants": 75
+      },
+      "normalizer": {
+        "capabilities": 7,
+        "presentations": 7,
+        "derivedProjectionVariants": 0,
+        "identityNodeCoverage": 0,
+        "deterministic": true
+      }
+    },
+    {
+      "name": "stripe",
+      "runId": "07776e70-ec86-449a-b570-3978161793ac",
+      "targetUrl": "https://stripe.com/",
+      "runPath": "../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/artifacts",
+      "counts": {
+        "identityGraphNodes": 144,
+        "capabilityRollupCapabilities": 12,
+        "objectRollupObjects": 128,
+        "objectRollupProjectionVariants": 128
+      },
+      "normalizer": {
+        "capabilities": 12,
+        "presentations": 15,
+        "derivedProjectionVariants": 0,
+        "identityNodeCoverage": 0,
+        "deterministic": true
+      }
+    }
+  ],
+  "gateResults": {
+    "fetchShapeValid": "MET — all 3 kinds parse on both fixtures with expected counts",
+    "schemaVersionFastFail": "MET — forged schema_version \"9.9.9\" rejected with structured error",
+    "fetchEtagStability": "MET — repeat fetches return identical etag and sizeBytes",
+    "normalizerDeterminism": "MET — byte-identical JSON.stringify across repeat normalize() calls on both fixtures",
+    "capabilityIdThreading": "MET — every NormalizedPresentation carries capability_id; every capability_rollup canonical_id appears in the normalized output"
+  }
+}
