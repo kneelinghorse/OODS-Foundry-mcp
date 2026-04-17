@@ -20,7 +20,7 @@ export type Stage1BridgeMappingSample = {
   projection_variants: Stage1ProjectionVariantSample[];
 };
 
-export type Stage1FixtureSchemaVersion = "v1.1.0" | "v1.5.0";
+export type Stage1FixtureSchemaVersion = "v1.1.0" | "v1.5.0" | "v1.6.0";
 
 export type Stage1FixtureKind = "reconciliation" | "rollups";
 
@@ -30,8 +30,8 @@ export type Stage1FixtureMeta = {
     | "stripe"
     | "linear-v15"
     | "stripe-v15"
-    | "linear-v15-rollups"
-    | "stripe-v15-rollups";
+    | "linear-v16-rollups"
+    | "stripe-v16-rollups";
   label: string;
   schemaVersion: Stage1FixtureSchemaVersion;
   /**

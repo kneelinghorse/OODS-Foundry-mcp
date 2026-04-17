@@ -21,8 +21,8 @@ import {
 } from "./components/Stage1DemoPanel";
 import { CapabilityPanel } from "./components/CapabilityPanel";
 import {
-  LINEAR_V15_ROLLUPS,
-  STRIPE_V15_ROLLUPS,
+  LINEAR_V16_ROLLUPS,
+  STRIPE_V16_ROLLUPS,
   type RollupBundle,
 } from "./fixtures/stage1-rollups";
 
@@ -220,29 +220,29 @@ const STAGE1_FIXTURES: Record<Stage1FixtureMeta["id"], Stage1FixtureMeta> = {
       },
     ],
   },
-  "linear-v15-rollups": {
-    id: "linear-v15-rollups",
-    label: "Linear (v1.5.0 rollups)",
-    schemaVersion: "v1.5.0",
+  "linear-v16-rollups": {
+    id: "linear-v16-rollups",
+    label: "Linear (v1.6.0 rollups)",
+    schemaVersion: "v1.6.0",
     kind: "rollups",
     reportPath:
-      "../Stage1/out/sprint-45-live-rerun/stage1/linear-app-s45-m06-rerun/dc1cfabb-f07a-47dc-8a23-ba160e5b45b9/artifacts",
+      "../Stage1/out/sprint-46-live-rerun/stage1/linear-app-s46-m06-rerun/a0300dc0-c10f-4821-b648-48556da43ef7/artifacts",
     targetUrl: "https://linear.app/",
-    targetId: "dc1cfabb-f07a-47dc-8a23-ba160e5b45b9",
+    targetId: "a0300dc0-c10f-4821-b648-48556da43ef7",
     candidateObjects: 0,
     candidateActions: 0,
     verdictCounts: { create: 0, patch: 0, skip: 0, conflict: 0 },
     lowConfidenceConflictAnnotations: 0,
   },
-  "stripe-v15-rollups": {
-    id: "stripe-v15-rollups",
-    label: "Stripe (v1.5.0 rollups)",
-    schemaVersion: "v1.5.0",
+  "stripe-v16-rollups": {
+    id: "stripe-v16-rollups",
+    label: "Stripe (v1.6.0 rollups)",
+    schemaVersion: "v1.6.0",
     kind: "rollups",
     reportPath:
-      "../Stage1/out/sprint-45-live-rerun/stage1/stripe-com-s45-m06-rerun/07776e70-ec86-449a-b570-3978161793ac/artifacts",
+      "../Stage1/out/sprint-46-live-rerun/stage1/stripe-com-s46-m06-rerun/7adc1d79-426b-4c8e-a217-e6d5a129b182/artifacts",
     targetUrl: "https://stripe.com/",
-    targetId: "07776e70-ec86-449a-b570-3978161793ac",
+    targetId: "7adc1d79-426b-4c8e-a217-e6d5a129b182",
     candidateObjects: 0,
     candidateActions: 0,
     verdictCounts: { create: 0, patch: 0, skip: 0, conflict: 0 },
@@ -316,8 +316,8 @@ const ROLLUP_BUNDLES: Record<Stage1FixtureMeta["id"], RollupBundle | null> = {
   stripe: null,
   "linear-v15": null,
   "stripe-v15": null,
-  "linear-v15-rollups": LINEAR_V15_ROLLUPS,
-  "stripe-v15-rollups": STRIPE_V15_ROLLUPS,
+  "linear-v16-rollups": LINEAR_V16_ROLLUPS,
+  "stripe-v16-rollups": STRIPE_V16_ROLLUPS,
 };
 
 function rollupBundleFor(id: Stage1FixtureMeta["id"]): RollupBundle {

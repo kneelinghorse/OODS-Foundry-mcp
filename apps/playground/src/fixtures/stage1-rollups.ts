@@ -1,8 +1,13 @@
 /**
- * Stage1 v1.5.0 rollup fixtures for the playground capability view (s93-m04).
+ * Stage1 v1.6.0 rollup fixtures for the playground capability view (s94-m04).
  *
- * Shapes pulled verbatim from the live dc1cfabb (linear) + 07776e70 (stripe)
- * reruns that sprint-93 gates against (see test/e2e/stage1-rollups.e2e.spec.ts).
+ * Shapes pulled verbatim from the live a0300dc0 (linear) + 7adc1d79 (stripe)
+ * Sprint 46 reruns that sprint-94 gates against (see
+ * test/e2e/stage1-rollups.e2e.spec.ts). schema_versions: identity_graph 1.2.0,
+ * capability_rollup 1.2.0, object_rollup 1.1.0. Each variant carries the new
+ * ConfidenceDecomposition shape (total + method + signals[]); the normalizer
+ * unwraps .total and preserves confidence_summary.
+ *
  * object_rollup and identity_graph are trimmed to representative samples to
  * keep the playground bundle lean; capability_rollup is full so the panel
  * shows the complete capability spine per fixture.
@@ -10,11 +15,11 @@
  * Normalizer logic mirrors packages/mcp-server/src/stage1/capability-normalizer.ts
  * — the playground can't import mcp-server source directly, so the transform
  * is reimplemented here with identical semantics (evidence-ref tuple equality,
- * deterministic sort, capability_id threading).
+ * deterministic sort, capability_id threading, ConfidenceDecomposition unwrap).
  */
 
-import linearRollups from './linear-v15-rollups.json';
-import stripeRollups from './stripe-v15-rollups.json';
+import linearRollups from './linear-v16-rollups.json';
+import stripeRollups from './stripe-v16-rollups.json';
 
 export type EvidenceRef = {
   artifact_ref: string;
@@ -171,8 +176,8 @@ export type NormalizedCapability = {
   conflicts: unknown[];
 };
 
-export const LINEAR_V15_ROLLUPS = linearRollups as RollupBundle;
-export const STRIPE_V15_ROLLUPS = stripeRollups as RollupBundle;
+export const LINEAR_V16_ROLLUPS = linearRollups as RollupBundle;
+export const STRIPE_V16_ROLLUPS = stripeRollups as RollupBundle;
 
 function evidenceKey(ref: EvidenceRef): string {
   return [ref.artifact_ref ?? '', ref.json_pointer ?? '', ref.run_id ?? ''].join('#');

@@ -1,0 +1,83 @@
+{
+  "mission": "s94-m04",
+  "title": "Real-data E2E gate vs Stage1 v1.6.0 rollup artifacts (a0300dc0 + 7adc1d79)",
+  "generatedAt": "2026-04-17T13:05:12.594Z",
+  "status": "verified",
+  "basis": "live_on_disk_rollups_via_structuredData_fetch",
+  "contractAlignment": {
+    "oods": "v1.2.4 (sprint-94)",
+    "stage1": "v1.6.0",
+    "oods_sprint_deliverables": [
+      "s94-m01 (structuredData.fetch allow-list widen for identity_graph 1.2.0 / capability_rollup 1.2.0 / object_rollup 1.1.0)",
+      "s94-m02 (normalizeCapabilities ConfidenceDecomposition unwrap)",
+      "s94-m03 (map.create raw-string coercion compat)"
+    ]
+  },
+  "acceptedSchemaVersions": {
+    "identity_graph": [
+      "1.1.0",
+      "1.2.0"
+    ],
+    "capability_rollup": [
+      "1.1.0",
+      "1.2.0"
+    ],
+    "object_rollup": [
+      "1.0.0",
+      "1.1.0"
+    ]
+  },
+  "fixtures": [
+    {
+      "name": "linear",
+      "runId": "a0300dc0-c10f-4821-b648-48556da43ef7",
+      "targetUrl": "https://linear.app/",
+      "runPath": "../Stage1/out/sprint-46-live-rerun/stage1/linear-app-s46-m06-rerun/a0300dc0-c10f-4821-b648-48556da43ef7/artifacts",
+      "counts": {
+        "identityGraphNodes": 80,
+        "capabilityRollupCapabilities": 7,
+        "capabilityRollupPresentations": 7,
+        "objectRollupObjects": 73,
+        "objectRollupProjectionVariants": 75,
+        "decomposedVariants": 75
+      },
+      "normalizer": {
+        "capabilities": 7,
+        "presentations": 7,
+        "derivedProjectionVariants": 0,
+        "identityNodeCoverage": 0,
+        "deterministic": true
+      }
+    },
+    {
+      "name": "stripe",
+      "runId": "7adc1d79-426b-4c8e-a217-e6d5a129b182",
+      "targetUrl": "https://stripe.com/",
+      "runPath": "../Stage1/out/sprint-46-live-rerun/stage1/stripe-com-s46-m06-rerun/7adc1d79-426b-4c8e-a217-e6d5a129b182/artifacts",
+      "counts": {
+        "identityGraphNodes": 144,
+        "capabilityRollupCapabilities": 12,
+        "capabilityRollupPresentations": 15,
+        "objectRollupObjects": 128,
+        "objectRollupProjectionVariants": 128,
+        "decomposedVariants": 128
+      },
+      "normalizer": {
+        "capabilities": 12,
+        "presentations": 15,
+        "derivedProjectionVariants": 0,
+        "identityNodeCoverage": 0,
+        "deterministic": true
+      }
+    }
+  ],
+  "gateResults": {
+    "fetchShapeValid": "MET — all 3 kinds parse on both fixtures with v1.6.0 schema_versions and expected counts",
+    "confidenceDecompositionShape": "MET — every projection_variant.confidence carries total + method + signals[] (non-empty)",
+    "schemaVersionFastFail": "MET — forged schema_version \"9.9.9\" rejected with structured error",
+    "fetchEtagStability": "MET — repeat fetches return identical etag and sizeBytes",
+    "normalizerDeterminism": "MET — byte-identical JSON.stringify across repeat normalize() calls on both fixtures",
+    "confidenceUnwrap": "MET — every NormalizedProjectionVariant.confidence is a scalar number (decomposition .total unwrapped)",
+    "capabilityIdThreading": "MET — every NormalizedPresentation carries capability_id; every capability_rollup canonical_id appears in the normalized output"
+  }
+}
