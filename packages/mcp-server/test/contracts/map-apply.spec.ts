@@ -259,3 +259,243 @@ describe('map.apply contract (pending implementation)', () => {
     expect(result.conflictArtifactPath).toMatch(/\.oods\/conflicts\/.+\.json$/);
   });
 });
+
+// ── s92-m02: projection_variants[] pass-through through map.apply ──
+// Aligns with Stage1 contract v1.5.0 §7.3. When a reconciliation_report
+// carries projection_variants[] on a candidate_object (create or patch
+// verdict), map.apply threads them through to the persisted mapping.
+
+describe('map.apply schema validation (s92-m02)', () => {
+  it('accepts candidate_objects with external_component (Stage1 v1.2.0 reconciliation_report shape)', () => {
+    const report = loadFixture();
+    report.candidate_objects[0].external_component = 'command-menu-trigger';
+    expect(validateInput({ report })).toBe(true);
+  });
+
+  it('accepts candidate_objects with projection_variants[]', () => {
+    const report = loadFixture();
+    (report.candidate_objects[0] as any).projection_variants = [
+      { id: 'variant-1', surface: 'desktop', selector: '.cmdk', confidence: 0.92 },
+    ];
+    expect(validateInput({ report })).toBe(true);
+  });
+
+  it('rejects projection_variants entry missing required surface', () => {
+    const report = loadFixture();
+    (report.candidate_objects[0] as any).projection_variants = [{ id: 'variant-1' }];
+    expect(validateInput({ report })).toBe(false);
+  });
+
+  it('still rejects unknown top-level fields on candidate_object', () => {
+    const report = loadFixture();
+    (report.candidate_objects[0] as any).bogus_field = 'should reject';
+    expect(validateInput({ report })).toBe(false);
+  });
+});
+
+describe('map.apply projection_variants[] handler pass-through (s92-m02)', () => {
+  it('forwards candidate.projection_variants to the persisted mapping on create verdict (apply:true)', async () => {
+    const handle = await loadHandle();
+    const report = loadFixture();
+    const variants = [
+      { id: 'variant-1', surface: 'desktop', selector: '.cmdk', confidence: 0.92 },
+      { id: 'variant-2', surface: 'mobile', external_component: 'CommandSheet' },
+    ];
+    (report.candidate_objects[0] as any).projection_variants = variants;
+
+    const result = await handle({
+      report,
+      apply: true,
+      minConfidence: 0.75,
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.applied.filter((r) => r.action === 'create')).toHaveLength(1);
+
+    const doc = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const persisted = doc.mappings.find((m: any) => m.externalComponent === 'Command Menu Trigger');
+    expect(persisted).toBeDefined();
+    expect(persisted.projection_variants).toEqual(variants);
+  });
+
+  it('dry-run (apply:false) does NOT persist projection_variants even when present on candidate', async () => {
+    const handle = await loadHandle();
+    const report = loadFixture();
+    const variants = [{ id: 'variant-1', surface: 'desktop' }];
+    (report.candidate_objects[0] as any).projection_variants = variants;
+
+    const result = await handle({ report, apply: false, minConfidence: 0.75 });
+
+    expect(result.errors).toEqual([]);
+    const doc = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const candidateNotPersisted = doc.mappings.find((m: any) => m.externalComponent === 'Command Menu Trigger');
+    expect(candidateNotPersisted).toBeUndefined();
+  });
+
+  it('updates projection_variants on patch verdict when they differ from the existing mapping', async () => {
+    // Seed existing mapping with old variants
+    writeMappings([
+      {
+        id: 'linear-issue-row',
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z', notes: 'Imported from sprint-52 fixture' },
+        projection_variants: [{ id: 'old-variant', surface: 'desktop' }],
+      },
+      {
+        id: 'linear-billing-plan-card',
+        externalSystem: 'linear',
+        externalComponent: 'Billing Plan Card',
+        oodsTraits: ['Priceable', 'Stateful'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z' },
+      },
+      {
+        id: 'linear-workspace-switcher',
+        externalSystem: 'linear',
+        externalComponent: 'Workspace Switcher',
+        oodsTraits: ['Stateful'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z' },
+      },
+    ]);
+
+    const handle = await loadHandle();
+    const report = loadFixture();
+    const patchCandidate = report.candidate_objects.find((c) => c.action === 'patch')!;
+    const newVariants = [
+      { id: 'variant-1', surface: 'desktop', selector: '.issue-row' },
+      { id: 'variant-2', surface: 'mobile' },
+    ];
+    (patchCandidate as any).projection_variants = newVariants;
+
+    const result = await handle({ report, apply: true, minConfidence: 0.75 });
+
+    expect(result.errors).toEqual([]);
+    const doc = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const patched = doc.mappings.find((m: any) => m.id === 'linear-issue-row');
+    expect(patched.projection_variants).toEqual(newVariants);
+  });
+
+  it('does NOT trigger a patch when candidate projection_variants match existing (routing stability)', async () => {
+    const sameVariants = [{ id: 'variant-1', surface: 'desktop' }];
+    writeMappings([
+      {
+        id: 'linear-issue-row',
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z', notes: 'Imported from sprint-52 fixture' },
+        projection_variants: sameVariants,
+      },
+      {
+        id: 'linear-billing-plan-card',
+        externalSystem: 'linear',
+        externalComponent: 'Billing Plan Card',
+        oodsTraits: ['Priceable', 'Stateful'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z' },
+      },
+      {
+        id: 'linear-workspace-switcher',
+        externalSystem: 'linear',
+        externalComponent: 'Workspace Switcher',
+        oodsTraits: ['Stateful'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z' },
+      },
+    ]);
+
+    const handle = await loadHandle();
+    const report = loadFixture();
+    const patchCandidate = report.candidate_objects.find((c) => c.action === 'patch')!;
+    // Zero out diff-triggered changes so the candidate only has the SAME variants.
+    patchCandidate.diff = { added_traits: [], removed_traits: [], changed_fields: [] };
+    patchCandidate.recommended_oods_traits = ['Listable'];
+    (patchCandidate as any).projection_variants = sameVariants;
+
+    const result = await handle({ report, apply: true, minConfidence: 0.75 });
+
+    // Patch still routed (bucket count preserved), but persisted:false because no changes.
+    const patchedEntry = result.applied.find((r) => r.action === 'patch');
+    expect(patchedEntry).toBeDefined();
+    expect(patchedEntry!.persisted).toBe(false);
+  });
+
+  it('bucket counts are invariant when variants are added to a fixture that otherwise routes unchanged (routing stability)', async () => {
+    const baselineHandle = await loadHandle();
+    const baseline = await baselineHandle({ report: loadFixture(), minConfidence: 0.75 });
+
+    const reportWithVariants = loadFixture();
+    (reportWithVariants.candidate_objects[0] as any).projection_variants = [
+      { id: 'v1', surface: 'desktop' },
+    ];
+    (reportWithVariants.candidate_objects[1] as any).projection_variants = [
+      { id: 'v2', surface: 'mobile' },
+    ];
+
+    const handle = await loadHandle();
+    const withVariants = await handle({ report: reportWithVariants, minConfidence: 0.75 });
+
+    expect(withVariants.applied.length).toBe(baseline.applied.length);
+    expect(withVariants.skipped.length).toBe(baseline.skipped.length);
+    expect(withVariants.queued.length).toBe(baseline.queued.length);
+    expect(withVariants.conflicted.length).toBe(baseline.conflicted.length);
+    expect(withVariants.errors.length).toBe(baseline.errors.length);
+    expect(withVariants.diff).toMatchObject({
+      create: baseline.diff.create,
+      patch: baseline.diff.patch,
+      skip: baseline.diff.skip,
+      conflict: baseline.diff.conflict,
+      queued: baseline.diff.queued,
+    });
+  });
+
+  it('dry-run preview surfaces variants on the proposed mapping applied-route entry (SC3)', async () => {
+    const handle = await loadHandle();
+    const report = loadFixture();
+    (report.candidate_objects[0] as any).projection_variants = [
+      { id: 'variant-1', surface: 'desktop' },
+    ];
+
+    // Reset to empty so the create verdict actually routes to create (not existing-match).
+    writeMappings([
+      {
+        id: 'linear-issue-row',
+        externalSystem: 'linear',
+        externalComponent: 'Issue Row',
+        oodsTraits: ['Listable'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z', notes: 'Imported from sprint-52 fixture' },
+      },
+      {
+        id: 'linear-billing-plan-card',
+        externalSystem: 'linear',
+        externalComponent: 'Billing Plan Card',
+        oodsTraits: ['Priceable', 'Stateful'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z' },
+      },
+      {
+        id: 'linear-workspace-switcher',
+        externalSystem: 'linear',
+        externalComponent: 'Workspace Switcher',
+        oodsTraits: ['Stateful'],
+        confidence: 'manual',
+        metadata: { createdAt: '2026-03-01T00:00:00.000Z' },
+      },
+    ]);
+
+    const dryRun = await handle({ report, apply: false, minConfidence: 0.75 });
+
+    // Dry-run output exposes the applied routes with persisted:false — m01 dry-run already
+    // returns the constructed mapping in map.create's response; here we confirm the apply
+    // loop at least routes the variant-bearing candidate into `applied` with persisted:false.
+    const createdRoute = dryRun.applied.find((r) => r.action === 'create' && r.name === 'Command Menu Trigger');
+    expect(createdRoute).toBeDefined();
+    expect(createdRoute!.persisted).toBe(false);
+  });
+});

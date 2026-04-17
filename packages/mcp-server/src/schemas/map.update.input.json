@@ -87,6 +87,31 @@
         "notes": {
           "type": "string",
           "description": "Update notes in metadata."
+        },
+        "projection_variants": {
+          "type": "array",
+          "description": "Replace Stage1 v1.5.0 cross-surface projection variants. Pass an empty array to clear; omit to leave unchanged.",
+          "items": {
+            "type": "object",
+            "required": ["id", "surface"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "surface": { "type": "string", "minLength": 1 },
+              "external_component": { "type": "string", "minLength": 1 },
+              "capability_id": { "type": "string", "minLength": 1 },
+              "selector": { "type": "string", "minLength": 1 },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+              "evidence_chain": {
+                "type": "array",
+                "items": { "type": "object", "additionalProperties": true }
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
         }
       }
     }

@@ -14,6 +14,7 @@
 | `updates.confidence` | `auto` \| `manual` | No |  | Update confidence level. |
 | `updates.propMappings` | object[] | No |  | Replace property mappings. |
 | `updates.notes` | string | No |  | Update notes in metadata. |
+| `updates.projection_variants` | object[] | No |  | Replace Stage1 v1.5.0 cross-surface projection variants. Pass an empty array to clear; omit to leave unchanged. |
 
 ## Output Shape
 

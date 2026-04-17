@@ -1465,9 +1465,27 @@ export namespace MapApplyInputSchema {
     reasoning: string;
     verdict_reasoning?: string;
     existing_map_id?: string;
+    external_component?: string;
     diff?: CandidateDiff;
     alternate_interpretations?: AlternateInterpretation[];
     evidence_chain?: EvidenceRef[];
+    /**
+     * Stage1 v1.5.0 cross-surface identity variants. When present on a candidate_object, map.apply threads them through to the persisted mapping on both create and patch verdicts.
+     */
+    projection_variants?: {
+      id: string;
+      surface: string;
+      external_component?: string;
+      capability_id?: string;
+      selector?: string;
+      confidence?: number;
+      evidence_chain?: {
+        [k: string]: any;
+      }[];
+      metadata?: {
+        [k: string]: any;
+      };
+    }[];
   };
   export type CandidateObject1 = {
     [k: string]: any;
@@ -2072,6 +2090,23 @@ export namespace MapUpdateInputSchema {
        * Update notes in metadata.
        */
       notes?: string;
+      /**
+       * Replace Stage1 v1.5.0 cross-surface projection variants. Pass an empty array to clear; omit to leave unchanged.
+       */
+      projection_variants?: {
+        id: string;
+        surface: string;
+        external_component?: string;
+        capability_id?: string;
+        selector?: string;
+        confidence?: number;
+        evidence_chain?: {
+          [k: string]: any;
+        }[];
+        metadata?: {
+          [k: string]: any;
+        };
+      }[];
     };
   }
 }
