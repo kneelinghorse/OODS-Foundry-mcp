@@ -67,12 +67,14 @@ export async function handle(input: MapCreateInput): Promise<MapCreateOutput> {
     }
   }
 
-  // Build mapping record
+  // Build mapping record. Coercion may arrive as null, a structured CoercionDef,
+  // or a Stage1 v1.6.0 raw string label (enum-map | type-cast | identity); preserve
+  // whichever shape arrived so round-trip artifacts stay byte-identical to Stage1.
   const now = new Date().toISOString();
   const propMappings: PropMapping[] | undefined = input.propMappings?.map((pm) => ({
     externalProp: pm.externalProp,
     oodsProp: pm.oodsProp,
-    coercion: pm.coercion ?? null,
+    coercion: pm.coercion === undefined ? null : pm.coercion,
   }));
 
   const metadata: MappingMetadata = {

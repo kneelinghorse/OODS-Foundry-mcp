@@ -2,6 +2,8 @@ import type {
   Stage1Capability,
   Stage1CapabilityPresentation,
   Stage1CapabilityRollup,
+  Stage1ConfidenceDecomposition,
+  Stage1ConfidenceSummary,
   Stage1EvidenceRef,
   Stage1IdentityGraph,
   Stage1IdentityGraphNode,
@@ -19,6 +21,7 @@ export type NormalizedProjectionVariant = {
   object_canonical_label?: string;
   evidence_chain: Stage1EvidenceRef[];
   metadata?: Record<string, unknown>;
+  confidence_summary?: Stage1ConfidenceSummary;
 };
 
 export type NormalizedPresentation = {
@@ -57,6 +60,24 @@ type EvidenceIndexEntry = {
 
 function evidenceKey(ref: Stage1EvidenceRef): string {
   return [ref.artifact_ref ?? '', ref.json_pointer ?? '', ref.run_id ?? ''].join('#');
+}
+
+/**
+ * v1.6.0 bridges confidence as either a scalar (v1.0.0 / v1.1.0 object_rollup,
+ * v1.1.0 capability_rollup / identity_graph candidate_mappings) or a full
+ * ConfidenceDecomposition (v1.2.0 rollups). Downstream consumers want a scalar
+ * for sorting/filtering, so unwrap `.total` when the decomposition shape is
+ * present. Undefined stays undefined.
+ */
+function unwrapConfidenceTotal(
+  value: number | Stage1ConfidenceDecomposition | undefined,
+): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === 'number') return value;
+  if (value && typeof value === 'object' && typeof (value as Stage1ConfidenceDecomposition).total === 'number') {
+    return (value as Stage1ConfidenceDecomposition).total;
+  }
+  return undefined;
 }
 
 function buildEvidenceIndex(objectRollup?: Stage1ObjectRollup): Map<string, EvidenceIndexEntry[]> {
@@ -118,15 +139,17 @@ function deriveVariants(
     for (const entry of bucket) {
       if (seen.has(entry.variant.id)) continue;
       seen.add(entry.variant.id);
+      const confidenceScalar = unwrapConfidenceTotal(entry.variant.confidence);
       variants.push({
         id: entry.variant.id,
         surface: entry.variant.surface,
-        ...(entry.variant.confidence !== undefined ? { confidence: entry.variant.confidence } : {}),
+        ...(confidenceScalar !== undefined ? { confidence: confidenceScalar } : {}),
         ...(entry.variant.selector ? { selector: entry.variant.selector } : {}),
         object_canonical_id: entry.object.canonical_id,
         ...(entry.object.canonical_label ? { object_canonical_label: entry.object.canonical_label } : {}),
         evidence_chain: entry.variant.evidence_chain ?? [],
         ...(entry.variant.metadata ? { metadata: entry.variant.metadata } : {}),
+        ...(entry.variant.confidence_summary ? { confidence_summary: entry.variant.confidence_summary } : {}),
       });
     }
   }
@@ -201,17 +224,22 @@ function normalizeCapability(
 }
 
 /**
- * Fold the three Stage1 v1.5.0 rollup artifacts into a deterministic
- * capability-centric view. Pure and side-effect free — same inputs always
- * produce byte-identical output.
+ * Fold the three Stage1 rollup artifacts into a deterministic capability-centric
+ * view. Pure and side-effect free — same inputs always produce byte-identical
+ * output. Accepts both v1.5.0 scalar-confidence and v1.6.0 ConfidenceDecomposition
+ * shapes on candidate_mappings[], presentations[], and projection_variants[].
  *
  * Spine: capability_rollup.capabilities[]. Every input canonical_id lands
  * in the output. Each presentation receives projection_variants derived
  * from object_rollup where any member_instance evidence ref (artifact_ref,
  * json_pointer, run_id) appears in a variant's evidence_chain; conflicts
  * from those matched objects are merged onto the capability's conflicts[].
- * identity_graph nodes with matching canonical_id attach as identity_node.
- * resolution_strategy is preserved from capability_rollup.
+ * identity_graph nodes with matching canonical_id attach as identity_node,
+ * preserving candidate_mappings[].confidence in whichever shape Stage1 emitted
+ * (so v1.2.0 signals[].hint surfaces stay reachable to downstream consumers).
+ * resolution_strategy is preserved from capability_rollup. Variant confidence
+ * is always emitted as a scalar (.total unwrapped when decomposed), with the
+ * optional ConfidenceSummary passed through for evidence traceability.
  */
 export function normalizeCapabilities(inputs: CapabilityNormalizerInputs): NormalizedCapability[] {
   const { capabilityRollup, objectRollup, identityGraph } = inputs;

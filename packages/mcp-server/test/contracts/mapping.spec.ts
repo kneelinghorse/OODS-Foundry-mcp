@@ -895,6 +895,116 @@ describe('map_resolve coercion integration', () => {
   });
 });
 
+// ── s94-m03: Stage1 v1.6.0 raw-string coercion compatibility ──
+// Stage1 bridge emits propMappings[].coercion as raw labels (enum-map | type-cast
+// | identity) rather than structured CoercionDef objects. Public map_create must
+// accept and round-trip these strings without losing information.
+
+describe('map.create v1.6.0 string coercion compatibility (s94-m03)', () => {
+  beforeEach(() => {
+    resetMappingsFile();
+  });
+
+  for (const label of ['enum-map', 'type-cast', 'identity']) {
+    it(`schema accepts coercion: '${label}' on a propMappings entry`, () => {
+      expect(
+        validateCreateInput({
+          externalSystem: 'stripe',
+          externalComponent: 'Button',
+          oodsTraits: ['Stateful'],
+          propMappings: [{ externalProp: 'variant', oodsProp: 'appearance', coercion: label }],
+        }),
+      ).toBe(true);
+    });
+  }
+
+  it('schema rejects an empty-string coercion', () => {
+    expect(
+      validateCreateInput({
+        externalSystem: 'stripe',
+        externalComponent: 'Button',
+        oodsTraits: ['Stateful'],
+        propMappings: [{ externalProp: 'variant', oodsProp: 'appearance', coercion: '' }],
+      }),
+    ).toBe(false);
+  });
+
+  it('handler round-trips a string coercion verbatim through persistence', async () => {
+    const result = await createHandle({
+      apply: true,
+      externalSystem: 'stripe',
+      externalComponent: 'Button',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'variant', oodsProp: 'appearance', coercion: 'enum-map' },
+        { externalProp: 'kind', oodsProp: 'role', coercion: 'type-cast' },
+        { externalProp: 'mode', oodsProp: 'mode', coercion: 'identity' },
+        { externalProp: 'href', oodsProp: 'href', coercion: null },
+      ],
+    });
+
+    expect(result.status).toBe('ok');
+    const persisted = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const propMappings = persisted.mappings[0].propMappings;
+    expect(propMappings).toEqual([
+      { externalProp: 'variant', oodsProp: 'appearance', coercion: 'enum-map' },
+      { externalProp: 'kind', oodsProp: 'role', coercion: 'type-cast' },
+      { externalProp: 'mode', oodsProp: 'mode', coercion: 'identity' },
+      { externalProp: 'href', oodsProp: 'href', coercion: null },
+    ]);
+  });
+
+  it('mixes structured + string coercion in one propMappings array', async () => {
+    const result = await createHandle({
+      apply: true,
+      externalSystem: 'mixed-system',
+      externalComponent: 'Field',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'kind', oodsProp: 'kind', coercion: { type: 'enum', mapping: { a: 'b' } } },
+        { externalProp: 'shape', oodsProp: 'shape', coercion: 'enum-map' },
+      ],
+    });
+    expect(result.status).toBe('ok');
+    expect((result.mapping as any).propMappings[0].coercion).toEqual({ type: 'enum', mapping: { a: 'b' } });
+    expect((result.mapping as any).propMappings[1].coercion).toBe('enum-map');
+  });
+
+  it('map.resolve surfaces string coercion as coercionType + null coercionDetail', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'stripe',
+      externalComponent: 'Card',
+      oodsTraits: ['Stateful'],
+      propMappings: [{ externalProp: 'variant', oodsProp: 'appearance', coercion: 'enum-map' }],
+    });
+    const result = await resolveHandle({ externalSystem: 'stripe', externalComponent: 'Card' });
+    expect(result.status).toBe('ok');
+    const translation = result.propTranslations![0];
+    expect(translation.coercionType).toBe('enum-map');
+    expect(translation.coercionDetail).toBeNull();
+  });
+
+  it('map.update accepts string coercion and persists round-trip', async () => {
+    await createHandle({
+      apply: true,
+      externalSystem: 'linear',
+      externalComponent: 'Row',
+      oodsTraits: ['Listable'],
+      propMappings: [{ externalProp: 'kind', oodsProp: 'kind', coercion: null }],
+    });
+    const updated = await updateHandle({
+      id: 'linear-row',
+      updates: {
+        propMappings: [{ externalProp: 'kind', oodsProp: 'kind', coercion: 'type-cast' }],
+      },
+    });
+    expect(updated.status).toBe('ok');
+    const persisted = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    expect(persisted.mappings[0].propMappings[0].coercion).toBe('type-cast');
+  });
+});
+
 // ── s92-m01: projection_variants[] write-path activation ──
 // Aligns with Stage1 contract v1.5.0 §7.3. Unblocks bridge payloads that
 // include per-mapping cross-surface identity variants.

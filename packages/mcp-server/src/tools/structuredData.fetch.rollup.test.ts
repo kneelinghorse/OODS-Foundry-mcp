@@ -158,6 +158,39 @@ describe('structuredData.fetch rollup mode', () => {
     expect(result.kind).toBe('capability_rollup');
   });
 
+  it('accepts identity_graph schema_version 1.2.0 (v1.6.0 bump)', async () => {
+    fs.writeFileSync(
+      path.join(artifactsDir, 'identity_graph.json'),
+      JSON.stringify(makeIdentityGraph('1.2.0')),
+    );
+    const result = await handle({ kind: 'identity_graph', runPath: artifactsDir });
+    expect(result.schemaVersion).toBe('1.2.0');
+    expect(result.schemaValidated).toBe(true);
+    expect((result.payload as any).nodes).toHaveLength(1);
+  });
+
+  it('accepts capability_rollup schema_version 1.2.0 (v1.6.0 bump)', async () => {
+    fs.writeFileSync(
+      path.join(artifactsDir, 'capability_rollup.json'),
+      JSON.stringify(makeCapabilityRollup('1.2.0')),
+    );
+    const result = await handle({ kind: 'capability_rollup', runPath: artifactsDir });
+    expect(result.schemaVersion).toBe('1.2.0');
+    expect(result.schemaValidated).toBe(true);
+    expect((result.payload as any).capabilities).toHaveLength(1);
+  });
+
+  it('accepts object_rollup schema_version 1.1.0 (v1.6.0 bump)', async () => {
+    fs.writeFileSync(
+      path.join(artifactsDir, 'object_rollup.json'),
+      JSON.stringify(makeObjectRollup('1.1.0')),
+    );
+    const result = await handle({ kind: 'object_rollup', runPath: artifactsDir });
+    expect(result.schemaVersion).toBe('1.1.0');
+    expect(result.schemaValidated).toBe(true);
+    expect((result.payload as any).objects).toHaveLength(1);
+  });
+
   it('rejects an unknown schema_version with a structured error', async () => {
     fs.writeFileSync(
       path.join(artifactsDir, 'identity_graph.json'),
@@ -170,7 +203,22 @@ describe('structuredData.fetch rollup mode', () => {
       await handle({ kind: 'identity_graph', runPath: artifactsDir });
     } catch (err) {
       expect((err as ToolError).message).toMatch(/Unsupported schema_version "2\.0\.0"/);
-      expect((err as any).details?.accepted).toEqual(['1.1.0']);
+      expect((err as any).details?.accepted).toEqual(['1.1.0', '1.2.0']);
+    }
+  });
+
+  it('rejects an unknown object_rollup schema_version with the new allow-list', async () => {
+    fs.writeFileSync(
+      path.join(artifactsDir, 'object_rollup.json'),
+      JSON.stringify(makeObjectRollup('2.0.0')),
+    );
+    try {
+      await handle({ kind: 'object_rollup', runPath: artifactsDir });
+      throw new Error('expected rejection');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ToolError);
+      expect((err as ToolError).message).toMatch(/Unsupported schema_version "2\.0\.0"/);
+      expect((err as any).details?.accepted).toEqual(['1.0.0', '1.1.0']);
     }
   });
 

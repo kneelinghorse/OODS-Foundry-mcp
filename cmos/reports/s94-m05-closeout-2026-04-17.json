@@ -1,0 +1,153 @@
+{
+  "mission": "s94-m05",
+  "title": "Sprint-94 closeout (+1 rule, 3rd formal instance)",
+  "sprint": "sprint-94",
+  "sprintTheme": "Stage1 v1.6.0 Activation + Coercion Compat",
+  "generatedAt": "2026-04-17T13:08:00.000Z",
+  "status": "verified",
+  "closeoutRule": {
+    "instance": 3,
+    "convention": "standing",
+    "promotedAt": "sprint-93",
+    "originatedAt": "sprint-92",
+    "predecessorOutcomes": [
+      "sprint-92: first formal closeout, zero retro-splits",
+      "sprint-93: second formal closeout, zero retro-splits"
+    ]
+  },
+  "missions": [
+    {
+      "id": "s94-m01",
+      "title": "Widen structuredData.fetch allow-list for v1.6.0 rollup schema_versions",
+      "commit": "d9d9e8f",
+      "status": "Completed",
+      "outcomes": {
+        "allowList": {
+          "identity_graph": ["1.1.0", "1.2.0"],
+          "capability_rollup": ["1.1.0", "1.2.0"],
+          "object_rollup": ["1.0.0", "1.1.0"]
+        },
+        "newTests": 4,
+        "rollupTestsPassing": "16/16"
+      }
+    },
+    {
+      "id": "s94-m02",
+      "title": "Update normalizeCapabilities() + playground mirror for ConfidenceDecomposition shape",
+      "commit": "25bc415",
+      "status": "Completed",
+      "outcomes": {
+        "newTypes": [
+          "Stage1ConfidenceDecomposition",
+          "Stage1ConfidenceSummary",
+          "Stage1ConfidenceSignal"
+        ],
+        "normalizerBehavior": {
+          "variantConfidence": "unwrapped to scalar (.total)",
+          "confidenceSummary": "preserved on NormalizedProjectionVariant",
+          "identityNodeHints": "reachable via wholesale node attachment"
+        },
+        "newTests": 4,
+        "normalizerTestsPassing": "14/14",
+        "playgroundMirror": "n=2 duplication preserved (per s93 decision); tsc + vite build clean"
+      }
+    },
+    {
+      "id": "s94-m03",
+      "title": "Fix map_create coercion-string compatibility (enum-map | type-cast | identity)",
+      "commit": "c2b4e64",
+      "status": "Completed",
+      "outcomes": {
+        "schemaWidening": "map.create.input.json + map.update.input.json accept coercion: string | null | CoercionDef",
+        "passThrough": "preserve string verbatim on persisted PropMapping; map.resolve emits coercionType=<string>, coercionDetail=null",
+        "resolveValueSemantics": "string coercion treated as value-level identity (no structured table to transform)",
+        "newTests": 8,
+        "mappingTestsPassing": "64/64"
+      }
+    },
+    {
+      "id": "s94-m04",
+      "title": "Migrate rollup fixtures to v1.6.0 live reruns and re-gate",
+      "commit": "e7d1849",
+      "status": "Completed",
+      "outcomes": {
+        "fixtures": {
+          "linear": {
+            "runId": "a0300dc0-c10f-4821-b648-48556da43ef7",
+            "counts": {
+              "nodes": 80,
+              "capabilities": 7,
+              "presentations": 7,
+              "objects": 73,
+              "variants": 75
+            }
+          },
+          "stripe": {
+            "runId": "7adc1d79-426b-4c8e-a217-e6d5a129b182",
+            "counts": {
+              "nodes": 144,
+              "capabilities": 12,
+              "presentations": 15,
+              "objects": 128,
+              "variants": 128
+            }
+          }
+        },
+        "gateReport": "cmos/reports/s94-m04-rollup-regate-2026-04-17.json",
+        "newGateAssertions": [
+          "every projection_variant carries ConfidenceDecomposition (total + method + signals[])",
+          "explicit presentation count gate (catches stripe 12 caps -> 15 presentations drift)"
+        ],
+        "playgroundFixtures": {
+          "removed": ["linear-v15-rollups.json", "stripe-v15-rollups.json"],
+          "added": ["linear-v16-rollups.json", "stripe-v16-rollups.json"],
+          "bundleSizeKb": { "linear": 80, "stripe": 136, "vsV15Kb": { "linear": 32, "stripe": 52 } }
+        },
+        "e2eTestsPassing": "7/7"
+      }
+    }
+  ],
+  "deliverables": {
+    "commitVerification": "git log c467d23..HEAD shows 4 m-prefixed commits in dependency order (m01, m02, m03, m04)",
+    "branchPushed": true,
+    "branchTracking": "origin/sprint-94",
+    "stage1HandshakeSent": true,
+    "stage1MessageType": "status_update",
+    "stage1MessageTarget": "cmos://derek/stage1",
+    "sessionCaptured": true,
+    "memoryUpdated": true,
+    "closeoutReport": "cmos/reports/s94-m05-closeout-2026-04-17.json"
+  },
+  "qualityGates": {
+    "fullSuite": "2199/2199 (vitest --no-file-parallelism)",
+    "fullSuiteParallel": "flakey on 3-4 tests due to pre-existing test-isolation issue (registry-snapshot benchmarks + mapping benchmarks share artifacts/structured-data/component-mappings.json); not introduced by sprint-94",
+    "playgroundTsc": "clean",
+    "playgroundBuild": "clean (370 kB / 83 kB gz; up from 283/78 due to ConfidenceDecomposition signals[] verbosity)",
+    "rollupGate": "7/7 v1.6.0 e2e tests green against live fixtures",
+    "retroSplits": 0
+  },
+  "outcomes": {
+    "stage1ContractAlignment": {
+      "stage1Version": "v1.6.0",
+      "oodsVersion": "v1.2.4 (sprint-94)",
+      "openGaps": [
+        "Full-payload map_create dry-run probe (projection_variants[] + propMappings[].coercion together) — pending synthetic smoke test, separable from sprint-94 scope"
+      ]
+    },
+    "namedAntiPatterns": {
+      "scopeInflation": "held — 5-mission posture preserved (m01..m05)",
+      "retroSplits": "held — zero, third consecutive sprint at zero (s92, s93, s94)"
+    },
+    "carryForward": [
+      "Pre-existing test-isolation housekeeping (registry-snapshot + mapping benchmark file pollution) remains a candidate for a future sprint; not blocking and not exacerbated by sprint-94.",
+      "Send Stage1 a full-payload map_create dry-run smoke confirmation once a synthetic payload is generated. Now unblocked by m03."
+    ]
+  },
+  "decisionsHigh": [
+    "Append-vs-replace on the schema_version allow-list (kept old versions; back-compat at unit-test layer)",
+    "Normalizer unwraps ConfidenceDecomposition.total to scalar — does not propagate decomposition shape onto NormalizedProjectionVariant (downstream consumers + bridge stay scalar)",
+    "Coercion string accepted as any non-empty string (not enumerated) — forward-compat with future Stage1 labels without OODS schema PRs",
+    "Playground v15 rollup fixtures retired in favor of v16; back-compat coverage stays at the unit-test layer; bundle size growth (32K→80K linear, 52K→136K stripe) accepted as cost of richer decomposition payloads",
+    "Explicit presentation-count gate added to e2e (caught stripe v1.6.0 12caps→15presentations drift; will catch future divergence earlier)"
+  ]
+}

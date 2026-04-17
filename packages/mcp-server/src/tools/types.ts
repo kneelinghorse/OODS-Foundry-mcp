@@ -160,7 +160,12 @@ export type StructuredDataFetchOutput = {
   resolvedVersion?: string | null;
 };
 
-/* Stage1 v1.5.0 rollup shapes (observed schema_versions: identity_graph 1.1.0, capability_rollup 1.1.0, object_rollup 1.0.0). */
+/* Stage1 rollup shapes — accepted schema_versions (post v1.6.0):
+ *   identity_graph: 1.1.0 | 1.2.0
+ *   capability_rollup: 1.1.0 | 1.2.0
+ *   object_rollup: 1.0.0 | 1.1.0
+ * See ROLLUP_ALLOWED_SCHEMA_VERSIONS in structuredData.fetch.ts.
+ */
 
 export type Stage1EvidenceRef = {
   artifact_ref: string;
@@ -170,9 +175,41 @@ export type Stage1EvidenceRef = {
   observation_type?: string;
 };
 
+/**
+ * Stage1 v1.6.0 unified confidence surfaces (contract §2d).
+ * Identical shape across identity_graph (candidate_mappings[]),
+ * capability_rollup (presentations[]), object_rollup (projection_variants[]),
+ * and reconciliation_report (candidate_objects[].decomposition).
+ */
+export type Stage1ConfidenceMethodId = 'weighted_blend_v1' | 'threshold_gate_v1' | string;
+
+export type Stage1ConfidenceSignal = {
+  type: string;
+  raw_score: number;
+  weight: number;
+  weighted_contribution: number;
+  evidence_ref: Stage1EvidenceRef;
+  hint?: string;
+};
+
+export type Stage1ConfidenceDecomposition = {
+  total: number;
+  method: Stage1ConfidenceMethodId;
+  signals: Stage1ConfidenceSignal[];
+};
+
+export type Stage1ConfidenceSummary = {
+  total: number;
+  method: Stage1ConfidenceMethodId;
+  evidence_ref: Stage1EvidenceRef;
+  top_signal_types?: string[];
+};
+
 export type Stage1CandidateMapping = {
   target: string;
-  confidence: number;
+  /** v1.1.0 scalar; v1.2.0 full decomposition. Use unwrap helpers in the normalizer. */
+  confidence: number | Stage1ConfidenceDecomposition;
+  /** Legacy v1.1.0 surface; removed in v1.2.0 (hints moved into confidence.signals[].hint). */
   hints?: Array<{ heuristic: string; contribution: number; detail?: string }>;
 };
 
@@ -206,6 +243,8 @@ export type Stage1IdentityGraph = {
 export type Stage1CapabilityPresentation = {
   surface: string;
   label?: string;
+  /** v1.2.0 adds a ConfidenceDecomposition per presentation. */
+  confidence?: Stage1ConfidenceDecomposition;
   preconditions?: unknown[];
   role_hints?: string[];
   state_hints?: string[];
@@ -235,10 +274,15 @@ export type Stage1CapabilityRollup = {
 export type Stage1RollupProjectionVariant = {
   id: string;
   surface: string;
-  confidence?: number;
+  /** v1.0.0 scalar; v1.1.0 full decomposition. Use unwrap helpers in the normalizer. */
+  confidence?: number | Stage1ConfidenceDecomposition;
+  /** v1.1.0 summary backref to object_rollup.json; preserved on normalized variants. */
+  confidence_summary?: Stage1ConfidenceSummary;
   evidence_chain?: Stage1EvidenceRef[];
   metadata?: Record<string, unknown>;
   selector?: string;
+  external_component?: string;
+  capability_id?: string;
 };
 
 export type Stage1RollupObject = {
@@ -404,6 +448,7 @@ export type MapCreateInput = {
           | { type: "template"; pattern: string }
           | { type: "identity" }
         )
+      | string
       | null;
   }>;
   confidence?: "auto" | "manual";
@@ -727,6 +772,7 @@ export type MapUpdateInput = {
             | { type: "template"; pattern: string }
             | { type: "identity" }
           )
+        | string
         | null;
     }>;
     notes?: string;

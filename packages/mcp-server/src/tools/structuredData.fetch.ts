@@ -13,14 +13,16 @@ import type {
 import { ToolError } from '../errors/tool-error.js';
 
 /**
- * Stage1 v1.5.0 rollup kinds and the schema_versions OODS currently accepts.
+ * Stage1 rollup kinds and the schema_versions OODS currently accepts.
  * Reject anything outside this set so a mid-sprint Stage1 bump lands as a
- * fast-fail instead of a silent parse (coordination note on s93-m01).
+ * fast-fail instead of a silent parse. Old versions remain accepted for
+ * back-compat on archived fixtures; v1.6.0 adds ConfidenceDecomposition-bearing
+ * bumps (identity_graph 1.2.0, capability_rollup 1.2.0, object_rollup 1.1.0).
  */
 const ROLLUP_ALLOWED_SCHEMA_VERSIONS: Record<Stage1RollupKind, string[]> = {
-  identity_graph: ['1.1.0'],
-  capability_rollup: ['1.1.0'],
-  object_rollup: ['1.0.0'],
+  identity_graph: ['1.1.0', '1.2.0'],
+  capability_rollup: ['1.1.0', '1.2.0'],
+  object_rollup: ['1.0.0', '1.1.0'],
 };
 
 type ManifestArtifact = {
