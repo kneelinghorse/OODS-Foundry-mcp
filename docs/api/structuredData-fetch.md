@@ -1,6 +1,6 @@
 # structuredData.fetch
 
-> Fetch structured data exports (components, tokens, or manifest). Supports ETag caching, version pinning, and version listing.
+> Fetch structured data exports (components, tokens, or manifest) or Stage1 v1.5.0 rollup artifacts (identity_graph, capability_rollup, object_rollup) via kind+runPath. Supports ETag caching, version pinning, and version listing in dataset mode; schema_version validation in rollup mode.
 
 **Registration:** auto
 
@@ -8,17 +8,22 @@
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `dataset` | `components` \| `tokens` \| `manifest` | Yes |  | Structured dataset to return. |
+| `dataset` | `components` \| `tokens` \| `manifest` | No |  | Local structured dataset to return (components/tokens/manifest). Mutually exclusive with kind+runPath. |
+| `kind` | `identity_graph` \| `capability_rollup` \| `object_rollup` | No |  | Stage1 v1.5.0 rollup artifact kind to read from runPath. Requires runPath; mutually exclusive with dataset. |
+| `runPath` | string | No |  | Filesystem path to a Stage1 run directory or its artifacts/ subdirectory. Required when kind is set. |
 | `ifNoneMatch` | string | No |  | Return matched=true without payload when the ETag matches. |
 | `includePayload` | boolean | No | `true` | When false, omit payload even if no ETag match occurs. |
-| `version` | string | No |  | Request a specific date-stamped version (e.g., '2026-02-24'). Omit for latest. |
+| `version` | string | No |  | Request a specific date-stamped version (e.g., '2026-02-24'). Omit for latest. Applies to dataset mode only. |
 | `listVersions` | boolean | No | `false` | When true, return available version dates instead of payload. |
 
 ## Output Shape
 
 | Field | Type | Always Present | Description |
 |-------|------|----------------|-------------|
-| `dataset` | `components` \| `tokens` \| `manifest` | Yes | Dataset that was requested. |
+| `dataset` | `components` \| `tokens` \| `manifest` | No | Dataset that was requested (dataset mode only). |
+| `kind` | `identity_graph` \| `capability_rollup` \| `object_rollup` | No | Stage1 rollup kind that was requested (kind mode only). |
+| `schemaVersion` | string | No | Stage1 artifact schema_version (kind mode only). |
+| `runId` | string | No | Stage1 run_id extracted from the artifact (kind mode only). |
 | `version` | string \| null | No | Version tag (usually the YYYY-MM-DD stamp from the manifest). |
 | `generatedAt` | string \| null | No | Timestamp recorded in the payload. |
 | `etag` | string | Yes | Stable hash of the payload (generatedAt excluded). |
@@ -46,7 +51,5 @@
 ## Example Request
 
 ```json
-{
-  "dataset": "components"
-}
+{}
 ```

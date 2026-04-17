@@ -4,8 +4,24 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAjv } from '../lib/ajv.js';
 import { withinAllowed } from '../lib/security.js';
-import type { StructuredDataFetchInput, StructuredDataFetchOutput, StructuredDataset } from './types.js';
+import type {
+  Stage1RollupKind,
+  StructuredDataFetchInput,
+  StructuredDataFetchOutput,
+  StructuredDataset,
+} from './types.js';
 import { ToolError } from '../errors/tool-error.js';
+
+/**
+ * Stage1 v1.5.0 rollup kinds and the schema_versions OODS currently accepts.
+ * Reject anything outside this set so a mid-sprint Stage1 bump lands as a
+ * fast-fail instead of a silent parse (coordination note on s93-m01).
+ */
+const ROLLUP_ALLOWED_SCHEMA_VERSIONS: Record<Stage1RollupKind, string[]> = {
+  identity_graph: ['1.1.0'],
+  capability_rollup: ['1.1.0'],
+  object_rollup: ['1.0.0'],
+};
 
 type ManifestArtifact = {
   name?: string;
@@ -236,7 +252,144 @@ function metaFor(dataset: StructuredDataset, payload: Record<string, any>): Reco
   return artifacts ? { artifactCount: Array.isArray(artifacts) ? artifacts.length : undefined } : undefined;
 }
 
+function resolveRollupArtifactPath(kind: Stage1RollupKind, runPath: string): string {
+  const absolute = path.isAbsolute(runPath) ? runPath : path.resolve(REPO_ROOT, runPath);
+  const filename = `${kind}.json`;
+
+  if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
+    const basename = path.basename(absolute);
+    if (basename !== filename) {
+      throw new ToolError(
+        'OODS-N007',
+        `runPath points at "${basename}" but kind "${kind}" expects "${filename}".`,
+        { kind, runPath: absolute },
+      );
+    }
+    return absolute;
+  }
+
+  const candidates = [
+    path.join(absolute, filename),
+    path.join(absolute, 'artifacts', filename),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return candidate;
+    }
+  }
+
+  throw new ToolError(
+    'OODS-N007',
+    `Stage1 rollup artifact not found for kind "${kind}" near runPath.`,
+    { kind, runPath: absolute, looked: candidates },
+  );
+}
+
+function validateRollupPayload(
+  kind: Stage1RollupKind,
+  payload: Record<string, unknown>,
+): { schemaVersion: string; runId?: string } {
+  const payloadKind = typeof payload.kind === 'string' ? (payload.kind as string) : undefined;
+  if (payloadKind !== kind) {
+    throw new ToolError(
+      'OODS-N007',
+      `Artifact kind mismatch: requested "${kind}" but payload reports "${payloadKind ?? 'none'}".`,
+      { requestedKind: kind, payloadKind: payloadKind ?? null },
+    );
+  }
+
+  const schemaVersion = typeof payload.schema_version === 'string' ? (payload.schema_version as string) : undefined;
+  if (!schemaVersion) {
+    throw new ToolError(
+      'OODS-N007',
+      `Stage1 rollup "${kind}" is missing schema_version.`,
+      { kind },
+    );
+  }
+
+  const allowed = ROLLUP_ALLOWED_SCHEMA_VERSIONS[kind];
+  if (!allowed.includes(schemaVersion)) {
+    throw new ToolError(
+      'OODS-N007',
+      `Unsupported schema_version "${schemaVersion}" for kind "${kind}". Accepted: ${allowed.join(', ')}.`,
+      { kind, schemaVersion, accepted: allowed },
+    );
+  }
+
+  const runId = typeof payload.run_id === 'string' ? (payload.run_id as string) : undefined;
+  return { schemaVersion, runId };
+}
+
+function rollupMeta(kind: Stage1RollupKind, payload: Record<string, any>): Record<string, unknown> {
+  if (kind === 'identity_graph') {
+    return { nodeCount: Array.isArray(payload.nodes) ? payload.nodes.length : 0 };
+  }
+  if (kind === 'capability_rollup') {
+    return { capabilityCount: Array.isArray(payload.capabilities) ? payload.capabilities.length : 0 };
+  }
+  const objects = Array.isArray(payload.objects) ? payload.objects : [];
+  let variantCount = 0;
+  for (const obj of objects) {
+    if (obj && Array.isArray((obj as any).projection_variants)) {
+      variantCount += (obj as any).projection_variants.length;
+    }
+  }
+  return { objectCount: objects.length, projectionVariantCount: variantCount };
+}
+
+async function handleRollupFetch(
+  input: StructuredDataFetchInput,
+): Promise<StructuredDataFetchOutput> {
+  const kind = input.kind as Stage1RollupKind;
+  if (!input.runPath) {
+    throw new ToolError('OODS-V201', `structuredData.fetch requires runPath when kind is set.`, { kind });
+  }
+  if (input.listVersions) {
+    throw new ToolError('OODS-V201', 'listVersions is not supported in kind mode.', { kind });
+  }
+  if (input.version) {
+    throw new ToolError('OODS-V201', 'version is not supported in kind mode.', { kind });
+  }
+
+  const includePayload = input.includePayload !== false;
+  const dataPath = resolveRollupArtifactPath(kind, input.runPath);
+  const payload = readJson(dataPath);
+  const { schemaVersion, runId } = validateRollupPayload(kind, payload);
+  const etag = computeStructuredDataEtag(payload);
+  const matched = Boolean(input.ifNoneMatch && input.ifNoneMatch === etag);
+  const payloadIncluded = includePayload && !matched;
+  const sizeBytes = fs.statSync(dataPath).size;
+  const generatedAt = typeof (payload as any).generated_at === 'string' ? (payload as any).generated_at : null;
+
+  return {
+    kind,
+    schemaVersion,
+    ...(runId ? { runId } : {}),
+    generatedAt,
+    etag,
+    matched,
+    payloadIncluded,
+    path: relativeToRepo(dataPath),
+    sizeBytes,
+    schemaValidated: true,
+    meta: rollupMeta(kind, payload as Record<string, any>),
+    payload: payloadIncluded ? payload : undefined,
+  };
+}
+
 export async function handle(input: StructuredDataFetchInput): Promise<StructuredDataFetchOutput> {
+  if (input.kind) {
+    return handleRollupFetch(input);
+  }
+
+  if (!input.dataset) {
+    throw new ToolError(
+      'OODS-V201',
+      'structuredData.fetch requires either dataset (components|tokens|manifest) or kind+runPath.',
+      { input },
+    );
+  }
+
   const dataset = input.dataset;
   const includePayload = input.includePayload !== false;
   const manifestInfo = loadManifest();
