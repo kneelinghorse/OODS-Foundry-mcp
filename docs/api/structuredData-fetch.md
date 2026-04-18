@@ -9,7 +9,7 @@
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `dataset` | `components` \| `tokens` \| `manifest` | No |  | Local structured dataset to return (components/tokens/manifest). Mutually exclusive with kind+runPath. |
-| `kind` | `identity_graph` \| `capability_rollup` \| `object_rollup` | No |  | Stage1 v1.5.0 rollup artifact kind to read from runPath. Requires runPath; mutually exclusive with dataset. |
+| `kind` | `identity_graph` \| `capability_rollup` \| `object_rollup` \| `drift_report` | No |  | Stage1 structured artifact kind to read from runPath. Requires runPath; mutually exclusive with dataset. |
 | `runPath` | string | No |  | Filesystem path to a Stage1 run directory or its artifacts/ subdirectory. Required when kind is set. |
 | `ifNoneMatch` | string | No |  | Return matched=true without payload when the ETag matches. |
 | `includePayload` | boolean | No | `true` | When false, omit payload even if no ETag match occurs. |
@@ -21,7 +21,7 @@
 | Field | Type | Always Present | Description |
 |-------|------|----------------|-------------|
 | `dataset` | `components` \| `tokens` \| `manifest` | No | Dataset that was requested (dataset mode only). |
-| `kind` | `identity_graph` \| `capability_rollup` \| `object_rollup` | No | Stage1 rollup kind that was requested (kind mode only). |
+| `kind` | `identity_graph` \| `capability_rollup` \| `object_rollup` \| `drift_report` | No | Stage1 structured artifact kind that was requested (kind mode only). |
 | `schemaVersion` | string | No | Stage1 artifact schema_version (kind mode only). |
 | `runId` | string | No | Stage1 run_id extracted from the artifact (kind mode only). |
 | `version` | string \| null | No | Version tag (usually the YYYY-MM-DD stamp from the manifest). |

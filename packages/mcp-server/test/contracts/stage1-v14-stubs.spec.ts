@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getAjv } from "../../src/lib/ajv.js";
@@ -21,12 +22,13 @@ import type { ComponentMapping } from "../../src/tools/map.shared.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../../");
-const MAPPINGS_PATH = path.join(
+const DEFAULT_MAPPINGS_PATH = path.join(
   REPO_ROOT,
   "artifacts",
   "structured-data",
   "component-mappings.json",
 );
+const MAPPINGS_PATH_ENV = "MCP_MAPPINGS_PATH";
 const FIXTURE_PATH = path.join(
   REPO_ROOT,
   "packages",
@@ -49,6 +51,8 @@ const validateCapabilityEntity = ajv.compile(stage1CapabilityEntitySchema);
 const validateProjectionVariant = ajv.compile(stage1ProjectionVariantSchema);
 
 let originalMappings: string | null = null;
+let originalMappingsPathEnv: string | undefined;
+let mappingsTmpDir: string | null = null;
 
 function loadFixture(): Stage1ReconciliationReport {
   return JSON.parse(
@@ -56,9 +60,15 @@ function loadFixture(): Stage1ReconciliationReport {
   ) as Stage1ReconciliationReport;
 }
 
+function currentMappingsPath(): string {
+  return process.env[MAPPINGS_PATH_ENV] || DEFAULT_MAPPINGS_PATH;
+}
+
 function writeMappings(mappings: ComponentMapping[]): void {
+  const mappingsPath = currentMappingsPath();
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
   fs.writeFileSync(
-    MAPPINGS_PATH,
+    mappingsPath,
     JSON.stringify(
       {
         $schema:
@@ -116,17 +126,38 @@ function buildDecision(): Stage1DisambiguationDecision {
 }
 
 beforeAll(() => {
-  originalMappings = fs.existsSync(MAPPINGS_PATH)
-    ? fs.readFileSync(MAPPINGS_PATH, "utf8")
+  originalMappingsPathEnv = process.env[MAPPINGS_PATH_ENV];
+  const originalPath = currentMappingsPath();
+  originalMappings = fs.existsSync(originalPath)
+    ? fs.readFileSync(originalPath, "utf8")
     : null;
+
+  mappingsTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "oods-stage1-v14-stubs-"));
+  process.env[MAPPINGS_PATH_ENV] = path.join(
+    mappingsTmpDir,
+    "component-mappings.json",
+  );
 });
 
 afterAll(() => {
-  if (originalMappings === null) {
-    fs.rmSync(MAPPINGS_PATH, { force: true });
-    return;
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
+  } else {
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
   }
-  fs.writeFileSync(MAPPINGS_PATH, originalMappings);
+
+  const restoredMappingsPath = currentMappingsPath();
+  if (originalMappings === null) {
+    fs.rmSync(restoredMappingsPath, { force: true });
+  } else {
+    fs.mkdirSync(path.dirname(restoredMappingsPath), { recursive: true });
+    fs.writeFileSync(restoredMappingsPath, originalMappings);
+  }
+
+  if (mappingsTmpDir) {
+    fs.rmSync(mappingsTmpDir, { recursive: true, force: true });
+    mappingsTmpDir = null;
+  }
 });
 
 beforeEach(() => {

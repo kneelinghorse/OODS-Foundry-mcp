@@ -12,8 +12,8 @@
     },
     "kind": {
       "type": "string",
-      "enum": ["identity_graph", "capability_rollup", "object_rollup"],
-      "description": "Stage1 v1.5.0 rollup artifact kind to read from runPath. Requires runPath; mutually exclusive with dataset."
+      "enum": ["identity_graph", "capability_rollup", "object_rollup", "drift_report"],
+      "description": "Stage1 structured artifact kind to read from runPath. Requires runPath; mutually exclusive with dataset."
     },
     "runPath": {
       "type": "string",

@@ -20,8 +20,8 @@
     },
     "kind": {
       "type": "string",
-      "enum": ["identity_graph", "capability_rollup", "object_rollup"],
-      "description": "Stage1 rollup kind that was requested (kind mode only)."
+      "enum": ["identity_graph", "capability_rollup", "object_rollup", "drift_report"],
+      "description": "Stage1 structured artifact kind that was requested (kind mode only)."
     },
     "schemaVersion": {
       "type": "string",
@@ -93,6 +93,7 @@
         "nodeCount": { "type": "integer", "minimum": 0 },
         "capabilityCount": { "type": "integer", "minimum": 0 },
         "projectionVariantCount": { "type": "integer", "minimum": 0 },
+        "signalCount": { "type": "integer", "minimum": 0 },
         "tokenCounts": {
           "type": "object",
           "additionalProperties": false,

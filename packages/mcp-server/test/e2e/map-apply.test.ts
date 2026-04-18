@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { handle as applyHandle } from '../../src/tools/map.apply.js';
@@ -8,13 +9,21 @@ import type { Stage1ReconciliationReport } from '../../src/tools/types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
-const MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const DEFAULT_MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const MAPPINGS_PATH_ENV = 'MCP_MAPPINGS_PATH';
 const ARTIFACT_PATH = path.join(REPO_ROOT, '.oods', 'conflicts', '2026-04-16T16-50-00.000Z-stage1-map-apply-e2e.json');
 
 let originalMappings: string | null = null;
 let originalArtifact: string | null = null;
+let originalMappingsPathEnv: string | undefined;
+let mappingsTmpDir: string | null = null;
+
+function currentMappingsPath(): string {
+  return process.env[MAPPINGS_PATH_ENV] || DEFAULT_MAPPINGS_PATH;
+}
 
 function seedMappings(mappings: ComponentMapping[]): void {
+  const mappingsPath = currentMappingsPath();
   const doc: MappingsDoc = {
     $schema: '../../packages/mcp-server/src/schemas/component-mapping.schema.json',
     generatedAt: '2026-04-16T00:00:00.000Z',
@@ -25,7 +34,8 @@ function seedMappings(mappings: ComponentMapping[]): void {
     },
     mappings,
   };
-  fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(doc, null, 2) + '\n');
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+  fs.writeFileSync(mappingsPath, JSON.stringify(doc, null, 2) + '\n');
 }
 
 function buildExistingMappings(): ComponentMapping[] {
@@ -203,15 +213,30 @@ function buildReport(): Stage1ReconciliationReport {
 }
 
 beforeAll(() => {
-  originalMappings = fs.existsSync(MAPPINGS_PATH) ? fs.readFileSync(MAPPINGS_PATH, 'utf8') : null;
+  originalMappingsPathEnv = process.env[MAPPINGS_PATH_ENV];
+  const originalPath = currentMappingsPath();
+  originalMappings = fs.existsSync(originalPath) ? fs.readFileSync(originalPath, 'utf8') : null;
+  mappingsTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oods-map-apply-e2e-'));
+  process.env[MAPPINGS_PATH_ENV] = path.join(mappingsTmpDir, 'component-mappings.json');
   originalArtifact = fs.existsSync(ARTIFACT_PATH) ? fs.readFileSync(ARTIFACT_PATH, 'utf8') : null;
 });
 
 afterAll(() => {
-  if (originalMappings === null) {
-    fs.rmSync(MAPPINGS_PATH, { force: true });
+  if (mappingsTmpDir) {
+    fs.rmSync(mappingsTmpDir, { force: true, recursive: true });
+    mappingsTmpDir = null;
+  }
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
   } else {
-    fs.writeFileSync(MAPPINGS_PATH, originalMappings);
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
+  }
+  const mappingsPath = currentMappingsPath();
+  if (originalMappings === null) {
+    fs.rmSync(mappingsPath, { force: true });
+  } else {
+    fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+    fs.writeFileSync(mappingsPath, originalMappings);
   }
 
   if (originalArtifact === null) {

@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { getAjv } from '../../src/lib/ajv.js';
 import inputSchema from '../../src/schemas/structuredData.fetch.input.json' assert { type: 'json' };
 import outputSchema from '../../src/schemas/structuredData.fetch.output.json' assert { type: 'json' };
 import { handle, computeStructuredDataEtag } from '../../src/tools/structuredData.fetch.js';
+import { ToolError } from '../../src/errors/tool-error.js';
 
 const ajv = getAjv();
 const validateInput = ajv.compile(inputSchema);
@@ -28,6 +32,9 @@ describe('structuredData.fetch schemas', () => {
     ).toBe(true);
     expect(
       validateInput({ kind: 'object_rollup', runPath: '/tmp/run/artifacts' }),
+    ).toBe(true);
+    expect(
+      validateInput({ kind: 'drift_report', runPath: '/tmp/run/artifacts' }),
     ).toBe(true);
   });
 
@@ -76,5 +83,65 @@ describe('structuredData.fetch handler', () => {
     expect(second.payloadIncluded).toBe(false);
     expect(second.payload).toBeUndefined();
     expect(validateOutput(second)).toBe(true);
+  });
+});
+
+describe('structuredData.fetch drift_report read-side allow-list (s95-m02)', () => {
+  let tmpDir: string;
+  let artifactsDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oods-drift-fetch-'));
+    artifactsDir = path.join(tmpDir, 'artifacts');
+    fs.mkdirSync(artifactsDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeDriftReport(schemaVersion: string) {
+    fs.writeFileSync(
+      path.join(artifactsDir, 'drift_report.json'),
+      JSON.stringify({
+        kind: 'drift_report',
+        schema_version: schemaVersion,
+        generated_at: '2026-04-18T02:16:31.952Z',
+        current_run: {
+          id: '5c22ae9c-0696-44ce-a51c-0352ddd5b6c1',
+          url: 'https://linear.app/',
+        },
+        semantic_drift: [],
+        projection_inconsistency: [],
+        capability_contradiction: [],
+        token_intent_mismatch: [],
+        object_coverage_gap: [],
+        signals: [],
+      }),
+    );
+  }
+
+  it('accepts drift_report schema_version 1.0.0 with empty signals[]', async () => {
+    writeDriftReport('1.0.0');
+    const result = await handle({ kind: 'drift_report', runPath: artifactsDir });
+
+    expect(validateOutput(result)).toBe(true);
+    expect(result.kind).toBe('drift_report');
+    expect(result.schemaVersion).toBe('1.0.0');
+    expect(result.meta?.signalCount).toBe(0);
+    expect((result.payload as any).signals).toEqual([]);
+  });
+
+  it('rejects unknown drift_report schema_version values with a structured ToolError', async () => {
+    writeDriftReport('2.0.0');
+
+    try {
+      await handle({ kind: 'drift_report', runPath: artifactsDir });
+      throw new Error('expected rejection');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ToolError);
+      expect((err as ToolError).message).toMatch(/Unsupported schema_version "2\.0\.0"/);
+      expect((err as any).details?.accepted).toEqual(['1.0.0']);
+    }
   });
 });

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +23,8 @@ import { handle as deleteHandle } from '../../src/tools/map.delete.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
-const MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const DEFAULT_MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const MAPPINGS_PATH_ENV = 'MCP_MAPPINGS_PATH';
 
 const ajv = getAjv();
 const validateCreateInput = ajv.compile(createInputSchema);
@@ -38,20 +40,37 @@ const validateDeleteOutput = ajv.compile(deleteOutputSchema);
 
 // Preserve original file state for cleanup
 let originalMappings: string | null = null;
+let originalMappingsPathEnv: string | undefined;
+let currentTestTmpDir: string | null = null;
+
+function currentMappingsPath(): string {
+  return process.env[MAPPINGS_PATH_ENV] || DEFAULT_MAPPINGS_PATH;
+}
 
 beforeAll(() => {
-  originalMappings = fs.existsSync(MAPPINGS_PATH) ? fs.readFileSync(MAPPINGS_PATH, 'utf8') : null;
+  originalMappingsPathEnv = process.env[MAPPINGS_PATH_ENV];
+  const mappingsPath = currentMappingsPath();
+  originalMappings = fs.existsSync(mappingsPath) ? fs.readFileSync(mappingsPath, 'utf8') : null;
 });
 
 afterAll(() => {
-  if (originalMappings === null) {
-    fs.rmSync(MAPPINGS_PATH, { force: true });
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
   } else {
-    fs.writeFileSync(MAPPINGS_PATH, originalMappings);
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
+  }
+
+  const mappingsPath = currentMappingsPath();
+  if (originalMappings === null) {
+    fs.rmSync(mappingsPath, { force: true });
+  } else {
+    fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+    fs.writeFileSync(mappingsPath, originalMappings);
   }
 });
 
 function resetMappingsFile(): void {
+  const mappingsPath = currentMappingsPath();
   const empty = {
     $schema: '../../packages/mcp-server/src/schemas/component-mapping.schema.json',
     generatedAt: new Date().toISOString(),
@@ -59,7 +78,8 @@ function resetMappingsFile(): void {
     stats: { mappingCount: 0, systemCount: 0 },
     mappings: [],
   };
-  fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(empty, null, 2) + '\n');
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+  fs.writeFileSync(mappingsPath, JSON.stringify(empty, null, 2) + '\n');
 }
 
 function buildBenchMappings(count: number): Array<Record<string, unknown>> {
@@ -77,8 +97,10 @@ function buildBenchMappings(count: number): Array<Record<string, unknown>> {
 
 function writeBenchMappings(count: number): void {
   const mappings = buildBenchMappings(count);
+  const mappingsPath = currentMappingsPath();
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
   fs.writeFileSync(
-    MAPPINGS_PATH,
+    mappingsPath,
     JSON.stringify(
       {
         $schema: '../../packages/mcp-server/src/schemas/component-mapping.schema.json',
@@ -95,6 +117,23 @@ function writeBenchMappings(count: number): void {
     ) + '\n',
   );
 }
+
+beforeEach(() => {
+  currentTestTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oods-mappings-spec-'));
+  process.env[MAPPINGS_PATH_ENV] = path.join(currentTestTmpDir, 'component-mappings.json');
+});
+
+afterEach(() => {
+  if (currentTestTmpDir) {
+    fs.rmSync(currentTestTmpDir, { recursive: true, force: true });
+    currentTestTmpDir = null;
+  }
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
+  } else {
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
+  }
+});
 
 // ── Schema validation ──
 
@@ -944,7 +983,7 @@ describe('map.create v1.6.0 string coercion compatibility (s94-m03)', () => {
     });
 
     expect(result.status).toBe('ok');
-    const persisted = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const persisted = JSON.parse(fs.readFileSync(currentMappingsPath(), 'utf8'));
     const propMappings = persisted.mappings[0].propMappings;
     expect(propMappings).toEqual([
       { externalProp: 'variant', oodsProp: 'appearance', coercion: 'enum-map' },
@@ -1000,7 +1039,7 @@ describe('map.create v1.6.0 string coercion compatibility (s94-m03)', () => {
       },
     });
     expect(updated.status).toBe('ok');
-    const persisted = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const persisted = JSON.parse(fs.readFileSync(currentMappingsPath(), 'utf8'));
     expect(persisted.mappings[0].propMappings[0].coercion).toBe('type-cast');
   });
 });
@@ -1154,5 +1193,93 @@ describe('map.create projection_variants[] handler persistence (s92-m01)', () =>
     const listResult = await listHandle({});
     const persisted = listResult.mappings.find((m: any) => m.id === 'linear-issue-row') as any;
     expect('projection_variants' in persisted).toBe(false);
+  });
+});
+
+// ── s95-m01: combined synthetic smoke for the last open Stage1 activation probe ──
+// Exercises the one shape that remained unproven after s92/s94: a single
+// map.create payload carrying BOTH projection_variants[] and raw-string
+// propMappings[].coercion labels, first as a dry-run, then persisted and
+// round-tripped through map.resolve.
+describe('map.create combined projection_variants[] + string coercion smoke (s95-m01)', () => {
+  beforeEach(() => {
+    resetMappingsFile();
+  });
+
+  it('accepts the combined Stage1-shaped payload via dry-run and resolves it losslessly after apply:true', async () => {
+    const payload = {
+      externalSystem: 'stage1-synthetic',
+      externalComponent: 'Capability Card',
+      oodsTraits: ['Stateful'],
+      propMappings: [
+        { externalProp: 'variant', oodsProp: 'appearance', coercion: 'enum-map' },
+        { externalProp: 'kind', oodsProp: 'role', coercion: 'type-cast' },
+      ],
+      projection_variants: [
+        {
+          id: 'capability-card-desktop',
+          surface: 'desktop',
+          external_component: 'CapabilityCard',
+          capability_id: 'cap-capability-card',
+          selector: '[data-capability-card]',
+          confidence: 0.93,
+          evidence_chain: [{ pass: 'dom.components', note: 'Synthetic s95-m01 smoke payload' }],
+        },
+        {
+          id: 'capability-card-mobile',
+          surface: 'mobile',
+          external_component: 'CapabilityCardMobile',
+          selector: '[data-capability-card-mobile]',
+        },
+      ],
+    } as const;
+
+    expect(validateCreateInput(payload)).toBe(true);
+
+    const dryRun = await createHandle({
+      ...payload,
+      apply: false,
+    });
+
+    expect(validateCreateOutput(dryRun)).toBe(true);
+    expect(dryRun.status).toBe('ok');
+    expect(dryRun.applied).toBe(false);
+    expect((dryRun.mapping as any).projection_variants).toEqual(payload.projection_variants);
+    expect((dryRun.mapping as any).propMappings).toEqual(payload.propMappings);
+
+    const afterDryRun = await listHandle({});
+    expect(afterDryRun.totalCount).toBe(0);
+
+    const persisted = await createHandle({
+      ...payload,
+      apply: true,
+    });
+
+    expect(validateCreateOutput(persisted)).toBe(true);
+    expect(persisted.status).toBe('ok');
+    expect(persisted.applied).toBe(true);
+
+    const resolved = await resolveHandle({
+      externalSystem: payload.externalSystem,
+      externalComponent: payload.externalComponent,
+    });
+
+    expect(validateResolveOutput(resolved)).toBe(true);
+    expect(resolved.status).toBe('ok');
+    expect((resolved.mapping as any).projection_variants).toEqual(payload.projection_variants);
+    expect(resolved.propTranslations).toEqual([
+      {
+        externalProp: 'variant',
+        oodsProp: 'appearance',
+        coercionType: 'enum-map',
+        coercionDetail: null,
+      },
+      {
+        externalProp: 'kind',
+        oodsProp: 'role',
+        coercionType: 'type-cast',
+        coercionDetail: null,
+      },
+    ]);
   });
 });

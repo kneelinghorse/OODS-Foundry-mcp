@@ -1,16 +1,16 @@
 # OODS Foundry MCP — V1 Roadmap
 
-> Updated: 2026-04-16 | Sprint 90 in progress
+> Updated: 2026-04-18 | Sprint 95 closeout verified
 
 ## Current State
 
 - **Platform Score:** 100/100 (Sprint 83 confirmed — all V1 categories at full marks)
 - **Agent UX Score:** 8.7/10
 - **Compose Quality:** 4.2/5
-- **Test Suite:** 401 files, 3641 tests, 0 failures (repo-wide serialized Vitest gate)
-- **Build:** pnpm build clean, dist rebuilt
+- **Test Suite:** 134 files, 2205 tests, 0 failures (`packages/mcp-server` serialized Vitest gate on 2026-04-18); parallel `core` verification also passed 3 consecutive runs at 396 files / 3673 tests during sprint-95
+- **Build:** no sprint-95 build-only changes; closeout evidence centered on the serialized `mcp-server` gate
 - **Critical Runtime Defects Open:** 0
-- **Stage1 Integration:** Contract v1.3.0 write-side consumer live — `map.apply`, `registry.snapshot`, and paginated `map.list` shipped in Sprint 90; real emitted report gate now runs against Stage1 `reconciliation_report.json` from the sibling repo while cross-project CMOS messaging remains externally blocked
+- **Stage1 Integration:** Stage1 v1.7.0 remained additive — `s95-m01` retired the full-payload activation probe, `s95-m02` added `drift_report` read-side acceptance only, and no hard OODS-side activation work was required; no local reply to the `s95-m01` `status_update` has been observed yet
 
 ## Validated Release Gates
 
@@ -174,6 +174,15 @@
 | `s90-m05` | Full 8-surface registration audit: registry, fallback registry, policy, generated schemas, adapter descriptions/classification, bridge config, server index, error catalog, API docs, and repo-wide serialized Vitest gate | Done | `packages/mcp-server/test/contracts/s90-registration-audit.spec.ts`; `pnpm exec vitest run --no-file-parallelism` → 401 files / 3641 tests |
 | `s90-m06` | Real emitted Stage1 integration gate: new E2E against sibling Stage1 `reconciliation_report.json` using `reportPath`, registry mutation verified through `registry.snapshot`, sample transcript artifact committed | In Progress | `packages/mcp-server/test/e2e/stage1-reconciliation.test.ts`, `cmos/reports/s90-m06-stage1-reconciliation-transcript-2026-04-16.json` |
 
+## Sprint 95 Validated Changes — Posture Flex, Drift Read-Side, and Isolation Closure
+
+| Mission | Change | Status | Evidence |
+|---------|--------|--------|----------|
+| `s95-m01` | Synthetic full-payload `map.create` smoke + Stage1 v1.7.0 ack reasoning: combined `projection_variants[]` with raw-string `propMappings[].coercion`, confirmed dry-run/persist/resolve round-trip, and retired the `s46-m06` activation probe | Done | `cmos/reports/s95-m01-map-create-smoke-2026-04-18.json`; `packages/mcp-server/test/contracts/mapping.spec.ts` |
+| `s95-m02` | `structuredData.fetch` read-side widen for `drift_report` `1.0.0` only; added `signalCount` metadata while keeping unknown schema versions as a structured fast-fail | Done | `packages/mcp-server/src/tools/structuredData.fetch.ts`, JSON schemas, `packages/mcp-server/test/contracts/structuredData.fetch.spec.ts`, `packages/mcp-server/src/tools/structuredData.fetch.rollup.test.ts` |
+| `s95-m03` | Closed `component-mappings.json` isolation flake via env-overridable mappings path, per-suite temp files, and a shared bridge startup harness; refreshed brittle playground assertions | Done | `packages/mcp-server/src/tools/map.shared.ts`, `packages/mcp-server/test/helpers/bridge-harness.ts`, parallel `core` gate green 3 consecutive times (`396` files / `3673` tests) |
+| `s95-m04` | Closeout gate: `origin/sprint-95` created, serialized `mcp-server` suite green, memory/roadmap refreshed, and closeout report captured | Done | `pnpm exec vitest run --config vitest.config.ts --no-file-parallelism` → `134` files / `2205` tests; `cmos/reports/s95-m04-closeout-2026-04-18.json` |
+
 ## Carry-Forward Backlog
 
 ### P1 — Composition Quality
@@ -210,6 +219,7 @@
 
 | Date | Agent | Score | Scope | Report |
 |------|-------|-------|-------|--------|
+| 2026-04-18 | Codex GPT-5 | Closeout verified | Sprint 95 posture flex (`N=3`) + `drift_report` read-side + test-isolation closure | `cmos/reports/s95-m04-closeout-2026-04-18.json` |
 | 2026-03-10 | Claude Opus 4.6 | 96/100 | Sprint 81 retest — Composition Intelligence 20→23, Codegen Quality 17→20, Pipeline 14→15 | `s80-m06` build+test gate |
 | 2026-03-06 | Claude Opus 4.6 | 89/100 | Sprint 79 retest — Codegen Quality 13→17 | `s79-m04` build+test gate |
 | 2026-03-06 | Codex GPT-5 | 84/100 | Sprint 76 latest-dist retest | `cmos/reports/s76-retest-latest-dist.md` |
