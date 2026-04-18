@@ -1,0 +1,104 @@
+{
+  "mission": "s95-m04",
+  "title": "Sprint-95 closeout (+1 rule, 4th formal instance)",
+  "sprint": "sprint-95",
+  "sprintTheme": "Descope Test (N=3) + Drift Read-Side + Housekeeping During Stage1 Pause",
+  "generatedAt": "2026-04-18T16:48:49.000Z",
+  "status": "verified",
+  "closeoutRule": {
+    "instance": 4,
+    "convention": "standing",
+    "promotedAt": "sprint-93",
+    "originatedAt": "sprint-92",
+    "predecessorOutcomes": [
+      "sprint-92: first formal closeout, zero retro-splits",
+      "sprint-93: second formal closeout, zero retro-splits",
+      "sprint-94: third formal closeout, zero retro-splits"
+    ]
+  },
+  "missions": [
+    {
+      "id": "s95-m01",
+      "title": "Synthetic full-payload map_create smoke + ack response to Stage1 v1.7.0 info_push",
+      "commit": "7f5b194",
+      "status": "Completed",
+      "outcomes": {
+        "smokeShape": "Single synthetic map.create payload carries both projection_variants[] and raw-string propMappings[].coercion labels",
+        "roundTrip": "Dry-run accepted, apply:true persisted, and map.resolve preserved projection variants plus coercionType values",
+        "evidence": "cmos/reports/s95-m01-map-create-smoke-2026-04-18.json",
+        "stage1Posture": "v1.7.0 accepted as additive; no hard OODS-side activation required"
+      }
+    },
+    {
+      "id": "s95-m02",
+      "title": "Widen structuredData.fetch allow-list for drift_report (read-side only)",
+      "commit": "b3e4ef1",
+      "status": "Completed",
+      "outcomes": {
+        "allowList": {
+          "identity_graph": [
+            "1.1.0",
+            "1.2.0"
+          ],
+          "capability_rollup": [
+            "1.1.0",
+            "1.2.0"
+          ],
+          "object_rollup": [
+            "1.0.0",
+            "1.1.0"
+          ],
+          "drift_report": [
+            "1.0.0"
+          ]
+        },
+        "meta": "structuredData.fetch now emits signalCount for drift_report payloads",
+        "guardrail": "Unknown drift_report schema versions still fast-fail with structured ToolError details"
+      }
+    },
+    {
+      "id": "s95-m03",
+      "title": "Test-isolation housekeeping: per-test temp dir for component-mappings.json contention",
+      "commit": "f1db899",
+      "status": "Completed",
+      "outcomes": {
+        "mappingsIsolation": "MCP_MAPPINGS_PATH override added and mapping-writing suites moved onto per-suite temp mappings files",
+        "bridgeFlake": "Shared bridge build/start harness removes parallel startup contention across bridge-backed suites",
+        "playgroundSync": "Stage1 fixture assertions updated to match current labels and summary text",
+        "parallelVerification": "pnpm exec vitest run --project core passed 3 consecutive runs (396 files / 3673 tests)"
+      }
+    }
+  ],
+  "deliverables": {
+    "workCommitsOnOrigin": "origin/sprint-95 contains 7f5b194, b3e4ef1, and f1db899 in dependency order",
+    "branchTracking": "origin/sprint-95",
+    "memoryUpdated": true,
+    "roadmapUpdated": true,
+    "closeoutReport": "cmos/reports/s95-m04-closeout-2026-04-18.json"
+  },
+  "qualityGates": {
+    "mcpServerSuiteSequential": "2205/2205 (pnpm exec vitest run --config vitest.config.ts --no-file-parallelism)",
+    "coreParallel": "396 files / 3673 tests green for 3 consecutive runs during s95-m03 verification",
+    "retroSplits": 0
+  },
+  "outcomes": {
+    "postureFlex": {
+      "target": "N=3 work missions + standing +1 closeout",
+      "result": "Succeeded; all four sprint-95 missions completed without reopening scope or retro-splitting"
+    },
+    "stage1ContractAlignment": {
+      "stage1Version": "v1.7.0",
+      "oodsActivation": "No hard activation required",
+      "driftReportReadSide": "Accepted at structuredData.fetch only",
+      "activationProbe": "Retired by s95-m01 synthetic smoke"
+    },
+    "carryForward": [
+      "No local Stage1 response to the s95-m01 status_update was observed in repo CMOS artifacts as of 2026-04-18; monitor in sprint-96 rather than blocking closeout."
+    ]
+  },
+  "decisionsHigh": [
+    "Keep drift_report activation deliberately read-side only; do not define downstream normalizer or playground consumer surfaces without a demand signal.",
+    "Fix the shared component-mappings contention by making the production path overridable instead of serializing the entire suite forever.",
+    "Treat sprint-95 as a real posture-flex experiment: N=3 work missions plus closeout is sufficient when scope is tight and evidence is explicit."
+  ]
+}
