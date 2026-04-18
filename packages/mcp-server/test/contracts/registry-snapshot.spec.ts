@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
@@ -12,24 +13,41 @@ import type { ComponentMapping } from '../../src/tools/map.shared.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
-const MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const DEFAULT_MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const MAPPINGS_PATH_ENV = 'MCP_MAPPINGS_PATH';
 
 const ajv = getAjv();
 const validateInput = ajv.compile(inputSchema);
 const validateOutput = ajv.compile(outputSchema);
 
 let originalMappings: string | null = null;
+let originalMappingsPathEnv: string | undefined;
+let currentTestTmpDir: string | null = null;
+
+function currentMappingsPath(): string {
+  return process.env[MAPPINGS_PATH_ENV] || DEFAULT_MAPPINGS_PATH;
+}
 
 beforeAll(() => {
-  originalMappings = fs.existsSync(MAPPINGS_PATH) ? fs.readFileSync(MAPPINGS_PATH, 'utf8') : null;
+  originalMappingsPathEnv = process.env[MAPPINGS_PATH_ENV];
+  const mappingsPath = currentMappingsPath();
+  originalMappings = fs.existsSync(mappingsPath) ? fs.readFileSync(mappingsPath, 'utf8') : null;
 });
 
 afterAll(() => {
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
+  } else {
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
+  }
+
+  const mappingsPath = currentMappingsPath();
   if (originalMappings === null) {
-    fs.rmSync(MAPPINGS_PATH, { force: true });
+    fs.rmSync(mappingsPath, { force: true });
     return;
   }
-  fs.writeFileSync(MAPPINGS_PATH, originalMappings);
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+  fs.writeFileSync(mappingsPath, originalMappings);
 });
 
 function buildMappings(count: number): ComponentMapping[] {
@@ -47,8 +65,10 @@ function buildMappings(count: number): ComponentMapping[] {
 }
 
 function writeMappings(mappings: ComponentMapping[]): void {
+  const mappingsPath = currentMappingsPath();
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
   fs.writeFileSync(
-    MAPPINGS_PATH,
+    mappingsPath,
     JSON.stringify(
       {
         $schema: '../../packages/mcp-server/src/schemas/component-mapping.schema.json',
@@ -67,7 +87,21 @@ function writeMappings(mappings: ComponentMapping[]): void {
 }
 
 beforeEach(() => {
+  currentTestTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oods-registry-snapshot-'));
+  process.env[MAPPINGS_PATH_ENV] = path.join(currentTestTmpDir, 'component-mappings.json');
   writeMappings(buildMappings(3));
+});
+
+afterEach(() => {
+  if (currentTestTmpDir) {
+    fs.rmSync(currentTestTmpDir, { recursive: true, force: true });
+    currentTestTmpDir = null;
+  }
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
+  } else {
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
+  }
 });
 
 describe('registry.snapshot schema validation', () => {

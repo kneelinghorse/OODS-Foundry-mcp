@@ -223,14 +223,18 @@ describe('playground app', () => {
       expect(runMapApply).toHaveBeenCalledWith(expect.stringContaining('linear-reconciliation-s43-validation'), 0.75),
     );
     expect(await screen.findByText('https://linear.app/')).toBeTruthy();
-    expect(await screen.findByText('Linear: 80 applied, 13 queued at minConfidence 0.75')).toBeTruthy();
+    expect(
+      await screen.findByText(/80 applied, 13 queued at minConfidence 0\.75/),
+    ).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Stripe' }));
+    await user.click(screen.getByRole('button', { name: 'Stripe (v1.1.0)' }));
 
     await waitFor(() =>
       expect(runMapApply).toHaveBeenCalledWith(expect.stringContaining('stripe-reconciliation-s43-validation'), 0.75),
     );
     expect(await screen.findByText('https://stripe.com/')).toBeTruthy();
-    expect(await screen.findByText('Stripe: 170 applied, 25 queued at minConfidence 0.75')).toBeTruthy();
+    expect(
+      await screen.findByText(/170 applied, 25 queued at minConfidence 0\.75/),
+    ).toBeTruthy();
   });
 });

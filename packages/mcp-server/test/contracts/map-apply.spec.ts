@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAjv } from '../../src/lib/ajv.js';
@@ -10,7 +11,8 @@ import { computeMappingsEtag, type ComponentMapping } from '../../src/tools/map.
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
-const MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const DEFAULT_MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const MAPPINGS_PATH_ENV = 'MCP_MAPPINGS_PATH';
 const FIXTURE_PATH = path.join(REPO_ROOT, 'packages', 'mcp-server', 'test', 'fixtures', 'reconciliation-report-v1.1.0.json');
 
 const ajv = getAjv();
@@ -21,7 +23,12 @@ function loadFixture(): Stage1ReconciliationReport {
   return JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8')) as Stage1ReconciliationReport;
 }
 
+function currentMappingsPath(): string {
+  return process.env[MAPPINGS_PATH_ENV] || DEFAULT_MAPPINGS_PATH;
+}
+
 function writeMappings(mappings: ComponentMapping[]): void {
+  const mappingsPath = currentMappingsPath();
   const doc = {
     $schema: '../../packages/mcp-server/src/schemas/component-mapping.schema.json',
     generatedAt: '2026-04-16T00:00:00.000Z',
@@ -32,7 +39,8 @@ function writeMappings(mappings: ComponentMapping[]): void {
     },
     mappings,
   };
-  fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(doc, null, 2) + '\n');
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+  fs.writeFileSync(mappingsPath, JSON.stringify(doc, null, 2) + '\n');
 }
 
 async function loadHandle(): Promise<(input: MapApplyInput) => Promise<MapApplyOutput>> {
@@ -41,17 +49,37 @@ async function loadHandle(): Promise<(input: MapApplyInput) => Promise<MapApplyO
 }
 
 let originalMappings: string | null = null;
+let originalMappingsPathEnv: string | undefined;
+let mappingsTmpDir: string | null = null;
 
 beforeAll(() => {
-  originalMappings = fs.existsSync(MAPPINGS_PATH) ? fs.readFileSync(MAPPINGS_PATH, 'utf8') : null;
+  originalMappingsPathEnv = process.env[MAPPINGS_PATH_ENV];
+  const originalPath = currentMappingsPath();
+  originalMappings = fs.existsSync(originalPath) ? fs.readFileSync(originalPath, 'utf8') : null;
+
+  mappingsTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oods-map-apply-spec-'));
+  process.env[MAPPINGS_PATH_ENV] = path.join(mappingsTmpDir, 'component-mappings.json');
 });
 
 afterAll(() => {
-  if (originalMappings === null) {
-    fs.rmSync(MAPPINGS_PATH, { force: true });
-    return;
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
+  } else {
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
   }
-  fs.writeFileSync(MAPPINGS_PATH, originalMappings);
+
+  const restoredMappingsPath = currentMappingsPath();
+  if (originalMappings === null) {
+    fs.rmSync(restoredMappingsPath, { force: true });
+  } else {
+    fs.mkdirSync(path.dirname(restoredMappingsPath), { recursive: true });
+    fs.writeFileSync(restoredMappingsPath, originalMappings);
+  }
+
+  if (mappingsTmpDir) {
+    fs.rmSync(mappingsTmpDir, { recursive: true, force: true });
+    mappingsTmpDir = null;
+  }
 });
 
 beforeEach(() => {
@@ -238,7 +266,7 @@ describe('map.apply contract (pending implementation)', () => {
       changedFields: ['oodsTraits', 'metadata.notes'],
     });
     expect(result.etag).toBe(
-      computeMappingsEtag(JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8')) as Parameters<typeof computeMappingsEtag>[0]),
+      computeMappingsEtag(JSON.parse(fs.readFileSync(currentMappingsPath(), 'utf8')) as Parameters<typeof computeMappingsEtag>[0]),
     );
   });
 
@@ -312,7 +340,7 @@ describe('map.apply projection_variants[] handler pass-through (s92-m02)', () =>
     expect(result.errors).toEqual([]);
     expect(result.applied.filter((r) => r.action === 'create')).toHaveLength(1);
 
-    const doc = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const doc = JSON.parse(fs.readFileSync(currentMappingsPath(), 'utf8'));
     const persisted = doc.mappings.find((m: any) => m.externalComponent === 'Command Menu Trigger');
     expect(persisted).toBeDefined();
     expect(persisted.projection_variants).toEqual(variants);
@@ -327,7 +355,7 @@ describe('map.apply projection_variants[] handler pass-through (s92-m02)', () =>
     const result = await handle({ report, apply: false, minConfidence: 0.75 });
 
     expect(result.errors).toEqual([]);
-    const doc = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const doc = JSON.parse(fs.readFileSync(currentMappingsPath(), 'utf8'));
     const candidateNotPersisted = doc.mappings.find((m: any) => m.externalComponent === 'Command Menu Trigger');
     expect(candidateNotPersisted).toBeUndefined();
   });
@@ -374,7 +402,7 @@ describe('map.apply projection_variants[] handler pass-through (s92-m02)', () =>
     const result = await handle({ report, apply: true, minConfidence: 0.75 });
 
     expect(result.errors).toEqual([]);
-    const doc = JSON.parse(fs.readFileSync(MAPPINGS_PATH, 'utf8'));
+    const doc = JSON.parse(fs.readFileSync(currentMappingsPath(), 'utf8'));
     const patched = doc.mappings.find((m: any) => m.id === 'linear-issue-row');
     expect(patched.projection_variants).toEqual(newVariants);
   });

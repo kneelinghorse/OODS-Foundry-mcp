@@ -1,8 +1,7 @@
-import { once } from 'node:events';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { buildAndStartBridge, stopBridge, type BridgeProcess } from '../helpers/bridge-harness.ts';
 import type {
   ReplRenderOutput,
   ReplValidateInput,
@@ -17,11 +16,6 @@ import type {
 const TEST_FILE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TEST_FILE_DIR, '../../../../');
 const MCP_BRIDGE_DIR = path.join(REPO_ROOT, 'packages', 'mcp-bridge');
-
-type BridgeProcess = {
-  child: ChildProcessWithoutNullStreams;
-  port: number;
-};
 
 let bridge: BridgeProcess | null = null;
 
@@ -40,53 +34,6 @@ const testSchema: UiSchema = {
     },
   ],
 };
-
-async function runCommand(cmd: string, args: string[], cwd: string): Promise<void> {
-  const child = spawn(cmd, args, {
-    cwd,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env },
-  });
-  const stderrChunks: string[] = [];
-  child.stderr.setEncoding('utf8');
-  child.stderr.on('data', (chunk) => stderrChunks.push(chunk));
-  const [code] = (await once(child, 'close')) as [number | null];
-  if (code !== 0) {
-    throw new Error(`Command failed (${cmd} ${args.join(' ')}):\n${stderrChunks.join('')}`);
-  }
-}
-
-async function startBridge(): Promise<BridgeProcess> {
-  const child = spawn(process.execPath, ['dist/server.js'], {
-    cwd: MCP_BRIDGE_DIR,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: {
-      ...process.env,
-      MCP_BRIDGE_PORT: '0',
-      MCP_EXTRA_TOOLS: 'a11y.scan',
-    },
-  });
-  child.stdout.setEncoding('utf8');
-
-  return await new Promise<BridgeProcess>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Timed out waiting for bridge startup')), 20_000);
-    child.stdout.on('data', (chunk: string) => {
-      const match = chunk.match(/\[mcp-bridge\] listening on :(\d+)/);
-      if (!match) return;
-      clearTimeout(timeout);
-      resolve({ child, port: Number(match[1]) });
-    });
-    child.once('exit', (code) => {
-      clearTimeout(timeout);
-      reject(new Error(`Bridge exited before startup (code=${String(code)})`));
-    });
-  });
-}
-
-async function stopBridge(proc: BridgeProcess): Promise<void> {
-  proc.child.kill('SIGTERM');
-  await once(proc.child, 'close');
-}
 
 async function runBridgeTool<T>(port: number, tool: string, input: unknown): Promise<T> {
   const response = await fetch(`http://127.0.0.1:${port}/run`, {
@@ -107,9 +54,11 @@ async function runBridgeTool<T>(port: number, tool: string, input: unknown): Pro
 
 describe('a11y pipeline e2e', () => {
   beforeAll(async () => {
-    await runCommand('pnpm', ['--filter', '@oods/mcp-server', 'run', 'build'], REPO_ROOT);
-    await runCommand('pnpm', ['--filter', '@oods/mcp-bridge', 'run', 'build'], REPO_ROOT);
-    bridge = await startBridge();
+    bridge = await buildAndStartBridge({
+      repoRoot: REPO_ROOT,
+      bridgeDir: MCP_BRIDGE_DIR,
+      extraEnv: { MCP_EXTRA_TOOLS: 'a11y.scan' },
+    });
   }, 180_000);
 
   afterAll(async () => {

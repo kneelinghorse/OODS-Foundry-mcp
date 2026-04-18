@@ -11,9 +11,10 @@ import type { Stage1ProjectionVariant } from "./types.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../../");
 const ARTIFACT_DIR = path.join(REPO_ROOT, "artifacts", "structured-data");
-const MAPPINGS_PATH = path.join(ARTIFACT_DIR, "component-mappings.json");
+const DEFAULT_MAPPINGS_PATH = path.join(ARTIFACT_DIR, "component-mappings.json");
 const MANIFEST_PATH = path.join(ARTIFACT_DIR, "manifest.json");
 const PLANNING_DIR = path.join(REPO_ROOT, "cmos", "planning");
+export const MAPPINGS_PATH_ENV = "MCP_MAPPINGS_PATH";
 
 export type CoercionEnum = {
   type: "enum";
@@ -85,8 +86,15 @@ export type MappingsDoc = {
   mappings: ComponentMapping[];
 };
 
+export function getMappingsPath(): string {
+  const override = process.env[MAPPINGS_PATH_ENV]?.trim();
+  if (!override) return DEFAULT_MAPPINGS_PATH;
+  return path.isAbsolute(override) ? override : path.resolve(REPO_ROOT, override);
+}
+
 export function loadMappings(): MappingsDoc {
-  if (!fs.existsSync(MAPPINGS_PATH)) {
+  const mappingsPath = getMappingsPath();
+  if (!fs.existsSync(mappingsPath)) {
     const now = new Date().toISOString();
     return {
       $schema:
@@ -97,10 +105,11 @@ export function loadMappings(): MappingsDoc {
       mappings: [],
     };
   }
-  return JSON.parse(fs.readFileSync(MAPPINGS_PATH, "utf8")) as MappingsDoc;
+  return JSON.parse(fs.readFileSync(mappingsPath, "utf8")) as MappingsDoc;
 }
 
 export function saveMappings(doc: MappingsDoc): void {
+  const mappingsPath = getMappingsPath();
   const now = new Date().toISOString();
   doc.generatedAt = now;
   doc.version = now.slice(0, 10);
@@ -108,7 +117,8 @@ export function saveMappings(doc: MappingsDoc): void {
   doc.stats.systemCount = new Set(
     doc.mappings.map((m) => m.externalSystem),
   ).size;
-  fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(doc, null, 2) + "\n", "utf8");
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+  fs.writeFileSync(mappingsPath, JSON.stringify(doc, null, 2) + "\n", "utf8");
 }
 
 function stableSort(value: unknown): unknown {

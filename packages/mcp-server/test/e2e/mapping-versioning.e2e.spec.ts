@@ -7,22 +7,26 @@
 import { once } from 'node:events';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-
-type BridgeProcess = {
-  child: ChildProcessWithoutNullStreams;
-  port: number;
-};
+import { buildAndStartBridge, type BridgeProcess } from '../helpers/bridge-harness.ts';
 
 const TEST_FILE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TEST_FILE_DIR, '../../../../');
 const MCP_BRIDGE_DIR = path.join(REPO_ROOT, 'packages', 'mcp-bridge');
-const MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const DEFAULT_MAPPINGS_PATH = path.join(REPO_ROOT, 'artifacts', 'structured-data', 'component-mappings.json');
+const MAPPINGS_PATH_ENV = 'MCP_MAPPINGS_PATH';
 
 let bridge: BridgeProcess | null = null;
 let originalMappings: string | null = null;
+let originalMappingsPathEnv: string | undefined;
+let mappingsTmpDir: string | null = null;
+
+function currentMappingsPath(): string {
+  return process.env[MAPPINGS_PATH_ENV] || DEFAULT_MAPPINGS_PATH;
+}
 
 async function runCommand(cmd: string, args: string[], cwd: string): Promise<void> {
   const child = spawn(cmd, args, {
@@ -37,32 +41,6 @@ async function runCommand(cmd: string, args: string[], cwd: string): Promise<voi
   if (code !== 0) {
     throw new Error(`Command failed (${cmd} ${args.join(' ')}):\n${stderrChunks.join('')}`);
   }
-}
-
-async function startBridge(): Promise<BridgeProcess> {
-  const child = spawn(process.execPath, ['dist/server.js'], {
-    cwd: MCP_BRIDGE_DIR,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: {
-      ...process.env,
-      MCP_BRIDGE_PORT: '0',
-    },
-  });
-  child.stdout.setEncoding('utf8');
-
-  return await new Promise<BridgeProcess>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Timed out waiting for bridge startup')), 20_000);
-    child.stdout.on('data', (chunk: string) => {
-      const match = chunk.match(/\[mcp-bridge\] listening on :(\d+)/);
-      if (!match) return;
-      clearTimeout(timeout);
-      resolve({ child, port: Number(match[1]) });
-    });
-    child.once('exit', (code) => {
-      clearTimeout(timeout);
-      reject(new Error(`Bridge exited before startup (code=${String(code)})`));
-    });
-  });
 }
 
 async function stopBridge(proc: BridgeProcess): Promise<void> {
@@ -85,8 +63,12 @@ async function runBridgeTool(port: number, tool: string, input: Record<string, u
 
 describe('mapping + versioning bridge E2E', () => {
   beforeAll(async () => {
-    // Preserve mappings file
-    originalMappings = fs.existsSync(MAPPINGS_PATH) ? fs.readFileSync(MAPPINGS_PATH, 'utf8') : null;
+    originalMappingsPathEnv = process.env[MAPPINGS_PATH_ENV];
+    const originalPath = currentMappingsPath();
+    originalMappings = fs.existsSync(originalPath) ? fs.readFileSync(originalPath, 'utf8') : null;
+
+    mappingsTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oods-mapping-versioning-'));
+    process.env[MAPPINGS_PATH_ENV] = path.join(mappingsTmpDir, 'component-mappings.json');
 
     // Reset to empty for clean test
     const empty = {
@@ -96,11 +78,13 @@ describe('mapping + versioning bridge E2E', () => {
       stats: { mappingCount: 0, systemCount: 0 },
       mappings: [],
     };
-    fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(empty, null, 2) + '\n');
+    fs.mkdirSync(path.dirname(currentMappingsPath()), { recursive: true });
+    fs.writeFileSync(currentMappingsPath(), JSON.stringify(empty, null, 2) + '\n');
 
-    await runCommand('pnpm', ['--filter', '@oods/mcp-server', 'run', 'build'], REPO_ROOT);
-    await runCommand('pnpm', ['--filter', '@oods/mcp-bridge', 'run', 'build'], REPO_ROOT);
-    bridge = await startBridge();
+    bridge = await buildAndStartBridge({
+      repoRoot: REPO_ROOT,
+      bridgeDir: MCP_BRIDGE_DIR,
+    });
   }, 180_000);
 
   afterAll(async () => {
@@ -108,11 +92,22 @@ describe('mapping + versioning bridge E2E', () => {
       await stopBridge(bridge);
       bridge = null;
     }
-    // Restore mappings file
-    if (originalMappings === null) {
-      fs.rmSync(MAPPINGS_PATH, { force: true });
+    if (mappingsTmpDir) {
+      fs.rmSync(mappingsTmpDir, { recursive: true, force: true });
+      mappingsTmpDir = null;
+    }
+    if (originalMappingsPathEnv === undefined) {
+      delete process.env[MAPPINGS_PATH_ENV];
     } else {
-      fs.writeFileSync(MAPPINGS_PATH, originalMappings);
+      process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
+    }
+    // Restore mappings file
+    const mappingsPath = currentMappingsPath();
+    if (originalMappings === null) {
+      fs.rmSync(mappingsPath, { force: true });
+    } else {
+      fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+      fs.writeFileSync(mappingsPath, originalMappings);
     }
   });
 

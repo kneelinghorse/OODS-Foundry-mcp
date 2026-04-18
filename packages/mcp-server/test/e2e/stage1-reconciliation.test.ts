@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { handle as applyHandle } from "../../src/tools/map.apply.js";
@@ -20,12 +21,13 @@ import type {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../../");
-const MAPPINGS_PATH = path.join(
+const DEFAULT_MAPPINGS_PATH = path.join(
   REPO_ROOT,
   "artifacts",
   "structured-data",
   "component-mappings.json",
 );
+const MAPPINGS_PATH_ENV = "MCP_MAPPINGS_PATH";
 const SYNTHETIC_REPORT_PATH = path.join(
   REPO_ROOT,
   "packages",
@@ -75,8 +77,15 @@ const REAL_REPORT_FIXTURES: RealReportFixture[] = [
 
 let originalMappings: string | null = null;
 const originalArtifacts = new Map<string, string | null>();
+let originalMappingsPathEnv: string | undefined;
+let mappingsTmpDir: string | null = null;
+
+function currentMappingsPath(): string {
+  return process.env[MAPPINGS_PATH_ENV] || DEFAULT_MAPPINGS_PATH;
+}
 
 function seedEmptyMappings(): void {
+  const mappingsPath = currentMappingsPath();
   const doc: MappingsDoc = {
     $schema:
       "../../packages/mcp-server/src/schemas/component-mapping.schema.json",
@@ -88,7 +97,8 @@ function seedEmptyMappings(): void {
     },
     mappings: [],
   };
-  fs.writeFileSync(MAPPINGS_PATH, JSON.stringify(doc, null, 2) + "\n");
+  fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+  fs.writeFileSync(mappingsPath, JSON.stringify(doc, null, 2) + "\n");
 }
 
 function loadReport(reportPath: string): Stage1ReconciliationReport {
@@ -146,9 +156,13 @@ const allRealReportsAvailable = REAL_REPORT_FIXTURES.every((fixture) =>
 );
 
 beforeAll(() => {
-  originalMappings = fs.existsSync(MAPPINGS_PATH)
-    ? fs.readFileSync(MAPPINGS_PATH, "utf8")
+  originalMappingsPathEnv = process.env[MAPPINGS_PATH_ENV];
+  const originalPath = currentMappingsPath();
+  originalMappings = fs.existsSync(originalPath)
+    ? fs.readFileSync(originalPath, "utf8")
     : null;
+  mappingsTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "oods-stage1-reconciliation-"));
+  process.env[MAPPINGS_PATH_ENV] = path.join(mappingsTmpDir, "component-mappings.json");
 
   for (const fixture of REAL_REPORT_FIXTURES) {
     if (!fs.existsSync(fixture.reportPath)) continue;
@@ -164,10 +178,21 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  if (originalMappings === null) {
-    fs.rmSync(MAPPINGS_PATH, { force: true });
+  if (mappingsTmpDir) {
+    fs.rmSync(mappingsTmpDir, { force: true, recursive: true });
+    mappingsTmpDir = null;
+  }
+  if (originalMappingsPathEnv === undefined) {
+    delete process.env[MAPPINGS_PATH_ENV];
   } else {
-    fs.writeFileSync(MAPPINGS_PATH, originalMappings);
+    process.env[MAPPINGS_PATH_ENV] = originalMappingsPathEnv;
+  }
+  const mappingsPath = currentMappingsPath();
+  if (originalMappings === null) {
+    fs.rmSync(mappingsPath, { force: true });
+  } else {
+    fs.mkdirSync(path.dirname(mappingsPath), { recursive: true });
+    fs.writeFileSync(mappingsPath, originalMappings);
   }
 
   for (const [artifactPath, originalArtifact] of originalArtifacts.entries()) {
