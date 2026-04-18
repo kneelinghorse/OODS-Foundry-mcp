@@ -13,16 +13,20 @@ import type {
 import { ToolError } from '../errors/tool-error.js';
 
 /**
- * Stage1 rollup kinds and the schema_versions OODS currently accepts.
+ * Stage1 structured artifact kinds and the schema_versions OODS currently accepts.
  * Reject anything outside this set so a mid-sprint Stage1 bump lands as a
  * fast-fail instead of a silent parse. Old versions remain accepted for
  * back-compat on archived fixtures; v1.6.0 adds ConfidenceDecomposition-bearing
  * bumps (identity_graph 1.2.0, capability_rollup 1.2.0, object_rollup 1.1.0).
+ * Sprint-95 m02 adds read-side acceptance for Stage1's additive drift_report
+ * side artifact at schema_version 1.0.0 without activating any downstream
+ * consumer surfaces.
  */
 const ROLLUP_ALLOWED_SCHEMA_VERSIONS: Record<Stage1RollupKind, string[]> = {
   identity_graph: ['1.1.0', '1.2.0'],
   capability_rollup: ['1.1.0', '1.2.0'],
   object_rollup: ['1.0.0', '1.1.0'],
+  drift_report: ['1.0.0'],
 };
 
 type ManifestArtifact = {
@@ -328,6 +332,9 @@ function rollupMeta(kind: Stage1RollupKind, payload: Record<string, any>): Recor
   }
   if (kind === 'capability_rollup') {
     return { capabilityCount: Array.isArray(payload.capabilities) ? payload.capabilities.length : 0 };
+  }
+  if (kind === 'drift_report') {
+    return { signalCount: Array.isArray(payload.signals) ? payload.signals.length : 0 };
   }
   const objects = Array.isArray(payload.objects) ? payload.objects : [];
   let variantCount = 0;

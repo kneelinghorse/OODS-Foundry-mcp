@@ -96,6 +96,21 @@ function makeObjectRollup(schemaVersion = '1.0.0') {
   };
 }
 
+function makeDriftReport(schemaVersion = '1.0.0') {
+  return {
+    kind: 'drift_report',
+    schema_version: schemaVersion,
+    generated_at: '2026-04-18T02:16:31.952Z',
+    current_run: { id: RUN_ID, url: 'https://example.com/' },
+    semantic_drift: [],
+    projection_inconsistency: [],
+    capability_contradiction: [],
+    token_intent_mismatch: [],
+    object_coverage_gap: [],
+    signals: [],
+  };
+}
+
 describe('structuredData.fetch rollup mode', () => {
   let tmpDir: string;
   let artifactsDir: string;
@@ -107,6 +122,7 @@ describe('structuredData.fetch rollup mode', () => {
     fs.writeFileSync(path.join(artifactsDir, 'identity_graph.json'), JSON.stringify(makeIdentityGraph()));
     fs.writeFileSync(path.join(artifactsDir, 'capability_rollup.json'), JSON.stringify(makeCapabilityRollup()));
     fs.writeFileSync(path.join(artifactsDir, 'object_rollup.json'), JSON.stringify(makeObjectRollup()));
+    fs.writeFileSync(path.join(artifactsDir, 'drift_report.json'), JSON.stringify(makeDriftReport()));
   });
 
   afterEach(() => {
@@ -142,6 +158,14 @@ describe('structuredData.fetch rollup mode', () => {
     expect(objects[0].projection_variants).toHaveLength(2);
     expect(result.meta?.objectCount).toBe(1);
     expect(result.meta?.projectionVariantCount).toBe(2);
+  });
+
+  it('returns parsed drift_report with empty signals[] intact', async () => {
+    const result = await handle({ kind: 'drift_report', runPath: artifactsDir });
+    expect(result.kind).toBe('drift_report');
+    expect(result.schemaVersion).toBe('1.0.0');
+    expect((result.payload as any).signals).toEqual([]);
+    expect(result.meta?.signalCount).toBe(0);
   });
 
   it('accepts a run-root runPath and finds artifacts/<kind>.json', async () => {
@@ -191,6 +215,17 @@ describe('structuredData.fetch rollup mode', () => {
     expect((result.payload as any).objects).toHaveLength(1);
   });
 
+  it('accepts drift_report schema_version 1.0.0 (s95-m02 read-side widen)', async () => {
+    fs.writeFileSync(
+      path.join(artifactsDir, 'drift_report.json'),
+      JSON.stringify(makeDriftReport('1.0.0')),
+    );
+    const result = await handle({ kind: 'drift_report', runPath: artifactsDir });
+    expect(result.schemaVersion).toBe('1.0.0');
+    expect(result.schemaValidated).toBe(true);
+    expect((result.payload as any).signals).toEqual([]);
+  });
+
   it('rejects an unknown schema_version with a structured error', async () => {
     fs.writeFileSync(
       path.join(artifactsDir, 'identity_graph.json'),
@@ -219,6 +254,21 @@ describe('structuredData.fetch rollup mode', () => {
       expect(err).toBeInstanceOf(ToolError);
       expect((err as ToolError).message).toMatch(/Unsupported schema_version "2\.0\.0"/);
       expect((err as any).details?.accepted).toEqual(['1.0.0', '1.1.0']);
+    }
+  });
+
+  it('rejects an unknown drift_report schema_version with the read-side allow-list', async () => {
+    fs.writeFileSync(
+      path.join(artifactsDir, 'drift_report.json'),
+      JSON.stringify(makeDriftReport('2.0.0')),
+    );
+    try {
+      await handle({ kind: 'drift_report', runPath: artifactsDir });
+      throw new Error('expected rejection');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ToolError);
+      expect((err as ToolError).message).toMatch(/Unsupported schema_version "2\.0\.0"/);
+      expect((err as any).details?.accepted).toEqual(['1.0.0']);
     }
   });
 

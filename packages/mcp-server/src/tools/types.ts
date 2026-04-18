@@ -124,8 +124,12 @@ export type ReleaseTagResult = GenericOutput & {
 
 export type StructuredDataset = "components" | "tokens" | "manifest";
 
-/** Stage1 v1.5.0 rollup artifact kinds consumable via structuredData.fetch. */
-export type Stage1RollupKind = "identity_graph" | "capability_rollup" | "object_rollup";
+/** Stage1 structured artifact kinds consumable via structuredData.fetch. */
+export type Stage1RollupKind =
+  | "identity_graph"
+  | "capability_rollup"
+  | "object_rollup"
+  | "drift_report";
 
 export type StructuredDataFetchInput = {
   dataset?: StructuredDataset;
@@ -164,6 +168,7 @@ export type StructuredDataFetchOutput = {
  *   identity_graph: 1.1.0 | 1.2.0
  *   capability_rollup: 1.1.0 | 1.2.0
  *   object_rollup: 1.0.0 | 1.1.0
+ *   drift_report: 1.0.0
  * See ROLLUP_ALLOWED_SCHEMA_VERSIONS in structuredData.fetch.ts.
  */
 
