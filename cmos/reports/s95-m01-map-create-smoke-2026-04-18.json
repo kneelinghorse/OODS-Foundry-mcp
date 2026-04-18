@@ -1,0 +1,223 @@
+{
+  "missionId": "s95-m01",
+  "generatedAt": "2026-04-18T16:02:04.835Z",
+  "payload": {
+    "externalSystem": "stage1-synthetic",
+    "externalComponent": "Capability Card",
+    "oodsTraits": [
+      "Stateful"
+    ],
+    "propMappings": [
+      {
+        "externalProp": "variant",
+        "oodsProp": "appearance",
+        "coercion": "enum-map"
+      },
+      {
+        "externalProp": "kind",
+        "oodsProp": "role",
+        "coercion": "type-cast"
+      }
+    ],
+    "projection_variants": [
+      {
+        "id": "capability-card-desktop",
+        "surface": "desktop",
+        "external_component": "CapabilityCard",
+        "capability_id": "cap-capability-card",
+        "selector": "[data-capability-card]",
+        "confidence": 0.93,
+        "evidence_chain": [
+          {
+            "pass": "dom.components",
+            "note": "Synthetic s95-m01 smoke payload"
+          }
+        ]
+      },
+      {
+        "id": "capability-card-mobile",
+        "surface": "mobile",
+        "external_component": "CapabilityCardMobile",
+        "selector": "[data-capability-card-mobile]"
+      }
+    ]
+  },
+  "checks": {
+    "dryRunAccepted": true,
+    "dryRunDidNotPersist": true,
+    "persistedApplySucceeded": true,
+    "projectionVariantsPreserved": true,
+    "coercionTypesPreserved": true
+  },
+  "dryRun": {
+    "status": "ok",
+    "mapping": {
+      "id": "stage1-synthetic-capability-card",
+      "externalSystem": "stage1-synthetic",
+      "externalComponent": "Capability Card",
+      "oodsTraits": [
+        "Stateful"
+      ],
+      "propMappings": [
+        {
+          "externalProp": "variant",
+          "oodsProp": "appearance",
+          "coercion": "enum-map"
+        },
+        {
+          "externalProp": "kind",
+          "oodsProp": "role",
+          "coercion": "type-cast"
+        }
+      ],
+      "confidence": "manual",
+      "metadata": {
+        "createdAt": "2026-04-18T16:02:04.833Z"
+      },
+      "projection_variants": [
+        {
+          "id": "capability-card-desktop",
+          "surface": "desktop",
+          "external_component": "CapabilityCard",
+          "capability_id": "cap-capability-card",
+          "selector": "[data-capability-card]",
+          "confidence": 0.93,
+          "evidence_chain": [
+            {
+              "pass": "dom.components",
+              "note": "Synthetic s95-m01 smoke payload"
+            }
+          ]
+        },
+        {
+          "id": "capability-card-mobile",
+          "surface": "mobile",
+          "external_component": "CapabilityCardMobile",
+          "selector": "[data-capability-card-mobile]"
+        }
+      ]
+    },
+    "etag": "d791d1daf18a926fb384e8ca06810e3afd668b73b864f220caf63040016f1f06",
+    "applied": false,
+    "warnings": [
+      "Dry run: mapping not persisted. Set apply=true to write to artifacts/structured-data/component-mappings.json."
+    ]
+  },
+  "afterDryRun": {
+    "totalCount": 0
+  },
+  "persisted": {
+    "status": "ok",
+    "mapping": {
+      "id": "stage1-synthetic-capability-card",
+      "externalSystem": "stage1-synthetic",
+      "externalComponent": "Capability Card",
+      "oodsTraits": [
+        "Stateful"
+      ],
+      "propMappings": [
+        {
+          "externalProp": "variant",
+          "oodsProp": "appearance",
+          "coercion": "enum-map"
+        },
+        {
+          "externalProp": "kind",
+          "oodsProp": "role",
+          "coercion": "type-cast"
+        }
+      ],
+      "confidence": "manual",
+      "metadata": {
+        "createdAt": "2026-04-18T16:02:04.835Z"
+      },
+      "projection_variants": [
+        {
+          "id": "capability-card-desktop",
+          "surface": "desktop",
+          "external_component": "CapabilityCard",
+          "capability_id": "cap-capability-card",
+          "selector": "[data-capability-card]",
+          "confidence": 0.93,
+          "evidence_chain": [
+            {
+              "pass": "dom.components",
+              "note": "Synthetic s95-m01 smoke payload"
+            }
+          ]
+        },
+        {
+          "id": "capability-card-mobile",
+          "surface": "mobile",
+          "external_component": "CapabilityCardMobile",
+          "selector": "[data-capability-card-mobile]"
+        }
+      ]
+    },
+    "etag": "98c34b1b9de1c2704e7ba944c3cde18083b72c367fed054995e9ef2d4b661d85",
+    "applied": true
+  },
+  "resolved": {
+    "status": "ok",
+    "mapping": {
+      "id": "stage1-synthetic-capability-card",
+      "externalSystem": "stage1-synthetic",
+      "externalComponent": "Capability Card",
+      "oodsTraits": [
+        "Stateful"
+      ],
+      "propMappings": [
+        {
+          "externalProp": "variant",
+          "oodsProp": "appearance",
+          "coercion": "enum-map"
+        },
+        {
+          "externalProp": "kind",
+          "oodsProp": "role",
+          "coercion": "type-cast"
+        }
+      ],
+      "confidence": "manual",
+      "metadata": {
+        "createdAt": "2026-04-18T16:02:04.835Z"
+      },
+      "projection_variants": [
+        {
+          "id": "capability-card-desktop",
+          "surface": "desktop",
+          "external_component": "CapabilityCard",
+          "capability_id": "cap-capability-card",
+          "selector": "[data-capability-card]",
+          "confidence": 0.93,
+          "evidence_chain": [
+            {
+              "pass": "dom.components",
+              "note": "Synthetic s95-m01 smoke payload"
+            }
+          ]
+        },
+        {
+          "id": "capability-card-mobile",
+          "surface": "mobile",
+          "external_component": "CapabilityCardMobile",
+          "selector": "[data-capability-card-mobile]"
+        }
+      ]
+    },
+    "propTranslations": [
+      {
+        "externalProp": "variant",
+        "oodsProp": "appearance",
+        "coercionType": "enum-map",
+        "coercionDetail": null
+      },
+      {
+        "externalProp": "kind",
+        "oodsProp": "role",
+        "coercionType": "type-cast",
+        "coercionDetail": null
+      }
+    ]
+  }
+}
